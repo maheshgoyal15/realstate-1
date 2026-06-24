@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: ankane/pgvector:v0.5.1 # PostgreSQL 16 with pgvector extension pre-installed
+    container_name: homeready_postgres
+    environment:
+      POSTGRES_USER: homeready_admin
+      POSTGRES_PASSWORD: homeready_secure_db_password_123!
+      POSTGRES_DB: homeready_dev
+    ports:
+      # Mandatory Secure Web Skills: Servers and databases MUST listen exclusively on localhost/127.0.0.1
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: homeready_redis
+    command: redis-server --requirepass homeready_secure_redis_pass_123!
+    ports:
+      # Mandatory Secure Web Skills: Servers and databases MUST listen exclusively on localhost/127.0.0.1
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:

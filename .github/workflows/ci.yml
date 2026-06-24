@@ -1,0 +1,66 @@
+name: HomeReady AI CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Monorepo
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Backend Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          cd backend
+          poetry config virtualenvs.create false
+          poetry install
+
+      - name: Run Ruff & Black Linting
+        run: |
+          cd backend
+          poetry run ruff check .
+          poetry run black --check .
+
+      - name: Execute PyTest Suite (127.0.0.1 Localhost Binding Enforced)
+        env:
+          JWT_SECRET_KEY: "ci_ephemeral_secure_secret_key_2026_test!"
+          SERVER_HOST: "127.0.0.1"
+        run: |
+          cd backend
+          poetry run pytest
+
+      - name: Set up Node.js 20 (Frontend)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Verify Frontend Formatting & Linting
+        run: |
+          cd frontend
+          npm install
+          npm run lint
+          npx prettier --check "src/**/*.{ts,tsx}"
+
+  docker-build:
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout Monorepo
+        uses: actions/checkout@v4
+
+      - name: Build Production Multi-Container Network
+        run: |
+          docker compose -f docker-compose.yml build

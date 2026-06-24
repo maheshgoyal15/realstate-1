@@ -1,0 +1,175 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased selection:bg-indigo-500 selection:text-white;
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+/* Dynamic Animated Mesh Gradient Background & Glowing Orbs */
+@keyframes mesh-animation {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes orb-float-1 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(50px, -50px) scale(1.1);
+  }
+}
+
+@keyframes orb-float-2 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-50px, 50px) scale(1.15);
+  }
+}
+
+@keyframes orb-float-3 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(40px, 40px) scale(1.05);
+  }
+}
+
+.bg-mesh {
+  background: linear-gradient(-45deg, #090d16, #0c102b, #071922, #0d0a26);
+  background-size: 400% 400%;
+  animation: mesh-animation 15s ease infinite;
+}
+
+.orb-1 {
+  position: absolute;
+  top: 5%;
+  left: 10%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, rgba(99, 102, 241, 0) 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: orb-float-1 12s ease-in-out infinite;
+}
+
+.orb-2 {
+  position: absolute;
+  bottom: 10%;
+  right: 10%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0) 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: orb-float-2 16s ease-in-out infinite;
+}
+
+.orb-3 {
+  position: absolute;
+  top: 40%;
+  left: 40%;
+  width: 550px;
+  height: 550px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.25) 0%, rgba(139, 92, 246, 0) 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: orb-float-3 14s ease-in-out infinite;
+}
+
+/* Custom premium glassmorphism utilities */
+.glass-panel {
+  @apply bg-slate-900/60 backdrop-blur-md border border-slate-800 rounded-2xl shadow-xl;
+}
+
+.glass-card {
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.3), inset 0 1px 2px 0 rgba(255, 255, 255, 0.1);
+  border-radius: 1.5rem;
+}
+
+.glass-nav {
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(99, 102, 241, 0.6);
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.35), inset 0 2px 4px 0 rgba(0, 0, 0, 0.15);
+  outline: none;
+}
+
+/* Marching Ants / Glowing Dashed Border for Dropzone */
+@keyframes color-pulse {
+  0% {
+    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.1);
+  }
+  50% {
+    border-color: rgba(139, 92, 246, 0.8);
+    box-shadow: 0 0 25px rgba(139, 92, 246, 0.4);
+  }
+  100% {
+    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.1);
+  }
+}
+
+.dropzone-container {
+  background: rgba(255, 255, 255, 0.02);
+  border: 2px dashed rgba(255, 255, 255, 0.15);
+  transition: all 0.3s ease;
+}
+
+.dropzone-container:hover {
+  background: rgba(255, 255, 255, 0.05);
+  animation: color-pulse 2s infinite;
+}
+
+/* Premium Gradient CTA Button */
+.btn-gradient {
+  background: linear-gradient(135deg, #2563eb, #6366f1, #8b5cf6);
+  background-size: 200% 200%;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+  transition: all 0.3s ease;
+}
+
+.btn-gradient:hover {
+  background-position: 100% 0;
+  box-shadow: 0 8px 30px rgba(139, 92, 246, 0.6);
+  transform: translateY(-2px);
+}
+
+.btn-gradient:active {
+  transform: translateY(0);
+}
