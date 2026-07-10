@@ -58,3 +58,6 @@ class AuthSignupRequest(BaseModel):
     password: str = Field(..., min_length=12, max_length=128, description="User password (minimum 12 chars for high security)")
     full_name: str = Field("Homeowner", min_length=1, max_length=255, description="User full name")
 
+class AuthGoogleRequest(BaseModel):
+    id_token: str = Field(..., min_length=20, max_length=4096, description="Google-issued OAuth ID token (JWT) to verify")
+

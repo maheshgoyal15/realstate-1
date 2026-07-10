@@ -1,5 +1,6 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 
 // Mandatory Secure Web Skills: Multi-tiered Secret Resolution (Node.js)
 // Resolution: Environment -> Local File Query -> Random Gen + Log
@@ -58,8 +59,15 @@ const authOptions: NextAuthOptions = {
       },
     },
   },
+  pages: {
+    signIn: "/login",
+    error: "/login",
+  },
   providers: [
-    // TODO(security): Consider using OAuth providers (Google, Apple) for production SSO integration.
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -98,6 +106,41 @@ const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider === "google") {
+        if (!account.id_token) {
+          return false;
+        }
+        try {
+          // Mandatory Secure Web Skills: BFF Pattern
+          // Exchange the Google ID token for a backend-issued JWT so every
+          // authenticated request (regardless of login method) carries the
+          // same kind of access token. The backend independently re-verifies
+          // the Google token signature - this route is reachable directly
+          // (via the /api/v1 rewrite), so it cannot be trusted on its own.
+          const backendUrl = process.env.BACKEND_URL || "http://127.0.0.1:8000";
+          const res = await fetch(`${backendUrl}/api/v1/auth/oauth/google`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id_token: account.id_token }),
+          });
+
+          if (!res.ok) {
+            return false;
+          }
+
+          const backendUser = await res.json();
+          (user as any).id = backendUser.id;
+          (user as any).role = backendUser.role;
+          (user as any).accessToken = backendUser.accessToken;
+          return true;
+        } catch (error) {
+          console.error("Google OAuth backend exchange error:", error);
+          return false;
+        }
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;

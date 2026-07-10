@@ -39,6 +39,9 @@ class Settings(BaseSettings):
     # Redis Configuration
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://:homeready_secure_redis_pass_123!@127.0.0.1:6379/0")
 
+    # Google OAuth Configuration (used to verify ID tokens issued to the frontend's OAuth client)
+    GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
+
     class Config:
         case_sensitive = True
 

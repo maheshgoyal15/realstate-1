@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { Dropdown } from "@/components/ui/Dropdown";
+import { apiFetch } from "@/lib/apiClient";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { uploadFormSchema } from "@/lib/validations";
 import { formatCurrency } from "@/lib/utils";
@@ -153,7 +154,7 @@ export default function AnalyzePropertyPage() {
         localStorage.setItem("user_uploaded_kitchen_before", attachedFiles[0].dataUrl);
       }
 
-      const apiRes = await fetch("http://127.0.0.1:8000/api/v1/upload", {
+      const apiRes = await apiFetch("/api/v1/upload", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

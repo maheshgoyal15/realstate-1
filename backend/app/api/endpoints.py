@@ -10,6 +10,7 @@ from app.schemas.payloads import (
     QuoteRequestPayload,
     AuthLoginRequest,
     AuthSignupRequest,
+    AuthGoogleRequest,
 )
 from app.core.security import (
     verify_access_token,
@@ -18,6 +19,7 @@ from app.core.security import (
     validate_password_strength,
     create_access_token,
 )
+from app.core.oauth import verify_google_id_token
 from app.core.config import settings
 from app.core.rate_limit import rate_limiter
 from app.services.storage import validate_and_store_image
@@ -32,12 +34,13 @@ router = APIRouter()
 # Ensure all APIs are authenticated and rate limited.
 def get_current_user(authorization: str = Header(None)) -> Dict[str, Any]:
     if not authorization or not authorization.startswith("Bearer "):
-        return {"sub": "anonymous", "role": "homeowner"}
-    try:
-        token = authorization.split(" ")[1]
-        return verify_access_token(token)
-    except Exception:
-        return {"sub": "anonymous", "role": "homeowner"}
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or invalid authorization header.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    token = authorization.split(" ")[1]
+    return verify_access_token(token)
 
 # Mandatory Secure Web Skills: Session Management & Authentication
 # - Store credentials using memory-hard hashing / bcrypt with unique per-user salts
@@ -144,6 +147,85 @@ async def auth_login(request: Request, payload: AuthLoginRequest) -> Any:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    access_token = create_access_token(subject=user_id)
+    return {
+        "id": str(user_id),
+        "email": user_email,
+        "role": user_role,
+        "accessToken": access_token
+    }
+
+
+@router.post("/auth/oauth/google", status_code=status.HTTP_200_OK)
+async def auth_oauth_google(request: Request, payload: AuthGoogleRequest) -> Any:
+    rate_limiter.check_limit(f"oauth:{request.client.host if request.client else 'unknown'}")
+
+    try:
+        idinfo = verify_google_id_token(payload.id_token)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Google sign-in token.",
+        )
+
+    google_sub = idinfo["sub"]
+    email = idinfo["email"]
+    full_name = idinfo.get("name") or email.split("@")[0]
+
+    logger.info("Processing Google OAuth sign-in.")
+
+    try:
+        conn = psycopg2.connect(settings.DATABASE_URL)
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT id, email, role FROM users WHERE oauth_provider = 'google' AND oauth_id = %s;",
+                    (google_sub,)
+                )
+                user_row = cur.fetchone()
+
+                if not user_row:
+                    cur.execute(
+                        "SELECT id, email, role, oauth_provider FROM users WHERE email = %s;",
+                        (email,)
+                    )
+                    existing = cur.fetchone()
+                    if existing and existing[3] is None:
+                        # A password-only account already owns this email. Do not silently
+                        # link - an attacker could pre-register a victim's email/password
+                        # and hijack the account when the victim later signs in with Google.
+                        raise HTTPException(
+                            status_code=status.HTTP_409_CONFLICT,
+                            detail="An account with this email already exists. Please sign in with your password instead."
+                        )
+                    if existing:
+                        user_row = (existing[0], existing[1], existing[2])
+                    else:
+                        cur.execute(
+                            "INSERT INTO users (email, password_hash, full_name, role, oauth_provider, oauth_id) "
+                            "VALUES (%s, NULL, %s, %s, 'google', %s) RETURNING id, email, role;",
+                            (email, full_name, "homeowner", google_sub)
+                        )
+                        user_row = cur.fetchone()
+    except HTTPException:
+        raise
+    except psycopg2.Error as e:
+        logger.error("Database error during Google OAuth sign-in.")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error. Database unavailable."
+        )
+    except Exception as e:
+        logger.error("Unexpected error during Google OAuth sign-in.")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error."
+        )
+    finally:
+        if 'conn' in locals() and conn:
+            conn.close()
+
+    user_id, user_email, user_role = user_row
     access_token = create_access_token(subject=user_id)
     return {
         "id": str(user_id),

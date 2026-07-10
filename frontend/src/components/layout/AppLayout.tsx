@@ -68,6 +68,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 
+  // The login page renders its own full-screen layout with no app chrome.
+  // This check runs after all hooks above so hook order stays constant across
+  // client-side navigations (this layout persists across route changes).
+  if (pathname?.startsWith("/login")) {
+    return <>{children}</>;
+  }
+
   return (
     <div className={cn("min-h-screen flex flex-col transition-colors duration-200", {
       "bg-slate-950 text-slate-50": theme === "dark",

@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { cn, formatCurrency } from "@/lib/utils";
+import { apiFetch } from "@/lib/apiClient";
 
 // Types
 interface Recommendation {
@@ -261,7 +262,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
 
     const checkStatus = async () => {
       try {
-        const response = await fetch(`http://127.0.0.1:8000/api/v1/analyze/${id}`);
+        const response = await apiFetch(`/api/v1/analyze/${id}`);
         if (!response.ok) {
           throw new Error("Failed to poll analysis results from server.");
         }
