@@ -1,4 +1,4 @@
-import React, { forwardRef } from "react";
+import React, { forwardRef, useId } from "react";
 import { cn } from "@/lib/utils";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -9,28 +9,42 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, type = "text", label, helperText, error, id, ...props }, ref) => {
+    const generatedId = useId();
+    const inputId = id ?? generatedId;
+    const descriptionId = error || helperText ? `${inputId}-description` : undefined;
+
     return (
       <div className="w-full space-y-1.5">
         {label && (
-          <label htmlFor={id} className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+          <label htmlFor={inputId} className="block text-xs font-bold text-ink-muted uppercase tracking-wider">
             {label}
           </label>
         )}
         <input
           type={type}
           ref={ref}
-          id={id}
+          id={inputId}
+          aria-invalid={!!error}
+          aria-describedby={descriptionId}
           className={cn(
-            "glass-input w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-100 placeholder:text-slate-500 font-medium text-sm transition-all focus:outline-none focus:border-blue-500 focus:bg-white/10 focus:ring-2 focus:ring-blue-500/20",
+            "w-full bg-surface-sunken border border-surface-border-strong rounded-xl px-4 py-3 text-ink placeholder:text-ink-subtle font-medium text-sm transition-colors focus:outline-none focus:border-accent-500 focus:bg-white focus:ring-2 focus:ring-accent-500/30",
             {
-              "border-red-500 focus:border-red-500 focus:ring-red-500/20": error,
+              "border-danger focus:border-danger focus:ring-danger/20": error,
             },
             className
           )}
           {...props}
         />
-        {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
-        {!error && helperText && <p className="text-xs text-slate-500">{helperText}</p>}
+        {error && (
+          <p id={descriptionId} className="text-xs text-danger font-medium">
+            {error}
+          </p>
+        )}
+        {!error && helperText && (
+          <p id={descriptionId} className="text-xs text-ink-subtle">
+            {helperText}
+          </p>
+        )}
       </div>
     );
   }

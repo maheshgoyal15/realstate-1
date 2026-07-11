@@ -13,21 +13,22 @@ export const Table: React.FC<TableProps> = ({
   ...props
 }) => {
   return (
-    <div className="w-full overflow-x-auto rounded-xl border border-white/10 bg-slate-900/30">
+    <div className="w-full overflow-x-auto rounded-xl border border-surface-border bg-surface-raised">
       <table className={cn("w-full text-left border-collapse", className)} {...props}>
         <thead>
-          <tr className="bg-slate-950/60 border-b border-white/10">
+          <tr className="bg-surface-sunken border-b border-surface-border">
             {headers.map((header, idx) => (
-              <th 
-                key={idx} 
-                className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider"
+              <th
+                key={idx}
+                scope="col"
+                className="px-6 py-4 text-xs font-bold text-ink-muted uppercase tracking-wider"
               >
                 {header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-white/5 text-slate-300 text-sm font-medium">
+        <tbody className="divide-y divide-surface-border text-ink text-sm font-medium">
           {children}
         </tbody>
       </table>
@@ -39,8 +40,8 @@ interface TableRowProps extends React.HTMLAttributes<HTMLTableRowElement> {}
 
 export const TableRow: React.FC<TableRowProps> = ({ children, className, ...props }) => {
   return (
-    <tr 
-      className={cn("hover:bg-white/5 transition-colors duration-150", className)} 
+    <tr
+      className={cn("hover:bg-surface-sunken transition-colors duration-150", className)}
       {...props}
     >
       {children}

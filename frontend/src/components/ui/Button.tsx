@@ -21,14 +21,15 @@ export const Button: React.FC<ButtonProps> = ({
   return (
     <button
       disabled={disabled || isLoading}
+      aria-busy={isLoading || undefined}
       className={cn(
-        "inline-flex items-center justify-center font-semibold rounded-lg transition-all duration-150 active:scale-95 focus:outline-none focus:ring-3 focus:ring-blue-500/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100",
+        "inline-flex items-center justify-center font-semibold rounded-lg transition-colors duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100",
         {
           // Variants
-          "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20 hover:shadow-blue-500/35": variant === "primary",
-          "border border-slate-700 bg-transparent text-slate-200 hover:bg-slate-800/50 hover:text-white": variant === "secondary",
-          "bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/20 hover:shadow-red-500/35": variant === "danger",
-          "bg-transparent text-slate-300 hover:bg-white/5 hover:text-white": variant === "ghost",
+          "bg-accent-500 hover:bg-accent-600 text-white shadow-card": variant === "primary",
+          "border border-surface-border-strong bg-transparent text-ink hover:bg-surface-sunken": variant === "secondary",
+          "bg-danger hover:opacity-90 text-white shadow-card": variant === "danger",
+          "bg-transparent text-ink-muted hover:bg-surface-sunken hover:text-ink": variant === "ghost",
           // Sizes
           "px-3 py-1.5 text-xs h-8": size === "sm",
           "px-4 py-2.5 text-sm h-10": size === "md",

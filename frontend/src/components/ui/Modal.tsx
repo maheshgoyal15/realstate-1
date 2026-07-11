@@ -1,6 +1,7 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 interface ModalProps {
   isOpen: boolean;
@@ -19,6 +20,9 @@ export const Modal: React.FC<ModalProps> = ({
   footer,
   size = "md",
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(containerRef, isOpen);
+
   // Lock scroll when open
   useEffect(() => {
     if (isOpen) {
@@ -51,19 +55,21 @@ export const Modal: React.FC<ModalProps> = ({
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity" 
-        onClick={onClose} 
+      <div
+        className="fixed inset-0 bg-navy-950/50 backdrop-blur-sm transition-opacity"
+        onClick={onClose}
         aria-hidden="true"
       />
 
       {/* Modal Container */}
       <div
+        ref={containerRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
+        tabIndex={-1}
         className={cn(
-          "bg-slate-900 border border-white/10 w-full rounded-2xl shadow-2xl overflow-hidden flex flex-col relative z-10 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh]",
+          "bg-surface-raised border border-surface-border w-full rounded-2xl shadow-card-hover overflow-hidden flex flex-col relative z-10 animate-modal-in max-h-[90vh] focus:outline-none",
           {
             "max-w-md": size === "sm",
             "max-w-xl": size === "md",
@@ -73,13 +79,13 @@ export const Modal: React.FC<ModalProps> = ({
         )}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
-          <h3 id="modal-title" className="text-lg font-bold text-white leading-none">
+        <div className="px-6 py-4 border-b border-surface-border flex items-center justify-between">
+          <h3 id="modal-title" className="text-lg font-semibold font-serif text-ink leading-none">
             {title}
           </h3>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+            className="p-2 hover:bg-surface-sunken rounded-full text-ink-muted hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-raised"
             aria-label="Close modal"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -89,13 +95,13 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto flex-1 text-slate-300 text-sm leading-relaxed">
+        <div className="p-6 overflow-y-auto flex-1 text-ink-muted text-sm leading-relaxed">
           {children}
         </div>
 
         {/* Footer */}
         {footer && (
-          <div className="px-6 py-4 border-t border-white/10 bg-slate-950/40 flex items-center justify-end space-x-3">
+          <div className="px-6 py-4 border-t border-surface-border bg-surface-sunken flex items-center justify-end space-x-3">
             {footer}
           </div>
         )}

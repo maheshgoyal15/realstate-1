@@ -6,6 +6,7 @@ web_loaders/
 # Next.js build output
 .next/
 out/
+*.tsbuildinfo
 
 # Python
 __pycache__/
