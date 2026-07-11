@@ -3,13 +3,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Sparkles,
-  ArrowRight,
   TrendingUp,
-  Clock,
   CheckCircle,
-  FileText,
   Eye,
-  Download,
   Trash2,
   Share2,
 } from "lucide-react";
@@ -88,33 +84,33 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8 pb-12 animate-in fade-in duration-300">
       {/* Welcome Banner */}
-      <Card className="bg-gradient-to-r from-blue-900/30 via-indigo-900/20 to-slate-900/50 border-blue-500/20 p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="bg-navy-800 rounded-2xl shadow-card p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="space-y-2">
-          <h1 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
-            Welcome back, Mahesh! 👋
+          <h1 className="text-3xl font-bold font-serif tracking-tight text-white">
+            Welcome back, Mahesh
           </h1>
-          <p className="text-slate-400 text-sm max-w-xl">
+          <p className="text-navy-200 text-sm max-w-xl">
             Our computer vision model finished scanning your new uploads. Ready to inspect recommended improvements?
           </p>
         </div>
-        <Button 
+        <Button
           id="hero-analyze-btn"
-          variant="primary" 
+          variant="primary"
           icon={<Sparkles className="w-4 h-4" />}
           onClick={() => window.location.href = "/analyze"}
         >
           Analyze New Property
         </Button>
-      </Card>
+      </div>
 
       {/* Quick Stats Grid */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {stats.map((stat, idx) => (
-          <Card key={idx} hoverEffect={false} className="p-6 bg-slate-900/40 border-white/5 shadow-md">
+          <Card key={idx} hoverEffect={false} className="p-6">
             <div className="space-y-1">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{stat.title}</span>
-              <h3 className="text-3xl font-extrabold text-white tracking-tight">{stat.value}</h3>
-              <p className="text-[11px] text-slate-400">{stat.desc}</p>
+              <span className="text-xs font-bold text-ink-subtle uppercase tracking-widest">{stat.title}</span>
+              <h3 className="text-3xl font-extrabold text-ink tracking-tight">{stat.value}</h3>
+              <p className="text-[11px] text-ink-muted">{stat.desc}</p>
             </div>
           </Card>
         ))}
@@ -122,10 +118,10 @@ export default function DashboardPage() {
 
       {/* Recent Analyses Table */}
       <section className="space-y-4">
-        <h2 className="text-xl font-bold tracking-tight text-white">Recent Property Analyses</h2>
+        <h2 className="text-xl font-bold tracking-tight text-ink">Recent Property Analyses</h2>
         {analyses.length === 0 ? (
-          <Card className="p-8 text-center bg-slate-900/40 border-white/5">
-            <p className="text-sm text-slate-400">
+          <Card className="p-8 text-center">
+            <p className="text-sm text-ink-muted">
               No analyses yet. Upload your first property to get started.
             </p>
           </Card>
@@ -133,19 +129,19 @@ export default function DashboardPage() {
         <Table headers={["Property Address", "Date Created", "Analysis Status", "Calculated ROI", "Actions"]}>
           {analyses.map((prop) => (
             <TableRow key={prop.id} id={`row-${prop.id}`}>
-              <TableCell className="font-bold text-white">{prop.address}</TableCell>
+              <TableCell className="font-bold text-ink">{prop.address}</TableCell>
               <TableCell>{prop.date}</TableCell>
               <TableCell>
                 <Badge variant={prop.status}>{prop.statusLabel}</Badge>
               </TableCell>
-              <TableCell className="font-extrabold text-emerald-400">
+              <TableCell className="font-extrabold text-success">
                 {typeof prop.roi === "number" ? `${prop.roi.toFixed(1)}%` : "--"}
               </TableCell>
               <TableCell>
                 <div className="flex items-center space-x-2">
-                  <Button 
+                  <Button
                     id={`view-btn-${prop.id}`}
-                    variant="ghost" 
+                    variant="ghost"
                     size="sm"
                     icon={<Eye className="w-3.5 h-3.5" />}
                     onClick={() => {
@@ -157,9 +153,9 @@ export default function DashboardPage() {
                   >
                     View
                   </Button>
-                  <Button 
+                  <Button
                     id={`share-btn-${prop.id}`}
-                    variant="ghost" 
+                    variant="ghost"
                     size="sm"
                     icon={<Share2 className="w-3.5 h-3.5" />}
                     onClick={() => handleShare(prop)}
@@ -167,10 +163,15 @@ export default function DashboardPage() {
                   >
                     Share
                   </Button>
-                  <button 
+                  <button
                     id={`delete-btn-${prop.id}`}
-                    onClick={() => handleDelete(prop.id)}
-                    className="p-2 text-slate-500 hover:text-red-400 transition-colors"
+                    onClick={() => {
+                      if (window.confirm(`Delete the analysis for ${prop.address}? This can't be undone.`)) {
+                        handleDelete(prop.id);
+                      }
+                    }}
+                    aria-label={`Delete analysis for ${prop.address}`}
+                    className="p-2 text-ink-subtle hover:text-danger transition-colors rounded-lg hover:bg-danger-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -184,43 +185,43 @@ export default function DashboardPage() {
 
       {/* Trending Upgrades & Insights Section */}
       <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="p-6 space-y-4 bg-slate-900/40 border-white/5 shadow-md">
-          <div className="flex items-center space-x-2 text-indigo-400 font-bold">
+        <Card hoverEffect={false} className="p-6 space-y-4">
+          <div className="flex items-center space-x-2 text-accent-600 font-bold">
             <TrendingUp className="w-5 h-5" />
-            <h4 className="text-sm uppercase tracking-wider text-slate-300">Trending Upgrades (Agents Only)</h4>
+            <h4 className="text-sm uppercase tracking-wider text-ink-muted">Trending Upgrades (Agents Only)</h4>
           </div>
-          <p className="text-xs text-slate-400 leading-normal">
+          <p className="text-xs text-ink-muted leading-normal">
             Among local properties in the Austin MLS region, computer vision audits suggest prioritizing the following elements to secure higher buyer bidding premiums:
           </p>
           <ul className="space-y-3 text-xs">
-            <li className="flex justify-between items-center bg-white/5 border border-white/5 rounded-xl p-3">
-              <span className="text-white font-semibold">• Modern Kitchen Remodel</span>
-              <span className="text-slate-400 font-bold">62% of scanned homes</span>
+            <li className="flex justify-between items-center bg-surface-sunken border border-surface-border rounded-xl p-3">
+              <span className="text-ink font-semibold">Modern Kitchen Remodel</span>
+              <span className="text-ink-muted font-bold">62% of scanned homes</span>
             </li>
-            <li className="flex justify-between items-center bg-white/5 border border-white/5 rounded-xl p-3">
-              <span className="text-white font-semibold">• HVAC Unit Replacement</span>
-              <span className="text-slate-400 font-bold">48% of scanned homes</span>
+            <li className="flex justify-between items-center bg-surface-sunken border border-surface-border rounded-xl p-3">
+              <span className="text-ink font-semibold">HVAC Unit Replacement</span>
+              <span className="text-ink-muted font-bold">48% of scanned homes</span>
             </li>
-            <li className="flex justify-between items-center bg-white/5 border border-white/5 rounded-xl p-3">
-              <span className="text-white font-semibold">• Exterior Painting & Siding Audit</span>
-              <span className="text-slate-400 font-bold">35% of scanned homes</span>
+            <li className="flex justify-between items-center bg-surface-sunken border border-surface-border rounded-xl p-3">
+              <span className="text-ink font-semibold">Exterior Painting & Siding Audit</span>
+              <span className="text-ink-muted font-bold">35% of scanned homes</span>
             </li>
           </ul>
         </Card>
 
-        <Card className="p-6 space-y-4 bg-slate-900/40 border-white/5 shadow-md justify-between flex flex-col">
+        <Card hoverEffect={false} className="p-6 space-y-4 justify-between flex flex-col">
           <div className="space-y-3">
-            <div className="flex items-center space-x-2 text-emerald-400 font-bold">
+            <div className="flex items-center space-x-2 text-success font-bold">
               <CheckCircle className="w-5 h-5" />
-              <h4 className="text-sm uppercase tracking-wider text-slate-300">Workspace Health Indicator</h4>
+              <h4 className="text-sm uppercase tracking-wider text-ink-muted">Workspace Health Indicator</h4>
             </div>
-            <p className="text-xs text-slate-400 leading-normal">
-              Your real estate team has generated <strong>8 comprehensive guides</strong> this month with a cumulative estimated valuation lift of <strong>+$185,500</strong>. Keep scanning listings to maximize contract conversions.
+            <p className="text-xs text-ink-muted leading-normal">
+              Your real estate team has generated <strong className="text-ink">8 comprehensive guides</strong> this month with a cumulative estimated valuation lift of <strong className="text-ink">+$185,500</strong>. Keep scanning listings to maximize contract conversions.
             </p>
           </div>
-          <Button 
+          <Button
             id="view-network-btn"
-            variant="secondary" 
+            variant="secondary"
             size="sm"
             onClick={() => window.location.href = "/contractors"}
             className="w-full mt-4"
@@ -242,24 +243,25 @@ export default function DashboardPage() {
         }
       >
         <div className="space-y-4">
-          <p className="text-xs text-slate-400">
-            Generate and copy a secure co-branded public URL for property sellers or buyers regarding: <strong>{selectedProperty}</strong>
+          <p className="text-xs text-ink-muted">
+            Generate and copy a secure co-branded public URL for property sellers or buyers regarding: <strong className="text-ink">{selectedProperty}</strong>
           </p>
-          <div className="flex items-center space-x-3 bg-slate-950 border border-slate-800 rounded-xl p-3">
+          <div className="flex items-center space-x-3 bg-surface-sunken border border-surface-border rounded-xl p-3">
             <input
               type="text"
               readOnly
               value={shareUrl}
-              className="flex-1 bg-transparent border-none text-xs text-indigo-300 focus:outline-none focus:ring-0"
+              aria-label="Shareable report URL"
+              className="flex-1 bg-transparent border-none text-xs text-ink focus:outline-none focus:ring-0"
             />
-            <button
+            <Button
+              size="sm"
               onClick={() => {
                 navigator.clipboard.writeText(shareUrl);
               }}
-              className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg transition-colors"
             >
               Copy
-            </button>
+            </Button>
           </div>
         </div>
       </Modal>

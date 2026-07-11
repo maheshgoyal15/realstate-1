@@ -4,15 +4,12 @@ import React, { useEffect, useState, useMemo } from "react";
 import {
   Sparkles,
   Search,
-  Filter,
   Eye,
   Download,
   Share2,
   Trash2,
   FileText,
   Printer,
-  Maximize,
-  ArrowUpRight
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -36,7 +33,6 @@ interface Report {
 export default function ReportsPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [sortField, setSortField] = useState("date");
 
   // Selection for Preview Modal
@@ -65,14 +61,21 @@ export default function ReportsPage() {
     };
   }, []);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (report: Report) => {
+    if (!window.confirm(`Delete the report for ${report.address}? This can't be undone.`)) {
+      return;
+    }
     try {
-      const res = await apiFetch(`/api/v1/reports/${id}`, { method: "DELETE" });
+      const res = await apiFetch(`/api/v1/reports/${report.id}`, { method: "DELETE" });
       if (res.ok) {
-        setReports(prev => prev.filter(r => r.id !== id));
+        setReports(prev => prev.filter(r => r.id !== report.id));
+        setNotification("Report deleted.");
+      } else {
+        setNotification("Failed to delete report. Please try again.");
       }
     } catch (error) {
       console.error("Failed to delete report:", error);
+      setNotification("Failed to delete report. Please try again.");
     }
   };
 
@@ -91,8 +94,8 @@ export default function ReportsPage() {
     let result = [...reports];
 
     if (searchQuery.trim()) {
-      result = result.filter(r => 
-        r.address.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      result = result.filter(r =>
+        r.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
         r.title.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
@@ -112,14 +115,14 @@ export default function ReportsPage() {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">My Reports</h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <h1 className="text-3xl font-bold font-serif text-ink tracking-tight">My Reports</h1>
+          <p className="text-ink-muted text-sm mt-1">
             Access and manage your generated co-branded pre-listing upgrade recommendations.
           </p>
         </div>
-        <Button 
+        <Button
           id="reports-new-analysis-btn"
-          variant="primary" 
+          variant="primary"
           icon={<Sparkles className="w-4 h-4" />}
           onClick={() => window.location.href = "/analyze"}
         >
@@ -128,15 +131,15 @@ export default function ReportsPage() {
       </div>
 
       {/* Filter Toolbar */}
-      <section className="glass-card p-4 flex flex-col md:flex-row justify-between items-center gap-4 border-white/5 bg-slate-900/30">
+      <section className="card-surface p-4 flex flex-col md:flex-row justify-between items-center gap-4">
         <div className="relative w-full md:w-80">
-          <Search className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-subtle" />
           <input
             type="text"
             placeholder="Search reports..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-blue-500 shadow-inner"
+            className="w-full bg-surface-sunken border border-surface-border-strong rounded-xl pl-9 pr-4 py-2 text-xs text-ink focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/20"
           />
         </div>
 
@@ -144,7 +147,8 @@ export default function ReportsPage() {
           <select
             value={sortField}
             onChange={(e) => setSortField(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-xs text-slate-300 focus:outline-none focus:border-blue-500 cursor-pointer"
+            aria-label="Sort reports"
+            className="bg-surface-sunken border border-surface-border-strong rounded-xl px-4 py-2 text-xs text-ink-muted focus:outline-none focus:border-accent-500 cursor-pointer"
           >
             <option value="date">Newest Generated</option>
             <option value="address">Property Address</option>
@@ -154,24 +158,24 @@ export default function ReportsPage() {
 
       {/* Reports Grid */}
       {processedReports.length === 0 ? (
-        <Card hoverEffect={false} className="p-12 text-center border-white/5 bg-slate-900/20">
-          <p className="text-slate-400 text-sm font-semibold">No pre-listing reports generated yet.</p>
+        <Card hoverEffect={false} className="p-12 text-center">
+          <p className="text-ink-muted text-sm font-semibold">No pre-listing reports generated yet.</p>
         </Card>
       ) : (
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {processedReports.map((report) => (
-            <article 
+            <article
               key={report.id}
-              className="bg-slate-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col justify-between shadow-xl hover:border-slate-700 hover:scale-[1.01] transition-all duration-200"
+              className="bg-surface-raised border border-surface-border rounded-2xl overflow-hidden flex flex-col justify-between shadow-card hover:shadow-card-hover hover:border-accent-200 transition-[box-shadow,border-color] duration-200"
             >
               {/* Cover - no real property photos are stored yet, so this is an
                   icon placeholder rather than a fabricated stock photo */}
-              <div className="h-44 w-full relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-950 flex items-center justify-center">
-                <FileText className="w-10 h-10 text-slate-700" />
+              <div className="h-44 w-full relative overflow-hidden bg-navy-800 flex items-center justify-center">
+                <FileText className="w-10 h-10 text-navy-500" />
                 <Badge variant="status-complete" className="absolute top-3 left-3">Ready</Badge>
                 <div className="absolute bottom-3 left-3 right-3 text-white">
                   <h4 className="text-sm font-extrabold truncate">{report.address}</h4>
-                  <p className="text-[10px] text-slate-350 truncate">{report.title}</p>
+                  <p className="text-[10px] text-navy-200 truncate">{report.title}</p>
                 </div>
               </div>
 
@@ -179,52 +183,61 @@ export default function ReportsPage() {
               <div className="p-5 space-y-4 flex-1 flex flex-col justify-between">
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Upgrade Investment:</span>
-                    <span className="font-bold text-white">{formatCurrency(report.cost)}</span>
+                    <span className="text-ink-muted">Upgrade Investment:</span>
+                    <span className="font-bold text-ink">{formatCurrency(report.cost)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Value Increase:</span>
-                    <span className="font-bold text-emerald-400">+{formatCurrency(report.valueAdd)}</span>
+                    <span className="text-ink-muted">Value Increase:</span>
+                    <span className="font-bold text-success">+{formatCurrency(report.valueAdd)}</span>
                   </div>
-                  <div className="flex justify-between border-t border-white/5 pt-2 mt-2">
-                    <span className="text-slate-400">Recommendations:</span>
-                    <span className="font-bold text-white">{report.recsCount} items</span>
+                  <div className="flex justify-between border-t border-surface-border pt-2 mt-2">
+                    <span className="text-ink-muted">Recommendations:</span>
+                    <span className="font-bold text-ink">{report.recsCount} items</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Generated:</span>
-                    <span className="text-slate-400">{report.date}</span>
+                    <span className="text-ink-muted">Generated:</span>
+                    <span className="text-ink-muted">{report.date}</span>
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
-                  <Button 
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-surface-border">
+                  <Button
                     id={`preview-btn-${report.id}`}
-                    variant="ghost" 
+                    variant="ghost"
                     size="sm"
                     icon={<Eye className="w-3.5 h-3.5" />}
                     onClick={() => setPreviewReport(report)}
                   >
                     Preview
                   </Button>
-                  <Button 
+                  <Button
                     id={`dl-btn-${report.id}`}
-                    variant="ghost" 
+                    variant="ghost"
                     size="sm"
                     icon={<Download className="w-3.5 h-3.5" />}
                     onClick={() => handleDownload(report)}
                   >
                     Download
                   </Button>
-                  <Button 
+                  <Button
                     id={`share-btn-${report.id}`}
-                    variant="ghost" 
+                    variant="ghost"
                     size="sm"
                     icon={<Share2 className="w-3.5 h-3.5" />}
-                    className="col-span-2"
                     onClick={() => handleShareTrigger(report)}
                   >
-                    Share Co-branded Link
+                    Share
+                  </Button>
+                  <Button
+                    id={`delete-btn-${report.id}`}
+                    variant="ghost"
+                    size="sm"
+                    icon={<Trash2 className="w-3.5 h-3.5" />}
+                    onClick={() => handleDelete(report)}
+                    className="text-danger hover:bg-danger-subtle hover:text-danger"
+                  >
+                    Delete
                   </Button>
                 </div>
               </div>
@@ -233,7 +246,7 @@ export default function ReportsPage() {
         </section>
       )}
 
-      {/* 3.6 REPORT PREVIEW MODAL */}
+      {/* Report Preview Modal */}
       {previewReport && (
         <Modal
           isOpen={!!previewReport}
@@ -242,7 +255,7 @@ export default function ReportsPage() {
           size="lg"
           footer={
             <div className="flex justify-between items-center w-full">
-              <span className="text-xs text-slate-500">Page 1 of 2</span>
+              <span className="text-xs text-ink-subtle">Page 1 of 2</span>
               <div className="flex items-center space-x-3">
                 <Button id="preview-print-btn" variant="secondary" size="sm" icon={<Printer className="w-4 h-4" />}>Print</Button>
                 <Button id="preview-dl-btn" variant="secondary" size="sm" icon={<Download className="w-4 h-4" />} onClick={() => { handleDownload(previewReport); setPreviewReport(null); }}>Download PDF</Button>
@@ -252,52 +265,52 @@ export default function ReportsPage() {
           }
         >
           {/* Simulated PDF document */}
-          <div className="bg-white text-slate-900 rounded-xl p-8 shadow-inner border border-slate-200 space-y-8 font-sans max-h-[60vh] overflow-y-auto">
-            <div className="text-center border-b pb-6 border-slate-200">
-              <h2 className="text-2xl font-extrabold tracking-tight text-blue-600">HOMEREADY AI REPORT</h2>
-              <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mt-1">Pre-Listing Value Uplift Guide</p>
+          <div className="bg-white text-navy-900 rounded-xl p-8 shadow-card border border-surface-border space-y-8 font-sans max-h-[60vh] overflow-y-auto">
+            <div className="text-center border-b pb-6 border-surface-border">
+              <h2 className="text-2xl font-bold font-serif tracking-tight text-navy-800">HOMEREADY AI REPORT</h2>
+              <p className="text-xs text-ink-subtle font-bold uppercase tracking-wider mt-1">Pre-Listing Value Uplift Guide</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4 text-xs">
               <div>
-                <p className="text-slate-400 font-bold uppercase">Prepared For:</p>
-                <p className="font-bold text-slate-800">Mahesh Patel</p>
+                <p className="text-ink-subtle font-bold uppercase">Property:</p>
+                <p className="font-bold text-ink">{previewReport.address}</p>
               </div>
               <div className="text-right">
-                <p className="text-slate-400 font-bold uppercase">Date Generated:</p>
-                <p className="font-bold text-slate-800">{previewReport.date}</p>
+                <p className="text-ink-subtle font-bold uppercase">Date Generated:</p>
+                <p className="font-bold text-ink">{previewReport.date}</p>
               </div>
             </div>
 
-            <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Executive Summary</h4>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Based on computer vision audits of interior and exterior photos of <strong>{previewReport.address}</strong>, we have generated {previewReport.recsCount} remodeling projects optimized for high-ROI comps conversion in the neighborhood area. Implementing these upgrades adds significant market interest.
+            <div className="bg-surface-sunken rounded-xl p-5 border border-surface-border space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Executive Summary</h4>
+              <p className="text-xs text-ink-muted leading-relaxed">
+                Based on computer vision audits of interior and exterior photos of <strong className="text-ink">{previewReport.address}</strong>, we have generated {previewReport.recsCount} remodeling projects optimized for high-ROI comps conversion in the neighborhood area. Implementing these upgrades adds significant market interest.
               </p>
             </div>
 
             <div className="space-y-4">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Valuation Ledger</h4>
-              <div className="grid grid-cols-3 gap-4 border rounded-xl p-4 text-center">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Valuation Ledger</h4>
+              <div className="grid grid-cols-3 gap-4 border border-surface-border rounded-xl p-4 text-center">
                 <div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase">Total Upgrade cost</p>
-                  <p className="text-base font-extrabold text-slate-800 mt-1">{formatCurrency(previewReport.cost)}</p>
+                  <p className="text-[10px] text-ink-subtle font-bold uppercase">Total Upgrade cost</p>
+                  <p className="text-base font-extrabold text-ink mt-1">{formatCurrency(previewReport.cost)}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase">Value increase</p>
-                  <p className="text-base font-extrabold text-emerald-600 mt-1">+{formatCurrency(previewReport.valueAdd)}</p>
+                  <p className="text-[10px] text-ink-subtle font-bold uppercase">Value increase</p>
+                  <p className="text-base font-extrabold text-success mt-1">+{formatCurrency(previewReport.valueAdd)}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase">Overall ROI</p>
-                  <p className="text-base font-extrabold text-emerald-600 mt-1">
+                  <p className="text-[10px] text-ink-subtle font-bold uppercase">Overall ROI</p>
+                  <p className="text-base font-extrabold text-success mt-1">
                     +{Math.round((previewReport.valueAdd / previewReport.cost) * 100)}%
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="pt-6 text-center border-t border-slate-200">
-              <p className="text-[10px] text-slate-400 font-bold">© 2026 HomeReady AI Platform • Confidential & Proprietary</p>
+            <div className="pt-6 text-center border-t border-surface-border">
+              <p className="text-[10px] text-ink-subtle font-bold">© 2026 HomeReady AI Platform • Confidential & Proprietary</p>
             </div>
           </div>
         </Modal>
@@ -316,26 +329,27 @@ export default function ReportsPage() {
           }
         >
           <div className="space-y-4">
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-ink-muted">
               Copy the secure co-branded public URL to email, text, or present directly:
             </p>
-            <div className="flex items-center space-x-3 bg-slate-950 border border-slate-800 rounded-xl p-3">
+            <div className="flex items-center space-x-3 bg-surface-sunken border border-surface-border rounded-xl p-3">
               <input
                 type="text"
                 readOnly
                 value={shareUrl}
-                className="flex-1 bg-transparent border-none text-xs text-indigo-300 focus:outline-none focus:ring-0"
+                aria-label="Shareable report URL"
+                className="flex-1 bg-transparent border-none text-xs text-ink focus:outline-none focus:ring-0"
               />
-              <button
+              <Button
+                size="sm"
                 onClick={() => {
                   navigator.clipboard.writeText(shareUrl);
                   setShareReport(null);
                   setNotification("Report shared link copied to clipboard.");
                 }}
-                className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors"
               >
                 Copy Link
-              </button>
+              </Button>
             </div>
           </div>
         </Modal>
@@ -343,9 +357,9 @@ export default function ReportsPage() {
 
       {/* Notification Toast */}
       {notification && (
-        <div className="fixed top-4 right-4 z-50 flex items-center space-x-3 bg-slate-900 border border-emerald-500/40 text-emerald-400 rounded-xl p-4 shadow-2xl animate-in slide-in-from-top-4 duration-300">
+        <div className="fixed top-4 right-4 z-50 flex items-center space-x-3 bg-surface-raised border border-success-border text-success rounded-xl p-4 shadow-card-hover animate-in slide-in-from-top-4 duration-300">
           <div className="text-xs font-bold">{notification}</div>
-          <button onClick={() => setNotification(null)} className="text-slate-400 hover:text-white font-mono">×</button>
+          <button onClick={() => setNotification(null)} aria-label="Dismiss notification" className="text-ink-subtle hover:text-ink font-mono">×</button>
         </div>
       )}
     </div>

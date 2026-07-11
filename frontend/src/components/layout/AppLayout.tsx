@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import {
   Search,
@@ -16,13 +16,29 @@ import {
   Briefcase,
   Settings,
   LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { apiFetch } from "@/lib/apiClient";
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
+
+interface AnalysisSummary {
+  id: string;
+  address: string;
+  date: string;
+  status: "status-complete" | "status-progress" | "status-error";
+  statusLabel: string;
+  roi: number | null;
+  cost: number;
+  reportUrl: string | null;
+}
+
+const SIDEBAR_COLLAPSED_KEY = "homeready_sidebar_collapsed";
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const pathname = usePathname();
@@ -34,10 +50,45 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Context properties that can be changed by sidebar
-  const [activeProperty, setActiveProperty] = useState("123 Oak St, Austin TX");
-  const [activeBudget, setActiveBudget] = useState(25000);
-  const [isEditingContext, setIsEditingContext] = useState(false);
+  // Collapsible sidebar rail, persisted across visits.
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+    if (saved === "true") setCollapsed(true);
+  }, []);
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next));
+      return next;
+    });
+  };
+
+  // Real workspace data, replacing the old hardcoded "Active context" / stats.
+  const [analyses, setAnalyses] = useState<AnalysisSummary[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiFetch("/api/v1/analyses");
+        if (!res.ok || cancelled) return;
+        setAnalyses(await res.json());
+      } catch (error) {
+        console.error("Failed to load workspace analyses:", error);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const workspaceStats = useMemo(() => {
+    const roiValues = analyses.map(a => a.roi).filter((r): r is number => typeof r === "number");
+    const avgRoi = roiValues.length > 0 ? roiValues.reduce((sum, r) => sum + r, 0) / roiValues.length : null;
+    const reportsCount = analyses.filter(a => a.reportUrl).length;
+    return { count: analyses.length, avgRoi, reportsCount };
+  }, [analyses]);
+
+  const mostRecent = analyses[0];
+  const recentProperties = analyses.slice(0, 4);
 
   const mobileDrawerRef = useRef<HTMLDivElement>(null);
   useFocusTrap(mobileDrawerRef, isMobileOpen);
@@ -254,120 +305,155 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
       <div className="flex-1 flex relative">
         {/* 2. SIDEBAR NAVIGATION (Desktop) */}
-        <aside className="hidden md:flex flex-col w-72 border-r border-surface-border bg-surface-raised shrink-0 min-h-[calc(100vh-64px)] justify-between pb-6">
+        <aside
+          className={cn(
+            "hidden md:flex flex-col border-r border-surface-border bg-surface-raised shrink-0 min-h-[calc(100vh-64px)] justify-between pb-6 transition-[width] duration-200 ease-out overflow-hidden",
+            collapsed ? "w-20" : "w-72"
+          )}
+        >
           <div className="space-y-6 pt-6">
+            {/* Collapse toggle */}
+            <div className={cn("flex px-4", collapsed ? "justify-center" : "justify-end")}>
+              <button
+                onClick={toggleCollapsed}
+                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                className="p-2 rounded-lg text-ink-subtle hover:text-ink hover:bg-surface-sunken transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+              >
+                {collapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+              </button>
+            </div>
+
             {/* Nav list */}
             <nav className="px-4 space-y-1.5">
               {navItems.map((item) => {
                 const isActive = pathname === item.href;
                 return (
-                  <a
-                    key={item.name}
-                    href={item.href}
-                    aria-current={isActive ? "page" : undefined}
-                    className={cn(
-                      "flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors group",
-                      isActive
-                        ? "bg-navy-800 text-white shadow-card"
-                        : "text-ink-muted hover:text-ink hover:bg-surface-sunken"
+                  <div key={item.name} className="relative">
+                    {isActive && (
+                      <span className="absolute -left-1 top-1/2 -translate-y-1/2 h-5 w-1 rounded-full bg-accent-400" aria-hidden="true" />
                     )}
-                  >
-                    <item.icon className={cn("w-4.5 h-4.5 transition-transform group-hover:scale-110", {
-                      "text-white": isActive,
-                      "text-ink-subtle group-hover:text-ink": !isActive
-                    })} />
-                    <span>{item.name}</span>
-                  </a>
+                    <a
+                      href={item.href}
+                      aria-current={isActive ? "page" : undefined}
+                      title={collapsed ? item.name : undefined}
+                      className={cn(
+                        "flex items-center px-4 py-3 rounded-xl text-sm font-semibold transition-colors group",
+                        collapsed ? "justify-center" : "space-x-3",
+                        isActive
+                          ? "bg-navy-800 text-white shadow-card"
+                          : "text-ink-muted hover:text-ink hover:bg-surface-sunken"
+                      )}
+                    >
+                      <item.icon className={cn("w-4.5 h-4.5 transition-transform group-hover:scale-110 shrink-0", {
+                        "text-white": isActive,
+                        "text-ink-subtle group-hover:text-ink": !isActive
+                      })} />
+                      {!collapsed && <span>{item.name}</span>}
+                    </a>
+                  </div>
                 );
               })}
             </nav>
 
-            {/* Divider */}
-            <div className="border-t border-surface-border mx-4" />
+            {!collapsed && (
+              <>
+                {/* Divider */}
+                <div className="border-t border-surface-border mx-4" />
 
-            {/* Context Widget: User Active Context */}
-            <div className="px-6 space-y-4">
-              <span className="block text-[10px] font-bold text-ink-subtle uppercase tracking-widest">Active context</span>
-              <div className="bg-surface-sunken border border-surface-border rounded-2xl p-4 space-y-3 relative group">
-                {isEditingContext ? (
-                  <div className="space-y-3">
-                    <input
-                      type="text"
-                      value={activeProperty}
-                      onChange={(e) => setActiveProperty(e.target.value)}
-                      className="w-full text-xs bg-surface-raised border border-surface-border-strong rounded-lg p-2 text-ink focus:outline-none focus:border-accent-500"
-                    />
-                    <input
-                      type="number"
-                      value={activeBudget}
-                      onChange={(e) => setActiveBudget(Number(e.target.value))}
-                      className="w-full text-xs bg-surface-raised border border-surface-border-strong rounded-lg p-2 text-ink focus:outline-none focus:border-accent-500"
-                    />
-                    <button
-                      onClick={() => setIsEditingContext(false)}
-                      className="w-full bg-accent-500 hover:bg-accent-600 text-white font-bold text-xs py-1.5 rounded-lg transition-colors"
+                {/* Context Widget: most recent property analyzed */}
+                <div className="px-6 space-y-4">
+                  <span className="block text-[10px] font-bold text-ink-subtle uppercase tracking-widest">Active context</span>
+                  {mostRecent ? (
+                    <a
+                      href={`/analyze/${mostRecent.id}`}
+                      className="block bg-surface-sunken border border-surface-border rounded-2xl p-4 space-y-1 hover:border-accent-200 transition-colors"
                     >
-                      Save Context
-                    </button>
+                      <h6 className="text-xs font-bold text-ink truncate">{mostRecent.address}</h6>
+                      <p className="text-[11px] text-ink-muted">Upgrade Budget: {formatCurrency(mostRecent.cost)}</p>
+                      <p className="text-[11px] text-accent-600 font-bold">{mostRecent.statusLabel}</p>
+                    </a>
+                  ) : (
+                    <div className="bg-surface-sunken border border-surface-border rounded-2xl p-4 space-y-2">
+                      <p className="text-[11px] text-ink-muted">No properties analyzed yet.</p>
+                      <a href="/analyze" className="text-[11px] text-accent-600 font-bold hover:underline">Start your first analysis →</a>
+                    </div>
+                  )}
+                </div>
+
+                {/* Quick Stats Box */}
+                <div className="px-6 space-y-3">
+                  <span className="block text-[10px] font-bold text-ink-subtle uppercase tracking-widest">Workspace Stats</span>
+                  <div className="bg-surface-sunken border border-surface-border rounded-2xl p-4 space-y-3 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-ink-muted">Analyses This Month</span>
+                      <span className="font-bold text-ink">{workspaceStats.count}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-ink-muted">Avg Recommendation ROI</span>
+                      <span className="font-bold text-success">
+                        {workspaceStats.avgRoi !== null ? `${workspaceStats.avgRoi.toFixed(1)}%` : "--"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-ink-muted">Reports Generated</span>
+                      <span className="font-bold text-ink">{workspaceStats.reportsCount}</span>
+                    </div>
                   </div>
-                ) : (
-                  <div>
-                    <h6 className="text-xs font-bold text-ink truncate">{activeProperty}</h6>
-                    <p className="text-[11px] text-ink-muted mt-1">Upgrade Budget: {formatCurrency(activeBudget)}</p>
-                    <p className="text-[11px] text-accent-600 font-bold mt-1">Timeline: Quick wins first</p>
-                    <button
-                      onClick={() => setIsEditingContext(true)}
-                      className="absolute top-3 right-3 text-[10px] text-ink-subtle hover:text-ink font-bold hidden group-hover:block transition-colors"
-                    >
-                      Edit
-                    </button>
+                </div>
+
+                {/* Recent Properties */}
+                {recentProperties.length > 0 && (
+                  <div className="px-6 space-y-2">
+                    <span className="block text-[10px] font-bold text-ink-subtle uppercase tracking-widest">Recent Properties</span>
+                    <div className="space-y-1">
+                      {recentProperties.map((a) => (
+                        <a
+                          key={a.id}
+                          href={`/analyze/${a.id}`}
+                          className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs text-ink-muted hover:text-ink hover:bg-surface-sunken transition-colors"
+                        >
+                          <span className="truncate">{a.address}</span>
+                          <span
+                            className={cn("w-1.5 h-1.5 rounded-full shrink-0", {
+                              "bg-success": a.status === "status-complete",
+                              "bg-navy-500": a.status === "status-progress",
+                              "bg-danger": a.status === "status-error",
+                            })}
+                            aria-hidden="true"
+                          />
+                        </a>
+                      ))}
+                    </div>
                   </div>
                 )}
-              </div>
-            </div>
 
-            {/* Quick Stats Box */}
-            <div className="px-6 space-y-3">
-              <span className="block text-[10px] font-bold text-ink-subtle uppercase tracking-widest">Workspace Stats</span>
-              <div className="bg-surface-sunken border border-surface-border rounded-2xl p-4 space-y-3 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-ink-muted">Analyses This Month</span>
-                  <span className="font-bold text-ink">5</span>
+                {/* Switch Workspace */}
+                <div className="px-6 space-y-2">
+                  <span className="block text-[10px] font-bold text-ink-subtle uppercase tracking-widest">Workspace</span>
+                  <div className="flex items-center justify-between text-xs font-semibold text-ink-muted bg-surface-sunken hover:bg-surface-border px-3 py-2 rounded-xl cursor-pointer transition-colors">
+                    <span>My Real Estate Team</span>
+                    <ChevronDown className="w-3.5 h-3.5 text-ink-subtle" />
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-ink-muted">Avg Recommendation ROI</span>
-                  <span className="font-bold text-success">18.5%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-ink-muted">Reports Generated</span>
-                  <span className="font-bold text-ink">4</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Switch Workspace */}
-            <div className="px-6 space-y-2">
-              <span className="block text-[10px] font-bold text-ink-subtle uppercase tracking-widest">Workspace</span>
-              <div className="flex items-center justify-between text-xs font-semibold text-ink-muted bg-surface-sunken hover:bg-surface-border px-3 py-2 rounded-xl cursor-pointer transition-colors">
-                <span>My Real Estate Team</span>
-                <ChevronDown className="w-3.5 h-3.5 text-ink-subtle" />
-              </div>
-            </div>
+              </>
+            )}
           </div>
 
           {/* Upgrade CTA Sticky Bottom */}
-          <div className="px-6">
-            <div className="bg-navy-800 rounded-2xl p-4 text-center space-y-3 shadow-card">
-              <h6 className="text-xs font-bold text-white">Upgrade to Pro</h6>
-              <p className="text-[10px] text-navy-200 leading-normal">Unlock white-label reports & batch analysis</p>
-              <button
-                onClick={() => window.location.href = "/settings?tab=billing"}
-                className="w-full bg-accent-500 hover:bg-accent-600 text-white text-xs font-extrabold py-2 rounded-xl transition-colors"
-              >
-                Upgrade Now
-              </button>
+          {!collapsed && (
+            <div className="px-6">
+              <div className="bg-navy-800 rounded-2xl p-4 text-center space-y-3 shadow-card">
+                <h6 className="text-xs font-bold text-white">Upgrade to Pro</h6>
+                <p className="text-[10px] text-navy-200 leading-normal">Unlock white-label reports & batch analysis</p>
+                <button
+                  onClick={() => window.location.href = "/settings?tab=billing"}
+                  className="w-full bg-accent-500 hover:bg-accent-600 text-white text-xs font-extrabold py-2 rounded-xl transition-colors"
+                >
+                  Upgrade Now
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </aside>
 
         {/* 3. MOBILE SIDEBAR DRAWER (Slides in) */}

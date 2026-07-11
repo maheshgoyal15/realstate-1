@@ -1,47 +1,39 @@
 "use client";
 
 import React, { useState } from "react";
+import { Construction } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-// Mandatory Secure Web Skills: Logging, Debugging & UI Interaction
-// - MUST NOT print structured user objects or tokens using console.log/console.warn
-// - Rely on framework-native modal components for secure, consistent UX
+function ComingSoonNotice() {
+  return (
+    <div className="flex items-center gap-2 bg-warning-subtle border border-warning-border text-warning text-xs font-semibold px-4 py-3 rounded-xl">
+      <Construction className="w-4 h-4 shrink-0" />
+      <span>Team administration isn't built yet — the numbers and directory below are illustrative only, and this page isn't restricted to admins.</span>
+    </div>
+  );
+}
 
 export default function TeamAdminDashboard() {
   const [activeTab, setActiveTab] = useState<string>("Analytics");
-  const [teamName, setTeamName] = useState("Austin Premier Realty");
-  const [primaryColor, setPrimaryColor] = useState("#3B82F6");
-  const [newInviteEmail, setNewInviteEmail] = useState("");
-  const [modalMessage, setModalMessage] = useState<string | null>(null);
-
-  const handleInviteSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newInviteEmail) return;
-    setModalMessage(`Secure invitation link routed to ${newInviteEmail}. Seat allocated successfully.`);
-    setNewInviteEmail("");
-  };
-
-  const handleWhiteLabelSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    setModalMessage(`White-label configuration saved successfully for ${teamName}. Custom hex theme ${primaryColor} activated.`);
-  };
 
   return (
-    <div className="max-w-6xl mx-auto py-8 space-y-10">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between pb-8 border-b border-slate-800 gap-4">
+    <div className="max-w-6xl mx-auto py-8 space-y-8">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between pb-8 border-b border-surface-border gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Enterprise Team Lead Administration</h1>
-          <p className="text-slate-400 text-sm mt-1">Tenant: Austin Premier Realty • Active Seats: <span className="text-blue-400 font-semibold">12 / 15</span></p>
+          <h1 className="text-3xl font-bold font-serif text-ink tracking-tight">Enterprise Team Lead Administration</h1>
+          <p className="text-ink-muted text-sm mt-1">Example tenant: Austin Premier Realty</p>
         </div>
         <div className="flex items-center space-x-3">
           {["Analytics", "Seat Allocation", "White-Label Branding"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+              className={cn(
+                "px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors",
                 activeTab === tab
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-slate-900 border border-slate-800 text-slate-300 hover:border-slate-700"
-              }`}
+                  ? "bg-navy-800 text-white shadow-card"
+                  : "bg-surface-raised border border-surface-border text-ink-muted hover:border-surface-border-strong"
+              )}
             >
               {tab}
             </button>
@@ -49,45 +41,47 @@ export default function TeamAdminDashboard() {
         </div>
       </div>
 
+      <ComingSoonNotice />
+
       {activeTab === "Analytics" && (
         <div className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="glass-panel p-6">
-              <h3 className="text-sm font-medium text-slate-400 mb-1">Reports Generated (YTD)</h3>
-              <p className="text-4xl font-extrabold text-white">412</p>
-              <p className="text-xs text-emerald-400 font-semibold mt-2">▲ 28% Month-over-Month</p>
+            <div className="card-surface p-6">
+              <h3 className="text-sm font-medium text-ink-muted mb-1">Reports Generated (YTD)</h3>
+              <p className="text-4xl font-extrabold text-ink">412</p>
+              <p className="text-xs text-success font-semibold mt-2">▲ 28% Month-over-Month</p>
             </div>
-            <div className="glass-panel p-6">
-              <h3 className="text-sm font-medium text-slate-400 mb-1">Total Value Added</h3>
-              <p className="text-4xl font-extrabold text-blue-400">$14.2M</p>
-              <p className="text-xs text-slate-500 mt-2">Aggregated After Repair Value impact</p>
+            <div className="card-surface p-6">
+              <h3 className="text-sm font-medium text-ink-muted mb-1">Total Value Added</h3>
+              <p className="text-4xl font-extrabold text-accent-600">$14.2M</p>
+              <p className="text-xs text-ink-subtle mt-2">Aggregated After Repair Value impact</p>
             </div>
-            <div className="glass-panel p-6">
-              <h3 className="text-sm font-medium text-slate-400 mb-1">Contractor Dispatches</h3>
-              <p className="text-4xl font-extrabold text-white">94</p>
-              <p className="text-xs text-emerald-400 font-semibold mt-2">22.8% Conversion Rate</p>
+            <div className="card-surface p-6">
+              <h3 className="text-sm font-medium text-ink-muted mb-1">Contractor Dispatches</h3>
+              <p className="text-4xl font-extrabold text-ink">94</p>
+              <p className="text-xs text-success font-semibold mt-2">22.8% Conversion Rate</p>
             </div>
-            <div className="glass-panel p-6">
-              <h3 className="text-sm font-medium text-slate-400 mb-1">Listing Premium Securing</h3>
-              <p className="text-4xl font-extrabold text-emerald-400">+7.8%</p>
-              <p className="text-xs text-slate-500 mt-2">Above neighborhood baseline comps</p>
+            <div className="card-surface p-6">
+              <h3 className="text-sm font-medium text-ink-muted mb-1">Listing Premium Securing</h3>
+              <p className="text-4xl font-extrabold text-success">+7.8%</p>
+              <p className="text-xs text-ink-subtle mt-2">Above neighborhood baseline comps</p>
             </div>
           </div>
 
-          <div className="glass-panel p-8">
-            <h2 className="text-xl font-bold text-white mb-4">Seat Utilization Audit Log</h2>
-            <div className="divide-y divide-slate-800 text-sm text-slate-300">
+          <div className="card-surface p-8">
+            <h2 className="text-xl font-bold text-ink mb-4">Seat Utilization Audit Log</h2>
+            <div className="divide-y divide-surface-border text-sm text-ink-muted">
               <div className="py-4 flex justify-between">
-                <div><span className="font-semibold text-white">Alice Vance</span> • alice@austinpremier.com</div>
-                <div className="text-slate-400">42 Analyses Completed YTD</div>
+                <div><span className="font-semibold text-ink">Alice Vance</span> • alice@austinpremier.com</div>
+                <div className="text-ink-muted">42 Analyses Completed YTD</div>
               </div>
               <div className="py-4 flex justify-between">
-                <div><span className="font-semibold text-white">Marcus Sterling</span> • marcus@austinpremier.com</div>
-                <div className="text-slate-400">38 Analyses Completed YTD</div>
+                <div><span className="font-semibold text-ink">Marcus Sterling</span> • marcus@austinpremier.com</div>
+                <div className="text-ink-muted">38 Analyses Completed YTD</div>
               </div>
               <div className="py-4 flex justify-between">
-                <div><span className="font-semibold text-white">Priya Patel</span> • priya@austinpremier.com</div>
-                <div className="text-slate-400">19 Analyses Completed YTD</div>
+                <div><span className="font-semibold text-ink">Priya Patel</span> • priya@austinpremier.com</div>
+                <div className="text-ink-muted">19 Analyses Completed YTD</div>
               </div>
             </div>
           </div>
@@ -95,83 +89,59 @@ export default function TeamAdminDashboard() {
       )}
 
       {activeTab === "Seat Allocation" && (
-        <div className="max-w-2xl mx-auto glass-panel p-8 space-y-6">
+        <div className="max-w-2xl mx-auto card-surface p-8 space-y-6">
           <div>
-            <h2 className="text-2xl font-bold text-white mb-2">Allocate New Agent Seat</h2>
-            <p className="text-slate-400 text-sm">Securely dispatch an invitation token to provision an enterprise seat under your brokerage tenant.</p>
+            <h2 className="text-2xl font-bold text-ink mb-2">Allocate New Agent Seat</h2>
+            <p className="text-ink-muted text-sm">Securely dispatch an invitation token to provision an enterprise seat under your brokerage tenant.</p>
           </div>
-          <form onSubmit={handleInviteSubmit} className="space-y-6">
+          <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Agent Email Address</label>
+              <label className="block text-sm font-medium text-ink-muted mb-2">Agent Email Address</label>
               <input
                 type="email"
-                value={newInviteEmail}
-                onChange={(e) => setNewInviteEmail(e.target.value)}
+                disabled
                 placeholder="newagent@austinpremier.com"
-                required
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full bg-surface-sunken border border-surface-border rounded-xl px-4 py-3 text-ink-muted opacity-60 cursor-not-allowed"
               />
             </div>
-            <button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-4 rounded-xl transition-colors shadow-lg"
-            >
+            <button disabled className="w-full bg-navy-800 opacity-50 cursor-not-allowed text-white font-semibold py-4 rounded-xl">
               Dispatch Invitation Token
             </button>
-          </form>
+          </div>
         </div>
       )}
 
       {activeTab === "White-Label Branding" && (
-        <div className="max-w-2xl mx-auto glass-panel p-8 space-y-6">
+        <div className="max-w-2xl mx-auto card-surface p-8 space-y-6">
           <div>
-            <h2 className="text-2xl font-bold text-white mb-2">Brokerage White-Label Customization</h2>
-            <p className="text-slate-400 text-sm">Configure custom PDF report co-branding, custom terminology, and corporate color palettes.</p>
+            <h2 className="text-2xl font-bold text-ink mb-2">Brokerage White-Label Customization</h2>
+            <p className="text-ink-muted text-sm">Configure custom PDF report co-branding, custom terminology, and corporate color palettes.</p>
           </div>
-          <form onSubmit={handleWhiteLabelSave} className="space-y-6">
+          <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Brokerage / Team Name</label>
+              <label className="block text-sm font-medium text-ink-muted mb-2">Brokerage / Team Name</label>
               <input
                 type="text"
-                value={teamName}
-                onChange={(e) => setTeamName(e.target.value)}
-                required
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-blue-500 transition-colors"
+                disabled
+                value="Austin Premier Realty"
+                readOnly
+                className="w-full bg-surface-sunken border border-surface-border rounded-xl px-4 py-3 text-ink-muted opacity-60 cursor-not-allowed"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Brand Accent Color Hex</label>
+              <label className="block text-sm font-medium text-ink-muted mb-2">Brand Accent Color Hex</label>
               <div className="flex items-center space-x-4">
                 <input
                   type="color"
-                  value={primaryColor}
-                  onChange={(e) => setPrimaryColor(e.target.value)}
-                  className="w-14 h-14 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer"
+                  disabled
+                  value="#c05621"
+                  className="w-14 h-14 bg-surface-sunken border border-surface-border rounded-xl opacity-60 cursor-not-allowed"
                 />
-                <span className="text-slate-300 font-mono text-base">{primaryColor}</span>
+                <span className="text-ink-muted font-mono text-base">#c05621</span>
               </div>
             </div>
-            <button
-              type="submit"
-              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-4 rounded-xl transition-colors shadow-lg"
-            >
+            <button disabled className="w-full bg-success opacity-50 cursor-not-allowed text-white font-semibold py-4 rounded-xl">
               Commit Custom Branding Configuration
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* Framework-Native Modal */}
-      {modalMessage && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl text-center">
-            <h3 className="text-lg font-bold text-white mb-3">Tenant Update Status</h3>
-            <p className="text-slate-300 text-sm mb-6">{modalMessage}</p>
-            <button
-              onClick={() => setModalMessage(null)}
-              className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-2.5 rounded-xl transition-colors w-full"
-            >
-              Acknowledge & Close
             </button>
           </div>
         </div>
