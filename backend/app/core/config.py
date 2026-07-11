@@ -7,6 +7,24 @@ logger = logging.getLogger(__name__)
 
 # Mandatory Secure Web Skills: Multi-tiered Secret Resolution
 # (Resolution: Environment -> Local File Query -> Random Gen + Log)
+def _load_env_file():
+    for env_path in [
+        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"),
+        ".env"
+    ]:
+        if os.path.exists(env_path):
+            with open(env_path, "r") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        k = k.strip()
+                        v = v.strip().strip('"').strip("'")
+                        if k not in os.environ:
+                            os.environ[k] = v
+
+_load_env_file()
+
 def get_jwt_secret() -> str:
     if os.getenv('JWT_SECRET_KEY'):
         return os.getenv('JWT_SECRET_KEY') # type: ignore

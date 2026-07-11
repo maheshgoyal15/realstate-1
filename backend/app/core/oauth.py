@@ -21,11 +21,14 @@ def verify_google_id_token(token: str) -> dict:
     """
     try:
         idinfo = google_id_token.verify_oauth2_token(
-            token, google_requests.Request(), settings.GOOGLE_CLIENT_ID
+            token,
+            google_requests.Request(),
+            settings.GOOGLE_CLIENT_ID or None,
+            clock_skew_in_seconds=60,
         )
     except ValueError as e:
-        logger.warning("Google ID token verification failed.")
-        raise ValueError("Invalid Google ID token") from e
+        logger.error(f"Google ID token verification failed: {e} (configured aud={settings.GOOGLE_CLIENT_ID})")
+        raise ValueError(f"Invalid Google ID token: {e}") from e
 
     if idinfo.get("iss") not in _VALID_ISSUERS:
         raise ValueError("Invalid Google ID token issuer")

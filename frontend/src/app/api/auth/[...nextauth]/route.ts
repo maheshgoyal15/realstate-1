@@ -126,6 +126,8 @@ const authOptions: NextAuthOptions = {
           });
 
           if (!res.ok) {
+            const errText = await res.text();
+            console.error(`Google OAuth backend exchange failed (${res.status}):`, errText);
             return false;
           }
 

@@ -34,3 +34,15 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# Environment and Credential files (Never commit secrets!)
+.env
+.env.*
+!.env.example
+jwt_secret.txt
+
+# Local databases & state
+*.db
+*.sqlite
+*.sqlite3
+analysis_store.json

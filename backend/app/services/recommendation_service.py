@@ -6,6 +6,7 @@ import psycopg2.extras
 
 from app.core.celery_app import celery_app
 from app.core.config import settings
+from app.core.db import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ def generate_recommendations(analysis_id: str, cv_summary: Dict[str, Any], budge
     detected_defects = cv_summary.get("detected_defects", [])
     budget = budget_ceiling or 100000.0
 
-    conn = psycopg2.connect(settings.DATABASE_URL)
+    conn = get_db()
     try:
         with conn:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:

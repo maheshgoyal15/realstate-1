@@ -82,7 +82,8 @@ def generate_prelisting_report(
     # bucket key instead.
     s3_pdf_key = f"db:{shareable_token}.pdf"
 
-    conn = psycopg2.connect(settings.DATABASE_URL)
+    from app.core.db import get_db
+    conn = get_db()
     try:
         with conn:
             with conn.cursor() as cur:

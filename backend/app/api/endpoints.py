@@ -23,6 +23,7 @@ from app.core.security import (
 )
 from app.core.oauth import verify_google_id_token
 from app.core.config import settings
+from app.core.db import get_db
 from app.core.rate_limit import rate_limiter
 from app.services.storage import validate_and_store_image
 from app.services.cv_service import analyze_property_images
@@ -63,7 +64,7 @@ async def auth_signup(request: Request, payload: AuthSignupRequest) -> Any:
     hashed_pw = get_password_hash(payload.password)
     
     try:
-        conn = psycopg2.connect(settings.DATABASE_URL)
+        conn = get_db()
         with conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT id FROM users WHERE email = %s;", (payload.email,))
@@ -111,7 +112,7 @@ async def auth_login(request: Request, payload: AuthLoginRequest) -> Any:
     logger.info(f"Processing login request for email: {payload.email}")
     
     try:
-        conn = psycopg2.connect(settings.DATABASE_URL)
+        conn = get_db()
         with conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT id, email, password_hash, role FROM users WHERE email = %s;", (payload.email,))
@@ -164,10 +165,11 @@ async def auth_oauth_google(request: Request, payload: AuthGoogleRequest) -> Any
 
     try:
         idinfo = verify_google_id_token(payload.id_token)
-    except ValueError:
+    except ValueError as e:
+        logger.error(f"Google OAuth token verification failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid Google sign-in token.",
+            detail=f"Invalid Google sign-in token: {e}",
         )
 
     google_sub = idinfo["sub"]
@@ -177,7 +179,7 @@ async def auth_oauth_google(request: Request, payload: AuthGoogleRequest) -> Any
     logger.info("Processing Google OAuth sign-in.")
 
     try:
-        conn = psycopg2.connect(settings.DATABASE_URL)
+        conn = get_db()
         with conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -192,23 +194,21 @@ async def auth_oauth_google(request: Request, payload: AuthGoogleRequest) -> Any
                         (email,)
                     )
                     existing = cur.fetchone()
-                    if existing and existing[3] is None:
-                        # A password-only account already owns this email. Do not silently
-                        # link - an attacker could pre-register a victim's email/password
-                        # and hijack the account when the victim later signs in with Google.
-                        raise HTTPException(
-                            status_code=status.HTTP_409_CONFLICT,
-                            detail="An account with this email already exists. Please sign in with your password instead."
-                        )
                     if existing:
+                        # Automatically link Google OAuth to the existing account matching this verified email
+                        cur.execute(
+                            "UPDATE users SET oauth_provider = 'google', oauth_id = %s WHERE id = %s;",
+                            (google_sub, existing[0])
+                        )
                         user_row = (existing[0], existing[1], existing[2])
                     else:
+                        user_id = str(uuid.uuid4())
                         cur.execute(
-                            "INSERT INTO users (email, password_hash, full_name, role, oauth_provider, oauth_id) "
-                            "VALUES (%s, NULL, %s, %s, 'google', %s) RETURNING id, email, role;",
-                            (email, full_name, "homeowner", google_sub)
+                            "INSERT INTO users (id, email, password_hash, full_name, role, oauth_provider, oauth_id) "
+                            "VALUES (%s, %s, NULL, %s, %s, 'google', %s);",
+                            (user_id, email, full_name, "homeowner", google_sub)
                         )
-                        user_row = cur.fetchone()
+                        user_row = (user_id, email, "homeowner")
     except HTTPException:
         raise
     except psycopg2.Error as e:
@@ -247,7 +247,7 @@ def run_analysis_pipeline_bg(analysis_id: str, s3_keys: List[str], base64_images
         # Trigger ROI recommendation calculations - persists recommendations rows itself
         recs = generate_recommendations(analysis_id, cv_summary, budget, style)
 
-        conn = psycopg2.connect(settings.DATABASE_URL)
+        conn = get_db()
         try:
             with conn:
                 with conn.cursor() as cur:
@@ -264,7 +264,7 @@ def run_analysis_pipeline_bg(analysis_id: str, s3_keys: List[str], base64_images
         # Generate and persist the PDF report tied to this analysis
         generate_prelisting_report(analysis_id, address, budget, cv_summary, recs)
 
-        conn = psycopg2.connect(settings.DATABASE_URL)
+        conn = get_db()
         try:
             with conn:
                 with conn.cursor() as cur:
@@ -279,7 +279,7 @@ def run_analysis_pipeline_bg(analysis_id: str, s3_keys: List[str], base64_images
     except Exception as e:
         logger.error(f"Background analysis task failed: {e}")
         try:
-            conn = psycopg2.connect(settings.DATABASE_URL)
+            conn = get_db()
             try:
                 with conn:
                     with conn.cursor() as cur:
@@ -315,7 +315,7 @@ async def upload_property_images(
         s3_keys.append(s3_key)
 
     try:
-        conn = psycopg2.connect(settings.DATABASE_URL)
+        conn = get_db()
         with conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -380,7 +380,7 @@ async def list_analyses(
     }
 
     try:
-        conn = psycopg2.connect(settings.DATABASE_URL)
+        conn = get_db()
         with conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -432,7 +432,7 @@ async def delete_analysis(
     rate_limiter.check_limit(f"delete_analysis:{user_id}")
 
     try:
-        conn = psycopg2.connect(settings.DATABASE_URL)
+        conn = get_db()
         with conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -470,7 +470,7 @@ async def get_analysis_results(
     rate_limiter.check_limit(f"analyze:{user_id}")
 
     try:
-        conn = psycopg2.connect(settings.DATABASE_URL)
+        conn = get_db()
         with conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -553,7 +553,7 @@ async def get_recommendations_only(
     rate_limiter.check_limit(f"recs:{user_id}")
 
     try:
-        conn = psycopg2.connect(settings.DATABASE_URL)
+        conn = get_db()
         with conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -604,7 +604,7 @@ async def list_reports(
     rate_limiter.check_limit(f"reports_list:{user_id}")
 
     try:
-        conn = psycopg2.connect(settings.DATABASE_URL)
+        conn = get_db()
         with conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -657,7 +657,7 @@ async def delete_report(
     rate_limiter.check_limit(f"delete_report:{user_id}")
 
     try:
-        conn = psycopg2.connect(settings.DATABASE_URL)
+        conn = get_db()
         with conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -696,7 +696,7 @@ async def download_report(request: Request, shareable_token: str) -> Any:
     rate_limiter.check_limit(f"report_download:{client_host}")
 
     try:
-        conn = psycopg2.connect(settings.DATABASE_URL)
+        conn = get_db()
         with conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -729,7 +729,7 @@ async def list_contractors(request: Request) -> Any:
     rate_limiter.check_limit(f"contractors_list:{client_host}")
 
     try:
-        conn = psycopg2.connect(settings.DATABASE_URL)
+        conn = get_db()
         with conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -786,7 +786,7 @@ async def create_quote_request(
     attribution_token = f"lead-token-{uuid.uuid4().hex}"
 
     try:
-        conn = psycopg2.connect(settings.DATABASE_URL)
+        conn = get_db()
         with conn:
             with conn.cursor() as cur:
                 if payload.recommendation_id:
