@@ -1,100 +1,82 @@
 import logging
 from typing import List, Dict, Any
+
+import psycopg2
+import psycopg2.extras
+
 from app.core.celery_app import celery_app
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
 
 @celery_app.task(name="app.services.recommendation_service.generate_recommendations")
 def generate_recommendations(analysis_id: str, cv_summary: Dict[str, Any], budget_ceiling: float, style_preference: str) -> List[Dict[str, Any]]:
     """
-    Celery background worker task for generating AI recommendations.
-    Combines XGBoost/LightGBM tabular regression ranking with GPT-4o semantic reasoning layer.
-    Queries SimplyRETS MLS feeds and contractor pricing tables.
+    Selects candidate upgrades from the upgrade_catalog reference table,
+    filters/ranks them against this analysis's detected defects and budget,
+    and persists the selected ones as real recommendations rows tied to
+    analysis_id. The catalog is seed/fallback data - a live MLS/contractor
+    pricing feed would replace the catalog SELECT below, not this function's
+    signature or return shape.
     """
-    logger.info(f"Starting AI Recommendation ranking for analysis_id: {analysis_id}. Budget: ${budget_ceiling}")
-    
-    # Simulate SimplyRETS / RESO Web API comp fetching and localized contractor pricing lookup
-    base_upgrades = [
-        {
-            "id": "rec-kitchen",
-            "category": "Kitchen Remodel & Resurfacing",
-            "trigger_defect": "outdated_kitchen_cabinets",
-            "estimated_cost": 35000.0,
-            "projected_value_increase": 57750.0,
-            "timeline": "3-4 months",
-            "explanation": f"Replacing laminate with quartz and modernizing cabinet hardware aligns with top 10% sold comps in your zip code. Fits perfectly with your {style_preference} aesthetic preference.",
-            "why_details": "Your kitchen was built in 1995. Modern kitchens with updated appliances, quartz counters, and open layouts drive significant buyer interest. Comparable sales that renovated sold 12% faster.",
-            "scope": [
-                { "item": "Cabinet refacing/replacement", "checked": True },
-                { "item": "Countertop upgrade (granite/quartz)", "checked": True },
-                { "item": "Backsplash installation", "checked": True },
-                { "item": "Lighting upgrade (LED)", "checked": True },
-                { "item": "Appliance replacement (stove, fridge, dishwasher)", "checked": True },
-                { "item": "Paint & refresh", "checked": True },
-                { "item": "Island addition (not recommended)", "checked": False }
-            ]
-        },
-        {
-            "id": "rec-roof",
-            "category": "Architectural Shingle Roof Replacement",
-            "trigger_defect": "old_shingle_roof",
-            "estimated_cost": 8500.0,
-            "projected_value_increase": 12325.0,
-            "timeline": "1-2 weeks",
-            "explanation": "Replacing a weathered roof prevents severe inspection contingency deductions and secures full appraisal valuation.",
-            "why_details": "AI Vision identified wear around shingles and flashing. Rectifying this prevents negotiation credit drops during appraisal.",
-            "scope": [
-                { "item": "Replace damaged asphalt shingles", "checked": True },
-                { "item": "Reseal vent pipes and chimney flashing", "checked": True },
-                { "item": "Clean gutters and install leaf guards", "checked": True },
-                { "item": "Certify roof structural integrity", "checked": False }
-            ]
-        },
-        {
-            "id": "rec-bath",
-            "category": "Bathroom Modernization",
-            "trigger_defect": "worn_hardwood_floors", # Map to a secondary trigger or run anyway
-            "estimated_cost": 22000.0,
-            "projected_value_increase": 33440.0,
-            "timeline": "2-3 months",
-            "explanation": "Spa-like features in the master suite bathroom increase premium comps matching.",
-            "why_details": "Replacing builder-grade single vanity with custom double quartz vanities and glass shower enclosures.",
-            "scope": [
-                { "item": "Custom double vanity installation", "checked": True },
-                { "item": "Premium quartz countertop overlay", "checked": True },
-                { "item": "Frameless glass walk-in shower conversion", "checked": True },
-                { "item": "Updated low-flow fixtures and LED mirrors", "checked": True }
-            ]
-        }
-    ]
+    logger.info(f"Starting recommendation ranking for analysis_id: {analysis_id}. Budget: ${budget_ceiling}")
 
     detected_defects = cv_summary.get("detected_defects", [])
-    
-    # Filter and rank based on detected defects and budget ceiling
-    recommendations = []
-    upg_index = 1
-    
-    for upg in base_upgrades:
-        # Include if trigger matches, or by default to fill out dashboard options
-        if upg["trigger_defect"] in detected_defects or len(recommendations) < 2:
-            if upg["estimated_cost"] <= (budget_ceiling or 100000.0):
-                roi = ((upg["projected_value_increase"] - upg["estimated_cost"]) / upg["estimated_cost"]) * 100
-                recommendations.append({
-                    "upgrade_id": upg["id"], # Keep key ID matching visualizer dictionary
-                    "category": upg["category"],
-                    "estimated_cost": upg["estimated_cost"],
-                    "projected_value_increase": upg["projected_value_increase"],
-                    "roi_percentage": round(roi, 1),
-                    "timeline": upg["timeline"],
-                    "explanation": upg["explanation"],
-                    "why_details": upg["why_details"],
-                    "scope": upg["scope"]
-                })
-                upg_index += 1
+    budget = budget_ceiling or 100000.0
 
-    # Sort by ROI percentage descending
+    conn = psycopg2.connect(settings.DATABASE_URL)
+    try:
+        with conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(
+                    "SELECT id, category, trigger_defect, estimated_cost, projected_value_increase, "
+                    "timeline, explanation_template, why_details_template, scope FROM upgrade_catalog;"
+                )
+                catalog = cur.fetchall()
+
+                selected = []
+                for upg in catalog:
+                    if upg["trigger_defect"] in detected_defects or len(selected) < 2:
+                        if float(upg["estimated_cost"]) <= budget:
+                            selected.append(upg)
+
+                recommendations = []
+                for upg in selected:
+                    cost = float(upg["estimated_cost"])
+                    value_increase = float(upg["projected_value_increase"])
+                    roi = round(((value_increase - cost) / cost) * 100, 1)
+                    explanation = upg["explanation_template"].format(style=style_preference)
+                    why_details = upg["why_details_template"].format(style=style_preference)
+
+                    cur.execute(
+                        "INSERT INTO recommendations "
+                        "(analysis_id, category, estimated_cost, projected_value_increase, roi_percentage, "
+                        "timeline, explanation, why_details, scope, upgrade_catalog_id) "
+                        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;",
+                        (
+                            analysis_id, upg["category"], cost, value_increase, roi,
+                            upg["timeline"], explanation, why_details,
+                            psycopg2.extras.Json(upg["scope"]), upg["id"],
+                        )
+                    )
+                    rec_id = cur.fetchone()["id"]
+
+                    recommendations.append({
+                        "upgrade_id": str(rec_id),
+                        "category": upg["category"],
+                        "estimated_cost": cost,
+                        "projected_value_increase": value_increase,
+                        "roi_percentage": roi,
+                        "timeline": upg["timeline"],
+                        "explanation": explanation,
+                        "why_details": why_details,
+                        "scope": upg["scope"],
+                    })
+    finally:
+        conn.close()
+
     recommendations.sort(key=lambda x: x["roi_percentage"], reverse=True)
-    
     logger.info(f"Generated {len(recommendations)} ranked recommendations for analysis_id: {analysis_id}")
-    
+
     return recommendations

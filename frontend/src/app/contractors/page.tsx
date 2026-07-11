@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { 
-  Search, 
-  Star, 
-  MapPin, 
-  Phone, 
-  MessageSquare, 
-  Bookmark, 
+import React, { useEffect, useState, useMemo } from "react";
+import {
+  Search,
+  Star,
+  MapPin,
+  Phone,
+  MessageSquare,
+  Bookmark,
   CheckCircle,
   FileText,
   Calendar,
@@ -19,92 +19,56 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { formatCurrency } from "@/lib/utils";
+import { apiFetch } from "@/lib/apiClient";
 
-// Mock Contractors
-const INITIAL_CONTRACTORS = [
-  {
-    id: "cont-1",
-    name: "Home Remodeling Pro",
-    rating: 4.8,
-    reviewsCount: 142,
-    license: "TCLD-12345",
-    location: "Austin, TX",
-    distance: 5,
-    specialties: ["Kitchens", "Bathrooms", "Hardwoods"],
-    avgCost: 34500,
-    avgTimeline: "4-5 Weeks",
-    availability: "Starting Jan 15, 2025",
-    snippet: "Excellent communication, finished on time!",
-    bio: "Home Remodeling Pro has served the Austin metro area since 2012. We specialize in high-end structural modifications, custom cabinetry, and premium tiling.",
-    pricingInfo: [
-      { project: "Kitchen Remodel", cost: "$30k - $45k" },
-      { project: "Bath Modernization", cost: "$15k - $25k" },
-      { project: "Hardwood Refinishing", cost: "$4k - $8k" }
-    ],
-    reviews: [
-      { author: "Sarah M.", rating: 5, text: "They completely refaced our dated 90s kitchen. The quartz installation is stunning!" },
-      { author: "Devin K.", rating: 4, text: "Solid work on the hardwood sanding. Highly recommend." }
-    ]
-  },
-  {
-    id: "cont-2",
-    name: "Austin Kitchen & Bath Co.",
-    rating: 4.6,
-    reviewsCount: 89,
-    license: "TCLD-56789",
-    location: "Austin, TX",
-    distance: 2,
-    specialties: ["Kitchens", "Bathrooms", "Countertops"],
-    avgCost: 35800,
-    avgTimeline: "6-7 Weeks",
-    availability: "Immediate Start",
-    snippet: "Very professional crew and great cleanup.",
-    bio: "Austin Kitchen & Bath Co. focuses on modern functional kitchen layouts and bathroom spa integrations.",
-    pricingInfo: [
-      { project: "Kitchen Remodel", cost: "$32k - $48k" },
-      { project: "Bath Modernization", cost: "$12k - $22k" }
-    ],
-    reviews: [
-      { author: "Linda P.", rating: 5, text: "Excellent design choices, helped us get high value upgrades within our budget." }
-    ]
-  },
-  {
-    id: "cont-3",
-    name: "Elite Roofing Austin",
-    rating: 4.9,
-    reviewsCount: 210,
-    license: "ROOF-9912",
-    location: "Austin, TX",
-    distance: 8,
-    specialties: ["Roofing", "Gutters", "Siding"],
-    avgCost: 8200,
-    avgTimeline: "1-2 Weeks",
-    availability: "Next Week",
-    snippet: "Fast service, handled the insurance details perfectly.",
-    bio: "Elite Roofing offers rapid-response roof replacements, composite shingle repairs, and gutter guard installations.",
-    pricingInfo: [
-      { project: "Roof Replacement", cost: "$8k - $14k" },
-      { project: "Flashing & Patching", cost: "$1k - $3k" }
-    ],
-    reviews: [
-      { author: "James D.", rating: 5, text: "Fixed leak in less than 24 hours. Phenomenal response times." }
-    ]
-  }
-];
+interface Contractor {
+  id: string;
+  name: string;
+  rating: number | null;
+  reviewsCount: number;
+  license: string | null;
+  location: string | null;
+  specialties: string[];
+  avgCost: number | null;
+  avgTimeline: string | null;
+  availability: string | null;
+  snippet: string | null;
+  bio: string | null;
+  pricingInfo: { project: string; cost: string }[];
+  reviews: { author: string; rating: number; text: string }[];
+}
 
 export default function ContractorsPage() {
-  const [contractors, setContractors] = useState(INITIAL_CONTRACTORS);
+  const [contractors, setContractors] = useState<Contractor[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  
+
   // Modals state
-  const [selectedContractor, setSelectedContractor] = useState<typeof INITIAL_CONTRACTORS[0] | null>(null);
-  const [quoteContractor, setQuoteContractor] = useState<typeof INITIAL_CONTRACTORS[0] | null>(null);
+  const [selectedContractor, setSelectedContractor] = useState<Contractor | null>(null);
+  const [quoteContractor, setQuoteContractor] = useState<Contractor | null>(null);
   const [savedContractors, setSavedContractors] = useState<Record<string, boolean>>({});
-  
+
   // Notification Toast
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [userNotes, setUserNotes] = useState("");
+  const [submittingQuote, setSubmittingQuote] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiFetch("/api/v1/contractors");
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        setContractors(data);
+      } catch (error) {
+        console.error("Failed to load contractors:", error);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSaveToggle = (id: string) => {
     setSavedContractors(prev => {
@@ -114,12 +78,33 @@ export default function ContractorsPage() {
     });
   };
 
-  const handleQuoteSubmit = (e: React.FormEvent) => {
+  const handleQuoteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (quoteContractor) {
-      setToastMessage(`Quote request submitted successfully to ${quoteContractor.name}! They will contact you shortly.`);
-      setQuoteContractor(null);
-      setUserNotes("");
+    if (!quoteContractor) return;
+
+    setSubmittingQuote(true);
+    try {
+      const res = await apiFetch("/api/v1/contractors/quote-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contractor_id: quoteContractor.id,
+          user_notes: userNotes || undefined,
+        }),
+      });
+
+      if (res.ok) {
+        setToastMessage(`Quote request submitted successfully to ${quoteContractor.name}! They will contact you shortly.`);
+        setQuoteContractor(null);
+        setUserNotes("");
+      } else {
+        setToastMessage("Failed to submit quote request. Please try again.");
+      }
+    } catch (error) {
+      console.error("Failed to submit quote request:", error);
+      setToastMessage("Failed to submit quote request. Please try again.");
+    } finally {
+      setSubmittingQuote(false);
     }
   };
 
@@ -201,7 +186,7 @@ export default function ContractorsPage() {
                 <div className="flex flex-wrap gap-4 text-xs text-slate-400">
                   <span className="flex items-center space-x-1">
                     <MapPin className="w-4 h-4 text-indigo-400" />
-                    <span>{cont.location} ({cont.distance} miles away)</span>
+                    <span>{cont.location}</span>
                   </span>
                   <span>•</span>
                   <span>License: <strong>{cont.license}</strong></span>
@@ -324,7 +309,9 @@ export default function ContractorsPage() {
           footer={
             <div className="flex justify-end space-x-3">
               <Button id="quote-cancel-btn" variant="secondary" onClick={() => setQuoteContractor(null)}>Cancel</Button>
-              <Button id="quote-submit-btn" variant="primary" onClick={handleQuoteSubmit}>Submit Quote Request</Button>
+              <Button id="quote-submit-btn" variant="primary" onClick={handleQuoteSubmit} disabled={submittingQuote}>
+                {submittingQuote ? "Submitting..." : "Submit Quote Request"}
+              </Button>
             </div>
           }
         >

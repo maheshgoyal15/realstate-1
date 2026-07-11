@@ -18,6 +18,9 @@ class PropertyMetadata(BaseModel):
         return v.lower()
 
 class UploadRequest(BaseModel):
+    # Client-generated label only - the backend creates its own real
+    # `properties` row and `analysis_id` per upload, it does not use this
+    # value as a database key.
     property_id: str = Field(..., min_length=5, max_length=100)
     images: List[str] = Field(..., min_items=1, max_items=50, description="Base64 encoded image strings or multipart references")
     metadata: PropertyMetadata
@@ -45,7 +48,9 @@ class AnalysisResultResponse(BaseModel):
     report_url: Optional[str] = None
 
 class QuoteRequestPayload(BaseModel):
-    recommendation_id: str = Field(..., min_length=10, max_length=100)
+    # Optional: the contractors directory supports general "contact this
+    # contractor" requests not tied to a specific upgrade recommendation.
+    recommendation_id: Optional[str] = Field(None, min_length=10, max_length=100)
     contractor_id: str = Field(..., min_length=10, max_length=100)
     user_notes: Optional[str] = Field(None, max_length=1000)
 
@@ -60,4 +65,14 @@ class AuthSignupRequest(BaseModel):
 
 class AuthGoogleRequest(BaseModel):
     id_token: str = Field(..., min_length=20, max_length=4096, description="Google-issued OAuth ID token (JWT) to verify")
+
+class AnalysisSummaryResponse(BaseModel):
+    id: str
+    address: str
+    date: str
+    status: str
+    statusLabel: str
+    roi: Optional[float] = None
+    cost: float
+    reportUrl: Optional[str] = None
 

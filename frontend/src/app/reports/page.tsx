@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { 
-  Sparkles, 
-  Search, 
-  Filter, 
-  Eye, 
-  Download, 
-  Share2, 
-  Trash2, 
+import React, { useEffect, useState, useMemo } from "react";
+import {
+  Sparkles,
+  Search,
+  Filter,
+  Eye,
+  Download,
+  Share2,
+  Trash2,
   FileText,
   Printer,
   Maximize,
@@ -19,65 +19,69 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { formatCurrency } from "@/lib/utils";
+import { apiFetch } from "@/lib/apiClient";
 
-// Mock reports matching specifications
-const INITIAL_REPORTS = [
-  {
-    id: "report-1",
-    address: "123 Oak St, Austin TX",
-    title: "Kitchen Remodel + Spa Bathroom Assessment",
-    recsCount: 8,
-    valueAdd: 92550,
-    cost: 143000,
-    date: "Dec 15, 2024",
-    status: "status-complete" as const,
-    image: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=600&q=80"
-  },
-  {
-    id: "report-2",
-    address: "456 Elm Ave, Austin TX",
-    title: "Hardwood Refinishing & Landscaping Audit",
-    recsCount: 3,
-    valueAdd: 42000,
-    cost: 21500,
-    date: "Dec 13, 2024",
-    status: "status-complete" as const,
-    image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=600&q=80"
-  },
-  {
-    id: "report-3",
-    address: "789 Pine Rd, Austin TX",
-    title: "Complete Pre-Listing Valuation Uplift Strategy",
-    recsCount: 12,
-    valueAdd: 185000,
-    cost: 110000,
-    date: "Dec 10, 2024",
-    status: "status-complete" as const,
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=600&q=80"
-  }
-];
+interface Report {
+  id: string;
+  address: string;
+  title: string;
+  recsCount: number;
+  valueAdd: number;
+  cost: number;
+  date: string;
+  status: "status-complete";
+  reportUrl: string;
+}
 
 export default function ReportsPage() {
-  const [reports, setReports] = useState(INITIAL_REPORTS);
+  const [reports, setReports] = useState<Report[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortField, setSortField] = useState("date");
 
   // Selection for Preview Modal
-  const [previewReport, setPreviewReport] = useState<typeof INITIAL_REPORTS[0] | null>(null);
-  
+  const [previewReport, setPreviewReport] = useState<Report | null>(null);
+
   // Selection for Share Modal
-  const [shareReport, setShareReport] = useState<typeof INITIAL_REPORTS[0] | null>(null);
+  const [shareReport, setShareReport] = useState<Report | null>(null);
   const [shareUrl, setShareUrl] = useState("");
 
   const [notification, setNotification] = useState<string | null>(null);
 
-  const handleDelete = (id: string) => {
-    setReports(prev => prev.filter(r => r.id !== id));
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiFetch("/api/v1/reports");
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        setReports(data);
+      } catch (error) {
+        console.error("Failed to load reports:", error);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await apiFetch(`/api/v1/reports/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setReports(prev => prev.filter(r => r.id !== id));
+      }
+    } catch (error) {
+      console.error("Failed to delete report:", error);
+    }
   };
 
-  const handleShareTrigger = (report: typeof INITIAL_REPORTS[0]) => {
-    const url = `https://homeready.ai/reports/shared-${report.id}`;
+  const handleDownload = (report: Report) => {
+    window.open(report.reportUrl, "_blank");
+  };
+
+  const handleShareTrigger = (report: Report) => {
+    const url = `${window.location.origin}${report.reportUrl}`;
     setShareUrl(url);
     setShareReport(report);
   };
@@ -160,10 +164,10 @@ export default function ReportsPage() {
               key={report.id}
               className="bg-slate-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col justify-between shadow-xl hover:border-slate-700 hover:scale-[1.01] transition-all duration-200"
             >
-              {/* Cover Image */}
-              <div className="h-44 w-full relative overflow-hidden bg-slate-950">
-                <img src={report.image} alt={report.address} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-85" />
+              {/* Cover - no real property photos are stored yet, so this is an
+                  icon placeholder rather than a fabricated stock photo */}
+              <div className="h-44 w-full relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-950 flex items-center justify-center">
+                <FileText className="w-10 h-10 text-slate-700" />
                 <Badge variant="status-complete" className="absolute top-3 left-3">Ready</Badge>
                 <div className="absolute bottom-3 left-3 right-3 text-white">
                   <h4 className="text-sm font-extrabold truncate">{report.address}</h4>
@@ -208,7 +212,7 @@ export default function ReportsPage() {
                     variant="ghost" 
                     size="sm"
                     icon={<Download className="w-3.5 h-3.5" />}
-                    onClick={() => setNotification("Official report PDF downloaded to your files.")}
+                    onClick={() => handleDownload(report)}
                   >
                     Download
                   </Button>
@@ -241,7 +245,7 @@ export default function ReportsPage() {
               <span className="text-xs text-slate-500">Page 1 of 2</span>
               <div className="flex items-center space-x-3">
                 <Button id="preview-print-btn" variant="secondary" size="sm" icon={<Printer className="w-4 h-4" />}>Print</Button>
-                <Button id="preview-dl-btn" variant="secondary" size="sm" icon={<Download className="w-4 h-4" />} onClick={() => { setPreviewReport(null); setNotification("Download completed."); }}>Download PDF</Button>
+                <Button id="preview-dl-btn" variant="secondary" size="sm" icon={<Download className="w-4 h-4" />} onClick={() => { handleDownload(previewReport); setPreviewReport(null); }}>Download PDF</Button>
                 <Button id="preview-close-btn" variant="primary" size="sm" onClick={() => setPreviewReport(null)}>Close Viewer</Button>
               </div>
             </div>

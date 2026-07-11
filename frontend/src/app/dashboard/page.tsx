@@ -1,19 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
-import { 
-  Sparkles, 
-  ArrowRight, 
-  TrendingUp, 
-  Clock, 
-  CheckCircle, 
-  FileText, 
-  Eye, 
-  Download, 
-  Trash2, 
-  Share2, 
-  X,
-  AlertCircle
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  Sparkles,
+  ArrowRight,
+  TrendingUp,
+  Clock,
+  CheckCircle,
+  FileText,
+  Eye,
+  Download,
+  Trash2,
+  Share2,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -21,37 +19,69 @@ import { Badge } from "@/components/ui/Badge";
 import { Table, TableRow, TableCell } from "@/components/ui/Table";
 import { Modal } from "@/components/ui/Modal";
 import { formatCurrency } from "@/lib/utils";
+import { apiFetch } from "@/lib/apiClient";
 
-// Mock recent analyses matching specifications
-const INITIAL_ANALYSES = [
-  { id: "prop-1", address: "123 Oak St, Austin TX", date: "Dec 15, 2024", status: "status-complete" as const, statusLabel: "Complete", roi: "18.5%", cost: 24000 },
-  { id: "prop-2", address: "456 Elm Ave, Austin TX", date: "Dec 13, 2024", status: "status-progress" as const, statusLabel: "Analyzing", roi: "22.0%", cost: 35000 },
-  { id: "prop-3", address: "789 Pine Rd, Austin TX", date: "Dec 10, 2024", status: "status-complete" as const, statusLabel: "Complete", roi: "15.0%", cost: 12000 },
-  { id: "prop-4", address: "1012 Maple Dr, Dallas TX", date: "Dec 05, 2024", status: "status-error" as const, statusLabel: "Error", roi: "--", cost: 0 },
-];
+interface AnalysisSummary {
+  id: string;
+  address: string;
+  date: string;
+  status: "status-complete" | "status-progress" | "status-error";
+  statusLabel: string;
+  roi: number | null;
+  cost: number;
+  reportUrl: string | null;
+}
 
 export default function DashboardPage() {
-  const [analyses, setAnalyses] = useState(INITIAL_ANALYSES);
-  const [activeNotification, setActiveNotification] = useState(true);
+  const [analyses, setAnalyses] = useState<AnalysisSummary[]>([]);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
   const [selectedProperty, setSelectedProperty] = useState<string | null>(null);
-  
-  // Quick stats matching specifications
-  const stats = [
-    { title: "Analyses", value: "12", trend: "↑ 14%", trendColor: "text-emerald-400", desc: "This month" },
-    { title: "Avg ROI", value: "18.5%", trend: "↑ 2.4%", trendColor: "text-emerald-400", desc: "This month" },
-    { title: "Reports", value: "8", trend: "→ Stable", trendColor: "text-slate-400", desc: "Generated" }
-  ];
 
-  const handleDelete = (id: string) => {
-    setAnalyses(prev => prev.filter(a => a.id !== id));
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiFetch("/api/v1/analyses");
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        setAnalyses(data);
+      } catch (error) {
+        console.error("Failed to load analyses:", error);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const stats = useMemo(() => {
+    const roiValues = analyses.map(a => a.roi).filter((r): r is number => typeof r === "number");
+    const avgRoi = roiValues.length > 0 ? roiValues.reduce((sum, r) => sum + r, 0) / roiValues.length : null;
+    const reportsCount = analyses.filter(a => a.reportUrl).length;
+
+    return [
+      { title: "Analyses", value: String(analyses.length), desc: "Total" },
+      { title: "Avg ROI", value: avgRoi !== null ? `${avgRoi.toFixed(1)}%` : "--", desc: "Across completed analyses" },
+      { title: "Reports", value: String(reportsCount), desc: "Generated" },
+    ];
+  }, [analyses]);
+
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await apiFetch(`/api/v1/analyses/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setAnalyses(prev => prev.filter(a => a.id !== id));
+      }
+    } catch (error) {
+      console.error("Failed to delete analysis:", error);
+    }
   };
 
-  const handleShare = (address: string) => {
-    const generatedUrl = `https://homeready.ai/share/report-${Math.random().toString(36).substr(2, 9)}`;
-    setShareUrl(generatedUrl);
-    setSelectedProperty(address);
+  const handleShare = (prop: AnalysisSummary) => {
+    if (!prop.reportUrl) return;
+    setShareUrl(`${window.location.origin}${prop.reportUrl}`);
+    setSelectedProperty(prop.address);
     setShareModalOpen(true);
   };
 
@@ -77,43 +107,14 @@ export default function DashboardPage() {
         </Button>
       </Card>
 
-      {/* Alert Banner for Unreviewed Items */}
-      {activeNotification && (
-        <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex items-center justify-between text-amber-300 text-xs md:text-sm font-semibold">
-          <div className="flex items-center space-x-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>You have 3 unreviewed recommendations from yesterday for <strong>123 Oak St, ATX</strong>.</span>
-          </div>
-          <div className="flex items-center space-x-4">
-            <button 
-              id="view-unreviewed-btn"
-              onClick={() => window.location.href = "/analyze/prop-1"}
-              className="text-white hover:underline whitespace-nowrap"
-            >
-              View Now &gt;
-            </button>
-            <button 
-              id="dismiss-unreviewed-btn"
-              onClick={() => setActiveNotification(false)}
-              className="text-slate-500 hover:text-slate-400 p-1"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Quick Stats Grid */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {stats.map((stat, idx) => (
-          <Card key={idx} hoverEffect={false} className="p-6 flex justify-between items-center bg-slate-900/40 border-white/5 shadow-md">
+          <Card key={idx} hoverEffect={false} className="p-6 bg-slate-900/40 border-white/5 shadow-md">
             <div className="space-y-1">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{stat.title}</span>
               <h3 className="text-3xl font-extrabold text-white tracking-tight">{stat.value}</h3>
               <p className="text-[11px] text-slate-400">{stat.desc}</p>
-            </div>
-            <div className={`text-xs font-bold ${stat.trendColor} bg-white/5 border border-white/5 px-2.5 py-1 rounded-lg`}>
-              {stat.trend}
             </div>
           </Card>
         ))}
@@ -122,6 +123,13 @@ export default function DashboardPage() {
       {/* Recent Analyses Table */}
       <section className="space-y-4">
         <h2 className="text-xl font-bold tracking-tight text-white">Recent Property Analyses</h2>
+        {analyses.length === 0 ? (
+          <Card className="p-8 text-center bg-slate-900/40 border-white/5">
+            <p className="text-sm text-slate-400">
+              No analyses yet. Upload your first property to get started.
+            </p>
+          </Card>
+        ) : (
         <Table headers={["Property Address", "Date Created", "Analysis Status", "Calculated ROI", "Actions"]}>
           {analyses.map((prop) => (
             <TableRow key={prop.id} id={`row-${prop.id}`}>
@@ -130,7 +138,9 @@ export default function DashboardPage() {
               <TableCell>
                 <Badge variant={prop.status}>{prop.statusLabel}</Badge>
               </TableCell>
-              <TableCell className="font-extrabold text-emerald-400">{prop.roi}</TableCell>
+              <TableCell className="font-extrabold text-emerald-400">
+                {typeof prop.roi === "number" ? `${prop.roi.toFixed(1)}%` : "--"}
+              </TableCell>
               <TableCell>
                 <div className="flex items-center space-x-2">
                   <Button 
@@ -152,8 +162,8 @@ export default function DashboardPage() {
                     variant="ghost" 
                     size="sm"
                     icon={<Share2 className="w-3.5 h-3.5" />}
-                    onClick={() => handleShare(prop.address)}
-                    disabled={prop.status !== "status-complete"}
+                    onClick={() => handleShare(prop)}
+                    disabled={!prop.reportUrl}
                   >
                     Share
                   </Button>
@@ -169,6 +179,7 @@ export default function DashboardPage() {
             </TableRow>
           ))}
         </Table>
+        )}
       </section>
 
       {/* Trending Upgrades & Insights Section */}
