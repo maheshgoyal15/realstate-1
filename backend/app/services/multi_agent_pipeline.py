@@ -7,7 +7,7 @@ import logging
 import ssl
 import urllib.request
 import urllib.error
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 from PIL import Image, ImageFilter, ImageOps
 import psycopg2
 import psycopg2.extras
@@ -197,6 +197,78 @@ TIMELINE_TAXONOMY = {
     }
 }
 
+# Minimum whole-house budget share below which a room isn't worth a standalone
+# renovation line item. Rooms under this are dropped and their budget flows to
+# higher-ROI rooms, so money concentrates where it can fund a real renovation
+# instead of promising a full remodel for a few hundred dollars.
+MIN_VIABLE_ROOM_BUDGET = 2500.0
+
+
+def allocate_house_budget(weights: Dict[str, float], total_budget: float) -> Dict[str, float]:
+    """Distribute the whole-house budget across rooms by ROI weight, but never
+    leave a room with an unrealistically small share. Any room that would fall
+    below MIN_VIABLE_ROOM_BUDGET is dropped (lowest weight first) and its budget
+    is redistributed to the remaining rooms. Guarantees sum(result) == total."""
+    rooms = {r: w for r, w in weights.items() if w and w > 0}
+    while rooms:
+        sw = sum(rooms.values()) or 1.0
+        alloc = {r: round((w / sw) * total_budget, 2) for r, w in rooms.items()}
+        under = [r for r, a in alloc.items() if a < MIN_VIABLE_ROOM_BUDGET]
+        if not under or len(rooms) == 1:
+            return alloc
+        drop = min(under, key=lambda r: rooms[r])
+        rooms.pop(drop)
+    return {}
+
+
+def build_room_scope(room_budget: float, has_water: bool, specs: Dict[str, str]) -> List[Dict[str, Any]]:
+    """Return itemized upgrades whose costs sum exactly to room_budget, choosing a
+    scope tier the budget can realistically fund. Cosmetic budgets get paint /
+    hardware / lighting refreshes only — custom cabinetry and stone surfaces
+    appear only once the budget clears their real cost floor. This keeps the
+    itemized additions honest: a $2,500 room never claims a custom cabinet."""
+    cab = specs.get("cabinets", "Custom cabinetry")
+    shelv = specs.get("shelving", "Open shelving")
+    surf = specs.get("surface", "Upgraded surfaces")
+    fix = specs.get("fixtures", "Architectural lighting")
+    fixture_detail = "Upgraded sink, faucet and fixtures" if has_water else "New lighting and fixtures"
+
+    if room_budget >= 8000:
+        # Full renovation: structural cabinetry and stone surfaces are affordable.
+        items = [
+            (f"Custom {surf}", 0.34, "Premium stone/quartz surfaces replacing the existing countertops"),
+            (cab, 0.40, "Full custom cabinetry with soft-close hardware"),
+            (shelv, 0.14, "Built-in shelving and storage racks"),
+            (fix, 0.12, fixture_detail),
+        ]
+    elif room_budget >= 4000:
+        # Mid renovation: refacing and engineered surfaces, not a full rebuild.
+        items = [
+            (f"Cabinet refacing ({cab.split(',')[0]})", 0.42, "Reface existing cabinet boxes with new doors, fronts and hardware"),
+            (f"Engineered {surf}", 0.30, "Durable engineered/laminate surfaces with an updated backsplash"),
+            (shelv, 0.16, "Open shelving and storage organizers"),
+            (fix, 0.12, fixture_detail),
+        ]
+    else:
+        # Cosmetic refresh only: no cabinet or surface replacement claimed.
+        items = [
+            ("Repaint existing cabinetry & trim", 0.40, "Professional repaint of existing cabinets and millwork (no replacement)"),
+            ("Updated hardware & fixtures", 0.20, "New handles, pulls and fixtures"),
+            ("Refreshed lighting", 0.22, "Updated ceiling and task lighting"),
+            ("Floating accent shelves", 0.18, "Lightweight wall-mounted display shelves"),
+        ]
+
+    scope = [
+        {"feature": label, "item_cost": round(room_budget * weight, 2), "added_details": detail}
+        for label, weight, detail in items
+    ]
+    # Reconcile rounding drift so the itemized costs sum to the budget exactly.
+    drift = round(room_budget - sum(i["item_cost"] for i in scope), 2)
+    if scope:
+        scope[0]["item_cost"] = round(scope[0]["item_cost"] + drift, 2)
+    return scope
+
+
 def _get_gemini_api_key() -> str:
     key = os.getenv("GEMINI_API_KEY")
     if not key:
@@ -240,14 +312,23 @@ def _call_gemini_vlm(prompt_text: str, image_b64: str = None) -> str:
         logger.warning(f"VLM API call failed ({e}). Returning fallback JSON.")
     return "{}"
 
-def _generate_render_for_prompt(source_img: Image.Image, source_b64: str, prompt_text: str, rec_id: str, tier_name: str, cost: float, room_type: str = "Kitchen") -> str:
-    key = _get_gemini_api_key()
+def _generate_render_for_prompt(source_img: Image.Image, source_b64: str, prompt_text: str, rec_id: str, tier_name: str, cost: float, room_type: str = "Kitchen") -> Optional[str]:
+    """Generate a genuine image-to-image upgrade of the SOURCE photo via the AI
+    image model. Returns the render URL only when the model actually produces an
+    edited version of the uploaded image. If no real render can be produced (no
+    API key, API failure), returns None — we never substitute a different stock
+    room, so the UI can simply omit the concept image rather than mislead."""
+    key = os.getenv("GEMINI_API_KEY")
+    if not key:
+        logger.info(f"No GEMINI_API_KEY configured; skipping AI render for {room_type} (no fabricated image will be shown).")
+        return None
+
     model = os.getenv("GEMINI_IMAGE_MODEL", "gemini-3.1-flash-image")
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
-    
+
     filename = f"{rec_id}_{tier_name}.png"
     filepath = os.path.join(GENERATED_IMAGES_DIR, filename)
-    
+
     payload = {
         "contents": [{
             "parts": [
@@ -274,19 +355,11 @@ def _generate_render_for_prompt(source_img: Image.Image, source_b64: str, prompt
                         logger.info(f"Generated {tier_name} render: {filename}")
                         return f"/api/v1/images/{filename}"
     except Exception as e:
-        logger.warning(f"AI image model call failed ({e}). Falling back to room-appropriate composite.")
-    
-    from app.services.image_generator import transform_to_modernized_image
-    _, after_img = transform_to_modernized_image(
-        source_img=source_img,
-        category=f"{room_type} Remodel Upgrade",
-        style=tier_name,
-        estimated_cost=cost,
-        roi=46.0,
-        rec_id=f"{rec_id}_{tier_name}"
-    )
-    after_img.save(filepath, "PNG")
-    return f"/api/v1/images/{filename}"
+        logger.warning(f"AI image model call failed ({e}). No genuine upgraded render available; omitting concept image for {room_type}.")
+
+    # Deliberately no fabricated fallback: if the model didn't return an edited
+    # version of the user's own photo, we show no 'after' image at all.
+    return None
 
 
 def run_multi_agent_pipeline_for_images(
@@ -427,11 +500,15 @@ def run_multi_agent_pipeline_for_images(
                 break
         raw_weights[r_type] = matched_w
 
-    sum_weights = sum(raw_weights.values()) or 1.0
-    room_budget_allocations: Dict[str, float] = {
-        r_type: round((w / sum_weights) * total_house_budget, 2)
-        for r_type, w in raw_weights.items()
-    }
+    # Allocate by ROI weight, dropping rooms whose share would be too small to
+    # fund a real renovation (their budget flows to higher-priority rooms).
+    room_budget_allocations: Dict[str, float] = allocate_house_budget(raw_weights, total_house_budget)
+
+    # Only rooms that received a viable budget move forward as recommendations.
+    selected_room_types = [r for r in selected_room_types if r in room_budget_allocations]
+    dropped_rooms = [r for r in raw_weights if r not in room_budget_allocations]
+    if dropped_rooms:
+        logger.info(f"Dropped low-budget rooms (< ${MIN_VIABLE_ROOM_BUDGET:,.0f} share): {dropped_rooms}. Budget redistributed to {selected_room_types}.")
 
     # ------------------------------------------------------------------
     # PHASE 2C: Master Room Design Plan Agent (Global Style Lock)
@@ -484,31 +561,28 @@ def run_multi_agent_pipeline_for_images(
     aggregated_defects = ["outdated_finishes", "budget_optimization"]
 
     for room_type, cluster in room_clusters.items():
+        # Skip rooms that didn't receive a viable budget share (dropped/redistributed).
+        if room_type not in room_budget_allocations:
+            logger.info(f"Skipping '{room_type}' — no viable whole-house budget share allocated.")
+            continue
+
         master_plan = master_room_plans[room_type]
         room_tax = _get_room_taxonomy(room_type, style_preference)
         has_water = master_plan.get("has_water_fixtures", False)
-        room_share_budget = room_budget_allocations.get(room_type, round(total_house_budget / max(1, len(selected_room_types)), 2))
+        room_share_budget = room_budget_allocations[room_type]
 
         cab_spec = master_plan.get("cabinet_and_storage_spec") or room_tax["cabinets"]
         shelv_spec = master_plan.get("shelving_and_rack_spec") or room_tax["shelving_racks"]
         surf_spec = master_plan.get("surface_spec") or room_tax["primary_surface"]
         fix_spec = master_plan.get("fixture_spec") or (room_tax["fixtures"] if has_water else "Architectural lighting")
 
-        # Synthesize Itemized Additions & Upgrades matching this room's exact budget share
-        if has_water:
-            itemized_additions = [
-                {"feature": f"Custom {surf_spec}", "item_cost": round(room_share_budget * 0.38, 2), "added_details": "Replaces existing countertops/surfaces shown in render"},
-                {"feature": f"{cab_spec}", "item_cost": round(room_share_budget * 0.40, 2), "added_details": "Refaces and upgrades all visible cabinetry with custom hardware"},
-                {"feature": f"{shelv_spec}", "item_cost": round(room_share_budget * 0.12, 2), "added_details": "Custom floating storage shelves and organizer racks"},
-                {"feature": f"{fix_spec}", "item_cost": round(room_share_budget * 0.10, 2), "added_details": "Upgraded commercial sink and water fixture"}
-            ]
-        else:
-            itemized_additions = [
-                {"feature": f"Custom {cab_spec}", "item_cost": round(room_share_budget * 0.45, 2), "added_details": "Built-in wardrobes and wall-mounted storage cabinets"},
-                {"feature": f"{shelv_spec}", "item_cost": round(room_share_budget * 0.30, 2), "added_details": "Custom architectural wall racks and open display shelving"},
-                {"feature": f"Designer Feature Wall ({surf_spec})", "item_cost": round(room_share_budget * 0.15, 2), "added_details": "Textured accent wall and trim detailing"},
-                {"feature": f"{fix_spec}", "item_cost": round(room_share_budget * 0.10, 2), "added_details": "Architectural LED lighting upgrade"}
-            ]
+        # Build itemized additions whose costs sum to the budget AND stay realistic
+        # for that budget tier (no custom cabinetry claimed on a cosmetic budget).
+        itemized_additions = build_room_scope(
+            room_share_budget,
+            has_water,
+            {"cabinets": cab_spec, "shelving": shelv_spec, "surface": surf_spec, "fixtures": fix_spec},
+        )
 
         for img_idx, img_item in enumerate(cluster):
             rec_id = img_item["rec_id"]
@@ -541,8 +615,10 @@ def run_multi_agent_pipeline_for_images(
                 master_render_url = _generate_render_for_prompt(source_img, clean_b64, selected_prompt, rec_id, "house_allocated_tier", room_share_budget, room_type)
                 canonical_room_renders[room_type] = master_render_url
             else:
-                # Reuse canonical master render for duplicate angles of same room
-                master_render_url = canonical_room_renders.get(room_type, before_url)
+                # Reuse the room's canonical render for duplicate angles. May be
+                # None when no genuine AI upgrade could be produced — we do NOT
+                # fall back to the before photo or any stock image.
+                master_render_url = canonical_room_renders.get(room_type)
 
             # Phase 5 QA Audit
             audit = {"status": "PASS", "confidence_score": 0.98}

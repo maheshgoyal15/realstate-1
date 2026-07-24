@@ -146,8 +146,6 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
     return () => { cancelled = true; };
   }, []);
 
-  const selectedTheme = selectedRec ? findVisualizerTheme(selectedRec.category) : undefined;
-
   // Auto-reset visualizer theme when selecting a different recommendation
   useEffect(() => {
     if (selectedRec) {
@@ -818,7 +816,9 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
                   <span className="text-[10px] font-bold text-accent-600 uppercase tracking-widest block">HomeReady Whole-House Design Studio</span>
-                  <span className="text-xs font-extrabold text-ink">Photorealistic Concept Render vs. Original Space:</span>
+                  <span className="text-xs font-extrabold text-ink">
+                    {selectedRec.afterImageUrl ? "Photorealistic Concept Render vs. Original Space:" : "Your Uploaded Space & Planned Scope:"}
+                  </span>
                 </div>
 
                 {/* Single Master Render indicator */}
@@ -831,11 +831,11 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
 
               {/* Slider comparative container */}
               <div className="h-72 md:h-96 w-full rounded-2xl overflow-hidden bg-surface-sunken relative border border-surface-border shadow-card select-none">
-                {(selectedRec.afterImageUrl || selectedTheme) ? (
+                {selectedRec.afterImageUrl ? (
                   <div className="relative w-full h-full">
-                    {/* Before Image (underneath) */}
+                    {/* Before Image (underneath) — always the user's own uploaded photo */}
                     <img
-                      src={selectedRec.beforeImageUrl || uploadedBeforeImg || selectedTheme?.before}
+                      src={selectedRec.beforeImageUrl || uploadedBeforeImg}
                       alt="Before upgrade"
                       className="absolute inset-0 w-full h-full object-cover pointer-events-none"
                     />
@@ -843,9 +843,9 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                       Original Photo (Before)
                     </div>
 
-                    {/* After Image (overlay, clipped based on drag slider) */}
+                    {/* After Image (overlay, clipped based on drag slider) — the genuine AI upgrade of the user's photo */}
                     <img
-                      src={selectedRec.afterImageUrl || selectedRec.tier_15k_url || selectedRec.tier15kUrl}
+                      src={selectedRec.afterImageUrl}
                       alt="AI generated remodel concept"
                       className="absolute inset-0 w-full h-full object-cover pointer-events-none z-20"
                       style={{
@@ -898,10 +898,27 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                       aria-label="Drag before-after visualizer comparison slider"
                     />
                   </div>
+                ) : (selectedRec.beforeImageUrl || uploadedBeforeImg) ? (
+                  <div className="relative w-full h-full">
+                    {/* No genuine AI upgrade render available — show the user's actual
+                        uploaded photo rather than a fabricated/stock concept image. */}
+                    <img
+                      src={selectedRec.beforeImageUrl || uploadedBeforeImg}
+                      alt="Your uploaded room photo"
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                    <div className="absolute top-4 left-4 bg-navy-950/75 backdrop-blur-sm text-white border border-white/10 font-bold text-[10px] px-2.5 py-1 rounded-lg shadow-card">
+                      Your Uploaded Photo
+                    </div>
+                    <div className="absolute inset-x-0 bottom-0 bg-navy-950/80 backdrop-blur-sm text-white p-3 text-center">
+                      <p className="text-[11px] font-semibold">A photorealistic upgrade render isn&apos;t available for this room.</p>
+                      <p className="text-[10px] text-white/70">The cost breakdown and scope below still apply to your space.</p>
+                    </div>
+                  </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center w-full h-full text-ink-subtle p-4">
                     <Sparkles className="w-12 h-12 text-accent-400 mb-3" />
-                    <p className="font-bold text-sm text-ink-muted">No style preview available for this upgrade category yet.</p>
+                    <p className="font-bold text-sm text-ink-muted">No concept preview available for this room.</p>
                   </div>
                 )}
               </div>
