@@ -74,6 +74,17 @@ function ensureArray<T = any>(val: any): T[] {
   return [];
 }
 
+// Backend scope items arrive as pre-formatted strings, e.g.
+// "[+] Calacatta Quartz Countertops ($2,850) — Honed finish". Pull them apart so
+// the UI can render each as a clickable pill badge with its own dollar figure.
+function parseScopeItem(raw: string): { label: string; cost: number; details: string } {
+  const m = raw.match(/^\s*\[\+\]\s*(.*?)\s*\(\$([\d,]+(?:\.\d+)?)\)\s*(?:[—-]\s*)?(.*)$/);
+  if (m) {
+    return { label: m[1].trim(), cost: Number(m[2].replace(/,/g, "")), details: m[3].trim() };
+  }
+  return { label: raw.replace(/^\s*\[\+\]\s*/, "").trim(), cost: 0, details: "" };
+}
+
 // A recommendation category matches a contractor specialty loosely (e.g. "Kitchen
 // Remodel" should surface contractors tagged "Kitchens").
 function matchesSpecialty(category: string, specialty: string) {
@@ -103,6 +114,12 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
   const [selectedRec, setSelectedRec] = useState<any | null>(null);
   const [modalBeforeAfterPct, setModalBeforeAfterPct] = useState(50);
   const [visualizerTheme, setVisualizerTheme] = useState<string>("");
+  // Which added item's badge is currently highlighted on the before/after slider.
+  const [selectedItemIdx, setSelectedItemIdx] = useState<number | null>(null);
+
+  // Live whole-house budget dial. Null until results load, then seeded from the
+  // backend's allocated total so the slider starts at the real figure.
+  const [budgetTotal, setBudgetTotal] = useState<number | null>(null);
 
   // Real contractor network, fetched once and matched against each recommendation's category.
   const [contractors, setContractors] = useState<Contractor[]>([]);
@@ -137,8 +154,20 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
       const theme = findVisualizerTheme(selectedRec.category);
       setVisualizerTheme(theme?.afterThemes[0]?.value ?? "");
       setModalBeforeAfterPct(50);
+      setSelectedItemIdx(null);
     }
   }, [selectedRec]);
+
+  // Parsed, structured list of items added to the currently open recommendation.
+  const selectedItems = useMemo(
+    () =>
+      selectedRec
+        ? ensureArray<any>(selectedRec.scope).map((s: any) =>
+            parseScopeItem(typeof s === "string" ? s : s?.item ?? String(s))
+          )
+        : [],
+    [selectedRec]
+  );
 
   const matchedContractors = useMemo(() => {
     if (!selectedRec) return [];
@@ -320,6 +349,23 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
     return result;
   }, [recommendations, filterRoi, filterTime, sortField]);
 
+  // Whole-house budget allocation. `baseHouseTotal` is the sum the backend
+  // allocated across rooms; the dial rescales every room's share proportionally.
+  const baseHouseTotal = useMemo(
+    () => recommendations.reduce((sum, r) => sum + (r.estimatedCost || 0), 0),
+    [recommendations]
+  );
+
+  useEffect(() => {
+    if (baseHouseTotal > 0 && budgetTotal === null) {
+      setBudgetTotal(Math.min(100000, Math.max(5000, Math.round(baseHouseTotal))));
+    }
+  }, [baseHouseTotal, budgetTotal]);
+
+  const scaleFactor = budgetTotal !== null && baseHouseTotal > 0 ? budgetTotal / baseHouseTotal : 1;
+  // Scale a backend dollar figure to the user's current whole-house budget dial.
+  const displayCost = (v: number) => Math.round((v || 0) * scaleFactor);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-6 text-center">
@@ -449,6 +495,60 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
           </Button>
         </div>
       </div>
+
+      {/* Live Whole-House Budget Dial */}
+      {recommendations.length > 0 && budgetTotal !== null && (
+        <Card hoverEffect={false} className="p-6 md:p-7 space-y-5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-accent-600">
+                Whole-House Budget Allocator
+              </span>
+              <h3 className="text-lg font-bold text-ink tracking-tight">
+                Set your total remodel budget
+              </h3>
+              <p className="text-[11px] text-ink-muted mt-0.5">
+                Drag the dial — every room&apos;s allocated share updates instantly.
+              </p>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-[9px] font-bold uppercase tracking-widest text-ink-subtle">Total House Budget</p>
+              <p className="text-3xl font-extrabold text-ink tabular-nums">{formatCurrency(budgetTotal)}</p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <input
+              id="whole-house-budget-dial"
+              type="range"
+              min={5000}
+              max={100000}
+              step={1000}
+              value={budgetTotal}
+              onChange={(e) => setBudgetTotal(Number(e.target.value))}
+              aria-label="Whole-house remodel budget"
+              className="w-full accent-accent-600 cursor-pointer"
+            />
+            <div className="flex justify-between text-[10px] font-semibold text-ink-subtle tabular-nums">
+              <span>$5,000</span>
+              <span>$100,000</span>
+            </div>
+          </div>
+
+          {/* Per-room allocation preview, live-scaled from the dial */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {processedRecommendations.map((rec) => (
+              <div
+                key={`alloc-${rec.id}`}
+                className="bg-surface-sunken border border-surface-border rounded-xl p-3 text-xs"
+              >
+                <p className="font-semibold text-ink truncate" title={rec.category}>{rec.category}</p>
+                <p className="font-extrabold text-accent-600 tabular-nums mt-1">{formatCurrency(displayCost(rec.estimatedCost))}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Two-Column Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -614,12 +714,12 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                     {/* Metrics Grid */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-surface-sunken p-4 rounded-xl border border-surface-border text-xs">
                       <div>
-                        <p className="text-ink-subtle uppercase tracking-widest font-bold text-[9px]">Estimated Cost</p>
-                        <p className="font-extrabold text-ink mt-1">{formatCurrency(rec.estimatedCost)}</p>
+                        <p className="text-ink-subtle uppercase tracking-widest font-bold text-[9px]">Allocated Budget</p>
+                        <p className="font-extrabold text-ink mt-1">{formatCurrency(displayCost(rec.estimatedCost))}</p>
                       </div>
                       <div>
                         <p className="text-ink-subtle uppercase tracking-widest font-bold text-[9px]">Market Value Add</p>
-                        <p className="font-extrabold text-success mt-1">{formatCurrency(rec.projectedValueIncrease)}</p>
+                        <p className="font-extrabold text-success mt-1">{formatCurrency(displayCost(rec.projectedValueIncrease))}</p>
                       </div>
                       <div>
                         <p className="text-ink-subtle uppercase tracking-widest font-bold text-[9px]">Estimated ROI</p>
@@ -724,7 +824,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                 {/* Single Master Render indicator */}
                 <div className="flex gap-2 items-center">
                   <span className="text-[11px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-lg">
-                    {formatCurrency(selectedRec.estimatedCost)} Whole-House Budget Share
+                    {formatCurrency(displayCost(selectedRec.estimatedCost))} Whole-House Budget Share
                   </span>
                 </div>
               </div>
@@ -772,6 +872,21 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                       </div>
                     </div>
 
+                    {/* Highlight callout for the item selected via its pill badge */}
+                    {selectedItemIdx !== null && selectedItems[selectedItemIdx] && (
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 pointer-events-none max-w-[90%] animate-in fade-in slide-in-from-bottom-2 duration-200">
+                        <div className="bg-navy-950/90 backdrop-blur-sm border border-accent-500/40 rounded-xl px-3.5 py-2 shadow-card flex items-center gap-2 text-white">
+                          <Sparkles className="w-3.5 h-3.5 text-accent-400 shrink-0" />
+                          <span className="text-[11px] font-bold">{selectedItems[selectedItemIdx].label}</span>
+                          {selectedItems[selectedItemIdx].cost > 0 && (
+                            <span className="text-[11px] font-extrabold text-accent-300 tabular-nums">
+                              {formatCurrency(displayCost(selectedItems[selectedItemIdx].cost))}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Invisible Input Slider range control covering entire container */}
                     <input
                       type="range"
@@ -791,37 +906,68 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                 )}
               </div>
 
-              {/* High-Impact Visual Changes Manifest right beneath picture */}
-              <div className="bg-gradient-to-r from-accent-50/70 via-surface-sunken to-accent-50/70 border border-accent-200/80 rounded-2xl p-4 space-y-2 text-xs">
-                <div className="flex items-center justify-between">
+              {/* Exact Items Added — clickable pill badges that highlight the slider */}
+              <div className="bg-surface-sunken border border-accent-200/80 rounded-2xl p-4 space-y-3 text-xs">
+                <div className="flex items-center justify-between gap-2">
                   <span className="font-extrabold uppercase tracking-widest text-[10px] text-accent-700 flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-accent-600" />
-                    <span>Exact Changes & Items Added to this Room Picture</span>
+                    <span>Exact Items Added to Picture</span>
                   </span>
-                  <span className="text-[10px] font-bold text-ink-muted">Allocated Budget Share: {formatCurrency(selectedRec.estimatedCost)}</span>
+                  <span className="text-[10px] font-bold text-ink-muted">Tap a badge to highlight it</span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                  {selectedRec.scope.map((item: { item: string; checked: boolean }, idx: number) => (
-                    <div key={idx} className="flex items-start space-x-2 bg-white/90 border border-surface-border rounded-xl p-2.5 text-xs text-ink shadow-2xs">
-                      <div className="w-4 h-4 rounded-md bg-emerald-500/15 text-emerald-600 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
-                        ✓
-                      </div>
-                      <span className="font-medium">{item.item}</span>
-                    </div>
-                  ))}
+                <div className="flex flex-wrap gap-2">
+                  {selectedItems.map((item, idx) => {
+                    const active = selectedItemIdx === idx;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          if (active) {
+                            setSelectedItemIdx(null);
+                          } else {
+                            setSelectedItemIdx(idx);
+                            // Reveal the upgraded render so the highlighted item is visible.
+                            setModalBeforeAfterPct(85);
+                          }
+                        }}
+                        aria-pressed={active}
+                        title={item.details || item.label}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-semibold transition-colors",
+                          active
+                            ? "bg-accent-600 border-accent-600 text-white shadow-card"
+                            : "bg-white border-surface-border text-ink hover:border-accent-300 hover:bg-accent-50"
+                        )}
+                      >
+                        <span className={cn("font-mono", active ? "text-accent-200" : "text-accent-600")}>+</span>
+                        <span>{item.label}</span>
+                        {item.cost > 0 && (
+                          <span className={cn("tabular-nums font-extrabold", active ? "text-white" : "text-ink-muted")}>
+                            {formatCurrency(displayCost(item.cost))}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
+                {selectedItemIdx !== null && selectedItems[selectedItemIdx]?.details && (
+                  <p className="text-[11px] text-ink-muted leading-relaxed border-t border-surface-border pt-2">
+                    {selectedItems[selectedItemIdx].details}
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Key Metrics Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-surface-sunken border border-surface-border rounded-2xl p-5 text-center text-xs">
               <div className="space-y-1">
-                <span className="text-ink-subtle font-bold uppercase tracking-wider text-[9px]">Estimated Cost</span>
-                <p className="text-base font-extrabold text-ink">{formatCurrency(selectedRec.estimatedCost)}</p>
+                <span className="text-ink-subtle font-bold uppercase tracking-wider text-[9px]">Allocated Budget</span>
+                <p className="text-base font-extrabold text-ink">{formatCurrency(displayCost(selectedRec.estimatedCost))}</p>
               </div>
               <div className="space-y-1">
                 <span className="text-ink-subtle font-bold uppercase tracking-wider text-[9px]">Market Value Increase</span>
-                <p className="text-base font-extrabold text-success">{formatCurrency(selectedRec.projectedValueIncrease)}</p>
+                <p className="text-base font-extrabold text-success">{formatCurrency(displayCost(selectedRec.projectedValueIncrease))}</p>
               </div>
               <div className="space-y-1">
                 <span className="text-ink-subtle font-bold uppercase tracking-wider text-[9px]">Estimated ROI</span>
@@ -843,10 +989,15 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
             <div className="space-y-3">
               <h5 className="font-bold text-xs uppercase tracking-widest text-accent-600">Scope of Work</h5>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {selectedRec.scope.map((item: { item: string; checked: boolean }, idx: number) => (
-                  <div key={idx} className="flex items-center space-x-3 bg-surface-sunken border border-surface-border rounded-xl p-3 text-xs text-ink">
-                    <CheckSquare className={cn("w-4 h-4", item.checked ? "text-accent-500" : "text-ink-subtle")} />
-                    <span>{item.item}</span>
+                {selectedItems.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between gap-3 bg-surface-sunken border border-surface-border rounded-xl p-3 text-xs text-ink">
+                    <div className="flex items-center space-x-3 min-w-0">
+                      <CheckSquare className="w-4 h-4 text-accent-500 shrink-0" />
+                      <span className="truncate" title={item.details || item.label}>{item.label}</span>
+                    </div>
+                    {item.cost > 0 && (
+                      <span className="font-extrabold text-ink-muted tabular-nums shrink-0">{formatCurrency(displayCost(item.cost))}</span>
+                    )}
                   </div>
                 ))}
               </div>

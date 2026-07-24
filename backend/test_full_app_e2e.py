@@ -6,7 +6,28 @@ import urllib.request
 import urllib.error
 
 BASE_URL = "http://127.0.0.1:8000/api/v1"
-IMAGE_PATH = "/Users/maheshgoyal/Documents/Real-Estate-AI/images/Screenshot 2026-07-17 at 5.46.46 PM.png"
+def _resolve_image_path() -> str:
+    """Locate a sample property photo portably across machines.
+
+    Priority: explicit E2E_IMAGE_PATH env var, then the repo's images/ dir
+    (any *.png/*.jpg), so the suite runs regardless of the developer's home path.
+    """
+    env_path = os.environ.get("E2E_IMAGE_PATH")
+    if env_path and os.path.exists(env_path):
+        return env_path
+
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    images_dir = os.path.join(repo_root, "images")
+    if os.path.isdir(images_dir):
+        for name in sorted(os.listdir(images_dir)):
+            if name.lower().endswith((".png", ".jpg", ".jpeg")):
+                return os.path.join(images_dir, name)
+    return os.path.join(images_dir, "sample.png")
+
+
+IMAGE_PATH = _resolve_image_path()
+
+_SUITE_START = time.time()
 
 print("================================================================")
 print(" 🧪 HOMEREADY AI: FULL APP END-TO-END VERIFICATION SUITE")
@@ -95,13 +116,12 @@ print(f"  ROI Percentage: +{rec.get('roi_percentage')}%")
 print(f"  Before Image URL: {rec.get('before_image_url')}")
 print(f"  After Image URL:  {rec.get('after_image_url')}")
 
-# Check 5k, 10k, 15k Image URLs
+# Verify the actual render assets the pipeline returns. The app moved from fixed
+# 5k/10k/15k tier renders to a single whole-house budget-allocated render, so we
+# validate the real URLs on the recommendation rather than legacy filenames.
 urls_to_test = [
     ("Before Image", rec.get("before_image_url")),
-    ("After Image", rec.get("after_image_url")),
-    ("$5k Tier Render", "/api/v1/images/homeready_upgrade_5k_cosmetic_refresh.png"),
-    ("$10k Tier Render", "/api/v1/images/homeready_upgrade_10k_moderate_upgrade.png"),
-    ("$15k Tier Render", "/api/v1/images/homeready_upgrade_15k_luxury_remodel.png"),
+    ("After (Whole-House Allocated) Render", rec.get("after_image_url")),
 ]
 
 print("\n[STEP 5] Verifying Image Asset Retrieval from Backend...")
@@ -121,9 +141,13 @@ for label, rel_url in urls_to_test:
         print(f"  ❌ {label} ({full_url}) FAIL: {e}")
         all_images_ok = False
 
+_elapsed = time.time() - _SUITE_START
+
 print("\n================================================================")
 if all_images_ok:
     print(" 🎉 FULL APP END-TO-END VERIFICATION: 100% PASSED SUCCESSFULLY!")
 else:
     print(" ⚠️ FULL APP VERIFICATION: COMPLETED WITH WARNINGS")
+print(f" ⏱  Total wall-clock runtime: {_elapsed:.2f}s "
+      f"({'PASS' if _elapsed < 5.0 else 'OVER'} target < 5.0s)")
 print("================================================================")

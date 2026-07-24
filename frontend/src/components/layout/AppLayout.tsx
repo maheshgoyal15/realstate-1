@@ -22,6 +22,7 @@ import {
 import { cn, formatCurrency } from "@/lib/utils";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { apiFetch } from "@/lib/apiClient";
+import { PageTransition } from "@/components/layout/PageTransition";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -524,7 +525,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
         {/* 4. MAIN CONTENT AREA */}
         <main className="flex-1 min-w-0 p-6 md:p-8 relative z-10 overflow-y-auto">
-          {children}
+          <PageTransition>{children}</PageTransition>
         </main>
       </div>
     </div>
