@@ -87,10 +87,11 @@ def generate_prelisting_report(
     try:
         with conn:
             with conn.cursor() as cur:
+                report_id = str(uuid.uuid4())
                 cur.execute(
-                    "INSERT INTO reports (analysis_id, s3_pdf_key, shareable_token, pdf_data) "
-                    "VALUES (%s, %s, %s, %s);",
-                    (analysis_id, s3_pdf_key, shareable_token, psycopg2.Binary(pdf_bytes)),
+                    "INSERT INTO reports (id, analysis_id, s3_pdf_key, shareable_token, pdf_data) "
+                    "VALUES (%s, %s, %s, %s, %s);",
+                    (report_id, analysis_id, s3_pdf_key, shareable_token, psycopg2.Binary(pdf_bytes)),
                 )
     finally:
         conn.close()

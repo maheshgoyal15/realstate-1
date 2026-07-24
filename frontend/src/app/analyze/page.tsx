@@ -123,14 +123,21 @@ export default function AnalyzePropertyPage() {
         images: formPayload.images,
         metadata: {
           address: formPayload.metadata.address,
-          mls_id: formPayload.metadata.mlsId || "",
+          mls_id: formPayload.metadata.mlsId || null,
           user_budget: formPayload.metadata.userBudget,
           style_preference: formPayload.metadata.stylePreference
         }
       };
 
       if (attachedFiles.length > 0) {
-        localStorage.setItem("user_uploaded_property_photo", attachedFiles[0].dataUrl);
+        try {
+          // Only attempt localStorage if thumbnail is under 500KB to prevent QuotaExceededError
+          if (attachedFiles[0].dataUrl.length < 500000) {
+            localStorage.setItem("user_uploaded_property_photo", attachedFiles[0].dataUrl);
+          }
+        } catch (e) {
+          console.warn("Storage quota limit reached for localStorage preview thumbnail:", e);
+        }
       }
 
       const apiRes = await apiFetch("/api/v1/upload", {
@@ -156,6 +163,8 @@ export default function AnalyzePropertyPage() {
       setUploadProgress(0);
       if (error instanceof z.ZodError) {
         setModalMessage(`Validation error: ${error.errors.map(err => err.message).join(", ")}`);
+      } else if (error instanceof Error) {
+        setModalMessage(`Assessment Error: ${error.message}`);
       } else {
         setModalMessage("Unexpected error initializing computer vision analysis. Please check inputs.");
       }
@@ -347,6 +356,102 @@ export default function AnalyzePropertyPage() {
                 Supports JPG, PNG, HEIC (Auto-Convert). Max 10MB per file. (Recommended: 3 to 50 photos)
               </p>
               <Button id="browse-files-btn" variant="secondary" size="sm">Browse Files</Button>
+            </div>
+
+            {/* Quick Test with Sample Photos (Eval Set) */}
+            <div className="bg-surface-sunken border border-surface-border rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-accent-600 uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Quick Test with Gemini Eval Set Sample Images
+                </span>
+                <span className="text-[10px] text-ink-muted">1-Click Load</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const res = await apiFetch("/api/v1/sample-photos");
+                      if (res.ok) {
+                        const photos = await res.json();
+                        const p = photos[0];
+                        if (p && p.dataUrl) {
+                          setAttachedFiles([{ name: p.file_name, size: "2.4 MB", dataUrl: p.dataUrl }]);
+                          setAddress(p.address);
+                          setUserBudget(p.user_budget);
+                          setStylePreference(p.style_preference);
+                        }
+                      }
+                    } catch (e) {
+                      console.error("Failed to load sample photo:", e);
+                    }
+                  }}
+                  className="bg-surface-raised hover:bg-surface-border border border-surface-border p-2.5 rounded-xl text-left transition-colors flex items-center gap-2.5"
+                >
+                  <span className="text-xl">🍳</span>
+                  <div className="truncate">
+                    <p className="text-xs font-bold text-ink truncate">Kitchen Primary</p>
+                    <p className="text-[10px] text-ink-muted truncate">Austin, TX • Modern</p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const res = await apiFetch("/api/v1/sample-photos");
+                      if (res.ok) {
+                        const photos = await res.json();
+                        const p = photos[1] || photos[0];
+                        if (p && p.dataUrl) {
+                          setAttachedFiles([{ name: p.file_name, size: "2.5 MB", dataUrl: p.dataUrl }]);
+                          setAddress(p.address);
+                          setUserBudget(p.user_budget);
+                          setStylePreference(p.style_preference);
+                        }
+                      }
+                    } catch (e) {
+                      console.error("Failed to load sample photo:", e);
+                    }
+                  }}
+                  className="bg-surface-raised hover:bg-surface-border border border-surface-border p-2.5 rounded-xl text-left transition-colors flex items-center gap-2.5"
+                >
+                  <span className="text-xl">🍽️</span>
+                  <div className="truncate">
+                    <p className="text-xs font-bold text-ink truncate">Kitchen & Dining</p>
+                    <p className="text-[10px] text-ink-muted truncate">Austin, TX • Transitional</p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const res = await apiFetch("/api/v1/sample-photos");
+                      if (res.ok) {
+                        const photos = await res.json();
+                        const p = photos[2] || photos[0];
+                        if (p && p.dataUrl) {
+                          setAttachedFiles([{ name: p.file_name, size: "2.5 MB", dataUrl: p.dataUrl }]);
+                          setAddress(p.address);
+                          setUserBudget(p.user_budget);
+                          setStylePreference(p.style_preference);
+                        }
+                      }
+                    } catch (e) {
+                      console.error("Failed to load sample photo:", e);
+                    }
+                  }}
+                  className="bg-surface-raised hover:bg-surface-border border border-surface-border p-2.5 rounded-xl text-left transition-colors flex items-center gap-2.5"
+                >
+                  <span className="text-xl">🛏️</span>
+                  <div className="truncate">
+                    <p className="text-xs font-bold text-ink truncate">Bedroom Suite</p>
+                    <p className="text-[10px] text-ink-muted truncate">Austin, TX • Traditional</p>
+                  </div>
+                </button>
+              </div>
             </div>
 
             {/* Upload counts */}

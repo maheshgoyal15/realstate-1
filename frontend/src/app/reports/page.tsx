@@ -35,9 +35,6 @@ export default function ReportsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState("date");
 
-  // Selection for Preview Modal
-  const [previewReport, setPreviewReport] = useState<Report | null>(null);
-
   // Selection for Share Modal
   const [shareReport, setShareReport] = useState<Report | null>(null);
   const [shareUrl, setShareUrl] = useState("");
@@ -84,7 +81,7 @@ export default function ReportsPage() {
   };
 
   const handleShareTrigger = (report: Report) => {
-    const url = `${window.location.origin}${report.reportUrl}`;
+    const url = `${window.location.origin}/reports/${report.id}`;
     setShareUrl(url);
     setShareReport(report);
   };
@@ -170,8 +167,11 @@ export default function ReportsPage() {
             >
               {/* Cover - no real property photos are stored yet, so this is an
                   icon placeholder rather than a fabricated stock photo */}
-              <div className="h-44 w-full relative overflow-hidden bg-navy-800 flex items-center justify-center">
-                <FileText className="w-10 h-10 text-navy-500" />
+              <div
+                onClick={() => window.location.href = `/reports/${report.id}`}
+                className="h-44 w-full relative overflow-hidden bg-navy-800 flex items-center justify-center cursor-pointer group"
+              >
+                <FileText className="w-10 h-10 text-navy-500 group-hover:scale-110 transition-transform" />
                 <Badge variant="status-complete" className="absolute top-3 left-3">Ready</Badge>
                 <div className="absolute bottom-3 left-3 right-3 text-white">
                   <h4 className="text-sm font-extrabold truncate">{report.address}</h4>
@@ -207,9 +207,9 @@ export default function ReportsPage() {
                     variant="ghost"
                     size="sm"
                     icon={<Eye className="w-3.5 h-3.5" />}
-                    onClick={() => setPreviewReport(report)}
+                    onClick={() => window.location.href = `/reports/${report.id}`}
                   >
-                    Preview
+                    View Report
                   </Button>
                   <Button
                     id={`dl-btn-${report.id}`}
@@ -246,75 +246,7 @@ export default function ReportsPage() {
         </section>
       )}
 
-      {/* Report Preview Modal */}
-      {previewReport && (
-        <Modal
-          isOpen={!!previewReport}
-          onClose={() => setPreviewReport(null)}
-          title={`Secure Preview: ${previewReport.address}`}
-          size="lg"
-          footer={
-            <div className="flex justify-between items-center w-full">
-              <span className="text-xs text-ink-subtle">Page 1 of 2</span>
-              <div className="flex items-center space-x-3">
-                <Button id="preview-print-btn" variant="secondary" size="sm" icon={<Printer className="w-4 h-4" />}>Print</Button>
-                <Button id="preview-dl-btn" variant="secondary" size="sm" icon={<Download className="w-4 h-4" />} onClick={() => { handleDownload(previewReport); setPreviewReport(null); }}>Download PDF</Button>
-                <Button id="preview-close-btn" variant="primary" size="sm" onClick={() => setPreviewReport(null)}>Close Viewer</Button>
-              </div>
-            </div>
-          }
-        >
-          {/* Simulated PDF document */}
-          <div className="bg-white text-navy-900 rounded-xl p-8 shadow-card border border-surface-border space-y-8 font-sans max-h-[60vh] overflow-y-auto">
-            <div className="text-center border-b pb-6 border-surface-border">
-              <h2 className="text-2xl font-bold font-serif tracking-tight text-navy-800">HOMEREADY AI REPORT</h2>
-              <p className="text-xs text-ink-subtle font-bold uppercase tracking-wider mt-1">Pre-Listing Value Uplift Guide</p>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <div>
-                <p className="text-ink-subtle font-bold uppercase">Property:</p>
-                <p className="font-bold text-ink">{previewReport.address}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-ink-subtle font-bold uppercase">Date Generated:</p>
-                <p className="font-bold text-ink">{previewReport.date}</p>
-              </div>
-            </div>
-
-            <div className="bg-surface-sunken rounded-xl p-5 border border-surface-border space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Executive Summary</h4>
-              <p className="text-xs text-ink-muted leading-relaxed">
-                Based on computer vision audits of interior and exterior photos of <strong className="text-ink">{previewReport.address}</strong>, we have generated {previewReport.recsCount} remodeling projects optimized for high-ROI comps conversion in the neighborhood area. Implementing these upgrades adds significant market interest.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Valuation Ledger</h4>
-              <div className="grid grid-cols-3 gap-4 border border-surface-border rounded-xl p-4 text-center">
-                <div>
-                  <p className="text-[10px] text-ink-subtle font-bold uppercase">Total Upgrade cost</p>
-                  <p className="text-base font-extrabold text-ink mt-1">{formatCurrency(previewReport.cost)}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-ink-subtle font-bold uppercase">Value increase</p>
-                  <p className="text-base font-extrabold text-success mt-1">+{formatCurrency(previewReport.valueAdd)}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-ink-subtle font-bold uppercase">Overall ROI</p>
-                  <p className="text-base font-extrabold text-success mt-1">
-                    +{Math.round((previewReport.valueAdd / previewReport.cost) * 100)}%
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-6 text-center border-t border-surface-border">
-              <p className="text-[10px] text-ink-subtle font-bold">© 2026 HomeReady AI Platform • Confidential & Proprietary</p>
-            </div>
-          </div>
-        </Modal>
-      )}
 
       {/* Share Link Modal */}
       {shareReport && (

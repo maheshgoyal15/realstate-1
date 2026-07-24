@@ -22,8 +22,8 @@ import {
 import { Card } from "@/components/ui/Card";
 
 // Unsplash premium architecture and design images allowed by Content-Security-Policy
-const INTERIOR_BEFORE = "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1200&q=80"; // Dated kitchen
-const INTERIOR_AFTER = "https://images.unsplash.com/photo-1556911220-1114b88a74e6?auto=format&fit=crop&w=1200&q=80";  // Modernized chef kitchen
+const INTERIOR_BEFORE = "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80"; // Dated kitchen
+const INTERIOR_AFTER = "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80";  // Modernized chef kitchen
 const HERO_IMAGE = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=80"; // Bright modern living room
 
 const SAMPLE_PROJECTS = [

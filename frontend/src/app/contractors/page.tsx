@@ -32,6 +32,17 @@ interface Contractor {
   reviews: { author: string; rating: number; text: string }[];
 }
 
+function ensureArray<T = any>(val: any): T[] {
+  if (Array.isArray(val)) return val;
+  if (typeof val === "string") {
+    try {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+  }
+  return [];
+}
+
 export default function ContractorsPage() {
   const [contractors, setContractors] = useState<Contractor[]>([]);
   const [loadError, setLoadError] = useState(false);
@@ -59,7 +70,13 @@ export default function ContractorsPage() {
           return;
         }
         const data = await res.json();
-        setContractors(data);
+        const normalized = Array.isArray(data) ? data.map((c: any) => ({
+          ...c,
+          specialties: ensureArray<string>(c.specialties),
+          pricingInfo: ensureArray<any>(c.pricingInfo),
+          reviews: ensureArray<any>(c.reviews),
+        })) : [];
+        setContractors(normalized);
       } catch (error) {
         console.error("Failed to load contractors:", error);
         if (!cancelled) setLoadError(true);
@@ -111,9 +128,10 @@ export default function ContractorsPage() {
   // Filter
   const filteredContractors = useMemo(() => {
     return contractors.filter(c => {
+      const specs = ensureArray<string>(c.specialties);
       const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            c.specialties.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
-      const matchesCategory = categoryFilter === "all" || c.specialties.includes(categoryFilter);
+                            specs.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesCategory = categoryFilter === "all" || specs.includes(categoryFilter);
       return matchesSearch && matchesCategory;
     });
   }, [contractors, searchQuery, categoryFilter]);

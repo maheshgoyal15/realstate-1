@@ -6,16 +6,25 @@ from pydantic import BaseModel, Field, field_validator
 
 class PropertyMetadata(BaseModel):
     address: str = Field(..., min_length=5, max_length=500, description="Full property address")
-    mls_id: Optional[str] = Field(None, min_length=2, max_length=100, description="Optional MLS ID")
+    mls_id: Optional[str] = Field(None, max_length=100, description="Optional MLS ID")
     user_budget: float = Field(..., ge=0.0, le=10000000.0, description="User budget ceiling in USD")
     style_preference: str = Field(..., min_length=2, max_length=100, description="Architectural style preference")
 
-    @field_validator("style_preference")
-    def validate_style(cls, v: str) -> str:
+    @field_validator("mls_id", mode="before")
+    def clean_mls_id(cls, v: Any) -> Optional[str]:
+        if not v or (isinstance(v, str) and v.strip() == ""):
+            return None
+        return str(v).strip()
+
+    @field_validator("style_preference", mode="before")
+    def clean_style(cls, v: Any) -> str:
+        if not v or not isinstance(v, str) or not v.strip():
+            return "traditional"
         allowed_styles = {"modern", "traditional", "contemporary", "farmhouse", "midcentury", "craftsman", "transitional"}
-        if v.lower() not in allowed_styles:
-            raise ValueError(f"Style must be one of {allowed_styles}")
-        return v.lower()
+        val = v.strip().lower()
+        if val not in allowed_styles:
+            raise ValueError(f"Unsupported architectural style: {v}")
+        return val
 
 class UploadRequest(BaseModel):
     # Client-generated label only - the backend creates its own real
@@ -40,6 +49,8 @@ class RecommendationItem(BaseModel):
     explanation: str
     why_details: str
     scope: List[Dict[str, Any]]
+    before_image_url: Optional[str] = None
+    after_image_url: Optional[str] = None
 
 class AnalysisResultResponse(BaseModel):
     status: str

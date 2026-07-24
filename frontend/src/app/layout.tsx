@@ -28,8 +28,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} ${fraunces.variable} font-sans min-h-screen flex flex-col overflow-x-hidden`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.variable} ${fraunces.variable} font-sans min-h-screen flex flex-col overflow-x-hidden`} suppressHydrationWarning>
         <AppLayout>{children}</AppLayout>
       </body>
     </html>

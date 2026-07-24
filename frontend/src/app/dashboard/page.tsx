@@ -75,8 +75,8 @@ export default function DashboardPage() {
   };
 
   const handleShare = (prop: AnalysisSummary) => {
-    if (!prop.reportUrl) return;
-    setShareUrl(`${window.location.origin}${prop.reportUrl}`);
+    if (prop.status !== "status-complete") return;
+    setShareUrl(`${window.location.origin}/reports/${prop.id}`);
     setSelectedProperty(prop.address);
     setShareModalOpen(true);
   };
@@ -159,7 +159,7 @@ export default function DashboardPage() {
                     size="sm"
                     icon={<Share2 className="w-3.5 h-3.5" />}
                     onClick={() => handleShare(prop)}
-                    disabled={!prop.reportUrl}
+                    disabled={prop.status !== "status-complete"}
                   >
                     Share
                   </Button>

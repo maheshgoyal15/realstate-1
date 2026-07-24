@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     # JWT Configuration
     JWT_SECRET_KEY: str = get_jwt_secret()
     JWT_ALGORITHM: str = "HS256" # Hardcoded expected algorithm for verification
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30 # Short inactivity timeout
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080 # 7 days timeout for dev/testing ease
 
     # Database Configuration
     DATABASE_URL: str = os.getenv(

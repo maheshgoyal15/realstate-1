@@ -63,6 +63,17 @@ function findVisualizerTheme(category: string) {
   return VISUALIZER_THEMES.find((t) => lower.includes(t.match));
 }
 
+function ensureArray<T = any>(val: any): T[] {
+  if (Array.isArray(val)) return val;
+  if (typeof val === "string") {
+    try {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+  }
+  return [];
+}
+
 // A recommendation category matches a contractor specialty loosely (e.g. "Kitchen
 // Remodel" should surface contractors tagged "Kitchens").
 function matchesSpecialty(category: string, specialty: string) {
@@ -103,7 +114,14 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
       try {
         const res = await apiFetch("/api/v1/contractors");
         if (!res.ok || cancelled) return;
-        setContractors(await res.json());
+        const data = await res.json();
+        const normalized = Array.isArray(data) ? data.map((c: any) => ({
+          ...c,
+          specialties: ensureArray<string>(c.specialties),
+          pricingInfo: ensureArray<any>(c.pricingInfo),
+          reviews: ensureArray<any>(c.reviews),
+        })) : [];
+        setContractors(normalized);
       } catch (error) {
         console.error("Failed to load contractors:", error);
       }
@@ -124,7 +142,10 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
 
   const matchedContractors = useMemo(() => {
     if (!selectedRec) return [];
-    return contractors.filter((c) => c.specialties.some((s) => matchesSpecialty(selectedRec.category, s))).slice(0, 3);
+    return contractors.filter((c) => {
+      const specs = ensureArray<string>(c.specialties);
+      return specs.some((s) => matchesSpecialty(selectedRec.category, s));
+    }).slice(0, 3);
   }, [selectedRec, contractors]);
 
   // Dynamic Comps and AI assessment states
@@ -161,9 +182,13 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
 
   // Poll server for property analysis status and results
   useEffect(() => {
-    const savedImg = localStorage.getItem("user_uploaded_property_photo");
-    if (savedImg) {
-      setUploadedBeforeImg(savedImg);
+    try {
+      const savedImg = localStorage.getItem("user_uploaded_property_photo");
+      if (savedImg) {
+        setUploadedBeforeImg(savedImg);
+      }
+    } catch (e) {
+      console.warn("Could not read thumbnail from localStorage:", e);
     }
 
     if (!id) return;
@@ -213,7 +238,9 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
             roiType: rec.roi_percentage > 50 ? "roi-high" : "roi-medium",
             explanation: rec.explanation,
             whyDetails: rec.why_details,
-            scope: rec.scope
+            scope: rec.scope,
+            beforeImageUrl: rec.before_image_url,
+            afterImageUrl: rec.after_image_url,
           })));
 
           setLoading(false);
@@ -295,25 +322,86 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-6 text-center space-y-6">
-        <div className="relative w-24 h-24">
-          <div className="absolute inset-0 rounded-full border-4 border-accent-200 animate-ping"></div>
-          <div className="absolute inset-0 rounded-full border-4 border-accent-500 border-t-transparent animate-spin"></div>
-          <div className="absolute inset-2 bg-surface-raised rounded-full flex items-center justify-center border border-surface-border shadow-card">
-            <Sparkles className="w-8 h-8 text-accent-500 animate-pulse" />
+      <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-xl w-full bg-surface-raised rounded-3xl border border-surface-border shadow-xl p-8 space-y-8 animate-in fade-in zoom-in-95 duration-500">
+          
+          {/* Top Architectural Studio Badge */}
+          <div className="flex flex-col items-center space-y-4">
+            <div className="relative w-20 h-20 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-2xl bg-accent-500/10 animate-ping"></div>
+              <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-navy-900 to-navy-950 border border-accent-500/30 flex items-center justify-center shadow-lg">
+                <Sparkles className="w-8 h-8 text-accent-400 animate-pulse" />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-accent-600 bg-accent-50 px-3 py-1 rounded-full border border-accent-200">
+                HomeReady Architectural Studio
+              </span>
+              <h2 className="text-2xl font-bold text-ink tracking-tight font-serif">
+                Designing Your Whole-House Remodel
+              </h2>
+              <p className="text-ink-muted text-xs max-w-md mx-auto leading-relaxed">
+                Analyzing room geometry, allocating your whole-house budget ceiling across high-ROI spaces, and generating visual upgrade concepts.
+              </p>
+            </div>
           </div>
-        </div>
 
-        <div className="space-y-2 max-w-sm">
-          <h2 className="text-xl font-bold text-ink tracking-tight">AI Multimodal Scan in Progress</h2>
-          <p className="text-ink-muted text-xs leading-relaxed">
-            Google Gemini is scanning your property photos for structural conditions, room contexts, and defect flags.
-          </p>
-        </div>
+          {/* Animated Studio Pipeline Stages */}
+          <div className="space-y-3 text-left bg-surface-sunken p-5 rounded-2xl border border-surface-border">
+            <div className="flex items-center space-y-0 space-x-3 text-xs">
+              <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-600 flex items-center justify-center font-bold text-[10px] shrink-0">
+                ✓
+              </div>
+              <div className="flex-1">
+                <span className="font-semibold text-ink">Room Recognition & Space De-duplication</span>
+                <p className="text-[11px] text-ink-subtle">Identifying Kitchen, Bathrooms, Master Bedroom & Living Areas</p>
+              </div>
+            </div>
 
-        <span className="text-[9px] text-accent-600 uppercase tracking-widest font-extrabold bg-accent-50 px-3 py-1 rounded-full border border-accent-200 animate-pulse">
-          Polling local API gateway...
-        </span>
+            <div className="flex items-center space-x-3 text-xs">
+              <div className="w-5 h-5 rounded-full bg-accent-500/20 text-accent-600 flex items-center justify-center font-bold text-[10px] shrink-0 animate-pulse">
+                2
+              </div>
+              <div className="flex-1">
+                <span className="font-semibold text-ink">Whole-House Financial Budget Allocator</span>
+                <p className="text-[11px] text-ink-subtle">Distributing total house budget cap by ROI priority ratios</p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3 text-xs">
+              <div className="w-5 h-5 rounded-full bg-surface border border-surface-border text-ink-subtle flex items-center justify-center font-bold text-[10px] shrink-0">
+                3
+              </div>
+              <div className="flex-1">
+                <span className="font-medium text-ink-muted">Carpentry, Surface & Fixture Spec Lock</span>
+                <p className="text-[11px] text-ink-subtle">Upgrading cabinetry, quartz, marble backsplash & shelving racks</p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3 text-xs">
+              <div className="w-5 h-5 rounded-full bg-surface border border-surface-border text-ink-subtle flex items-center justify-center font-bold text-[10px] shrink-0">
+                4
+              </div>
+              <div className="flex-1">
+                <span className="font-medium text-ink-muted">Spatial Concept Renders & Itemized Cost Manifest</span>
+                <p className="text-[11px] text-ink-subtle">Generating 3–4 primary room views with exact item additions</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Shimmering Animated Bar */}
+          <div className="space-y-2">
+            <div className="w-full bg-surface-sunken h-2 rounded-full overflow-hidden relative">
+              <div className="bg-gradient-to-r from-accent-500 via-accent-400 to-accent-600 h-full w-2/3 rounded-full animate-pulse"></div>
+            </div>
+            <div className="flex justify-between items-center text-[10px] text-ink-subtle">
+              <span>Whole-House Budget Allocation Active</span>
+              <span className="font-semibold text-accent-600">Curating Representative Views...</span>
+            </div>
+          </div>
+
+        </div>
       </div>
     );
   }
@@ -368,6 +456,20 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
         {/* Left Column (40% width on Desktop) */}
         <aside className="lg:col-span-4 space-y-6">
           <Card hoverEffect={false} className="space-y-6">
+            {/* Analyzed Property Image Banner */}
+            {(uploadedBeforeImg || (recommendations.length > 0 && recommendations[0].beforeImageUrl)) && (
+              <div className="w-full h-48 rounded-xl overflow-hidden relative border border-surface-border shadow-sm">
+                <img
+                  src={uploadedBeforeImg || recommendations[0].beforeImageUrl}
+                  alt="Analyzed Property"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute top-2 left-2 bg-navy-950/80 backdrop-blur-sm text-white font-bold text-[10px] px-2.5 py-1 rounded-lg shadow-card border border-white/10">
+                  Analyzed Property Photo
+                </div>
+              </div>
+            )}
+
             {/* Condition Score Gauge */}
             <div className="text-center space-y-3 pb-6 border-b border-surface-border">
               <h3 className="text-xs font-bold text-ink-subtle uppercase tracking-widest">Overall Condition Score</h3>
@@ -530,8 +632,27 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                     </div>
                   </div>
 
-                  <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center border-t md:border-t-0 md:border-l border-surface-border pt-4 md:pt-0 md:pl-6 shrink-0 gap-4">
-                    <div className="flex items-center space-x-2">
+                  <div className="flex flex-col items-center md:items-end justify-between md:justify-center border-t md:border-t-0 md:border-l border-surface-border pt-4 md:pt-0 md:pl-6 shrink-0 gap-4">
+                    {/* Visual Thumbnail Preview right on card */}
+                    {(rec.afterImageUrl || rec.beforeImageUrl) && (
+                      <div
+                        onClick={() => setSelectedRec(rec)}
+                        className="w-full md:w-44 h-28 rounded-xl overflow-hidden relative border border-surface-border shadow-sm cursor-pointer group shrink-0"
+                      >
+                        <img
+                          src={rec.afterImageUrl || rec.beforeImageUrl}
+                          alt={`${rec.category} AI Concept`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-navy-950/80 via-transparent to-transparent flex items-end p-2">
+                          <span className="text-[10px] font-bold text-white tracking-wider uppercase">
+                            {rec.afterImageUrl ? "AI Concept Render" : "Before Preview"}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between w-full md:w-auto gap-3">
                       <button
                         onClick={() => handleHeartToggle(rec.id)}
                         className={cn(
@@ -544,16 +665,16 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                       >
                         <Heart className={cn("w-4 h-4", heartedList[rec.id] && "fill-current")} />
                       </button>
-                    </div>
 
-                    <Button
-                      id={`see-details-btn-${rec.id}`}
-                      variant="primary"
-                      size="sm"
-                      onClick={() => setSelectedRec(rec)}
-                    >
-                      See Details
-                    </Button>
+                      <Button
+                        id={`see-details-btn-${rec.id}`}
+                        variant="primary"
+                        size="sm"
+                        onClick={() => setSelectedRec(rec)}
+                      >
+                        See Details
+                      </Button>
+                    </div>
                   </div>
                 </Card>
               ))
@@ -592,65 +713,53 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
         >
           <div className="space-y-6">
 
-            {/* Image Slider Comparison Panel */}
+            {/* Image Slider Comparison Panel with Architectural Studio Concept */}
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <span className="text-[10px] font-bold text-ink-subtle uppercase tracking-widest">Illustrative Style Preview</span>
+                <div>
+                  <span className="text-[10px] font-bold text-accent-600 uppercase tracking-widest block">HomeReady Whole-House Design Studio</span>
+                  <span className="text-xs font-extrabold text-ink">Photorealistic Concept Render vs. Original Space:</span>
+                </div>
 
-                {/* Upgrade options themes picker */}
-                {selectedTheme && (
-                  <div className="flex gap-2 flex-wrap">
-                    {selectedTheme.afterThemes.map((themeItem) => (
-                      <button
-                        key={themeItem.value}
-                        onClick={() => setVisualizerTheme(themeItem.value)}
-                        className={cn(
-                          "px-3 py-1.5 rounded-lg border text-[10px] font-bold tracking-wider uppercase transition-colors",
-                          visualizerTheme === themeItem.value
-                            ? "bg-accent-500 border-transparent text-white shadow-card"
-                            : "bg-surface-sunken border-surface-border text-ink-muted hover:bg-surface-border"
-                        )}
-                      >
-                        {themeItem.label.split(" (")[0]}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                {/* Single Master Render indicator */}
+                <div className="flex gap-2 items-center">
+                  <span className="text-[11px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-lg">
+                    {formatCurrency(selectedRec.estimatedCost)} Whole-House Budget Share
+                  </span>
+                </div>
               </div>
 
               {/* Slider comparative container */}
               <div className="h-72 md:h-96 w-full rounded-2xl overflow-hidden bg-surface-sunken relative border border-surface-border shadow-card select-none">
-                {selectedTheme ? (
+                {(selectedRec.afterImageUrl || selectedTheme) ? (
                   <div className="relative w-full h-full">
                     {/* Before Image (underneath) */}
                     <img
-                      src={uploadedBeforeImg || selectedTheme.before}
+                      src={selectedRec.beforeImageUrl || uploadedBeforeImg || selectedTheme?.before}
                       alt="Before upgrade"
                       className="absolute inset-0 w-full h-full object-cover pointer-events-none"
                     />
                     <div className="absolute top-4 left-4 bg-navy-950/75 backdrop-blur-sm text-white border border-white/10 font-bold text-[10px] px-2.5 py-1 rounded-lg z-10 shadow-card">
-                      Before
+                      Original Photo (Before)
                     </div>
 
-                    {/* After Image (overlay, clipped) */}
+                    {/* After Image (overlay, clipped based on drag slider) */}
                     <img
-                      src={
-                        selectedTheme.afterThemes.find(t => t.value === visualizerTheme)?.url ||
-                        selectedTheme.afterThemes[0].url
-                      }
-                      alt="Illustrative style preview"
+                      src={selectedRec.afterImageUrl || selectedRec.tier_15k_url || selectedRec.tier15kUrl}
+                      alt="AI generated remodel concept"
                       className="absolute inset-0 w-full h-full object-cover pointer-events-none z-20"
                       style={{
                         clipPath: `polygon(0 0, ${modalBeforeAfterPct}% 0, ${modalBeforeAfterPct}% 100%, 0 100%)`
                       }}
                     />
                     <div
-                      className="absolute top-4 bg-accent-500 text-white font-bold text-[10px] px-2.5 py-1 rounded-lg z-30 shadow-card transition-[right]"
+                      className="absolute top-4 bg-accent-500 text-white font-bold text-[10px] px-2.5 py-1 rounded-lg z-30 shadow-card transition-[right] flex items-center space-x-1"
                       style={{
                         right: `${Math.max(4, 100 - modalBeforeAfterPct + 2)}%`
                       }}
                     >
-                      Example Style
+                      <Sparkles className="w-3 h-3 text-amber-300 inline" />
+                      <span>Upgraded Concept Render</span>
                     </div>
 
                     {/* Draggable Divider Line */}
@@ -681,11 +790,27 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                   </div>
                 )}
               </div>
-              {selectedTheme && (
-                <p className="text-[10px] text-ink-subtle">
-                  Example style shown for illustration — not a render generated from your uploaded photos.
-                </p>
-              )}
+
+              {/* High-Impact Visual Changes Manifest right beneath picture */}
+              <div className="bg-gradient-to-r from-accent-50/70 via-surface-sunken to-accent-50/70 border border-accent-200/80 rounded-2xl p-4 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-extrabold uppercase tracking-widest text-[10px] text-accent-700 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-accent-600" />
+                    <span>Exact Changes & Items Added to this Room Picture</span>
+                  </span>
+                  <span className="text-[10px] font-bold text-ink-muted">Allocated Budget Share: {formatCurrency(selectedRec.estimatedCost)}</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                  {selectedRec.scope.map((item: { item: string; checked: boolean }, idx: number) => (
+                    <div key={idx} className="flex items-start space-x-2 bg-white/90 border border-surface-border rounded-xl p-2.5 text-xs text-ink shadow-2xs">
+                      <div className="w-4 h-4 rounded-md bg-emerald-500/15 text-emerald-600 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                        ✓
+                      </div>
+                      <span className="font-medium">{item.item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Key Metrics Grid */}
@@ -746,7 +871,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                           <Badge variant="roi-high">Verified License</Badge>
                         </div>
                         <p className="text-ink-muted">{cont.rating ?? "--"} rating ({cont.reviewsCount} reviews) • License: {cont.license || "N/A"}</p>
-                        <p className="text-ink-muted">Specialty: <strong className="text-ink">{cont.specialties.join(", ")}</strong></p>
+                        <p className="text-ink-muted">Specialty: <strong className="text-ink">{ensureArray(cont.specialties).join(", ")}</strong></p>
                         {cont.snippet && <p className="italic text-ink-subtle">"{cont.snippet}"</p>}
                       </div>
 

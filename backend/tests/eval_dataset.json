@@ -1,0 +1,87 @@
+[
+  {
+    "eval_id": "eval-kitchen-primary-austin",
+    "file_name": "Screenshot 2026-07-17 at 5.46.46 PM.png",
+    "file_path": "/Users/maheshgoyal/Documents/Real-Estate-AI/images/Screenshot 2026-07-17 at 5.46.46 PM.png",
+    "property_scene": "Interior Kitchen & Dining Space",
+    "ground_truth": {
+      "room_type_options": ["Kitchen", "Dining Area", "Living Room"],
+      "expected_defects": ["outdated_kitchen_cabinets", "laminate_countertops", "dated_appliances", "worn_hardwood_floors"],
+      "min_condition_score": 5.5,
+      "max_condition_score": 8.5,
+      "target_condition_score": 7.2,
+      "expected_recommendation_categories": ["Kitchen Remodel", "Countertop Upgrade", "Fixture Modernization"],
+      "min_expected_roi": 40.0,
+      "visual_modernization_targets": {
+        "styles": ["modern", "contemporary", "transitional"],
+        "required_resolution": [1200, 800],
+        "format": "image/png",
+        "structural_preservation": true,
+        "features": ["quartz_countertops", "recessed_lighting", "sleek_cabinetry", "architectural_hud"]
+      }
+    },
+    "test_metadata": {
+      "address": "2030 Natchez Dr, Austin, TX 78704",
+      "mls_id": "TX-ACTRIS-10101",
+      "user_budget": 35000.0,
+      "style_preference": "modern"
+    }
+  },
+  {
+    "eval_id": "eval-kitchen-dining-angle",
+    "file_name": "Screenshot 2026-07-17 at 5.47.00 PM.png",
+    "file_path": "/Users/maheshgoyal/Documents/Real-Estate-AI/images/Screenshot 2026-07-17 at 5.47.00 PM.png",
+    "property_scene": "Kitchen Angle & Dining Nook",
+    "ground_truth": {
+      "room_type_options": ["Kitchen", "Dining Room", "Dining Area", "Breakfast Nook", "Living Room"],
+      "expected_defects": ["outdated_kitchen_cabinets", "laminate_countertops", "dated_lighting_fixture", "worn_hardwood_floors"],
+      "min_condition_score": 5.5,
+      "max_condition_score": 8.5,
+      "target_condition_score": 6.8,
+      "expected_recommendation_categories": ["Kitchen Remodel", "Countertop Upgrade", "Fixture Modernization"],
+      "min_expected_roi": 40.0,
+      "visual_modernization_targets": {
+        "styles": ["transitional", "modern", "contemporary"],
+        "required_resolution": [1200, 800],
+        "format": "image/png",
+        "structural_preservation": true,
+        "features": ["warm_slate_finish", "ambient_lighting", "countertop_upgrade", "architectural_hud"]
+      }
+    },
+    "test_metadata": {
+      "address": "2030 Natchez Dr, Austin, TX 78704",
+      "mls_id": "TX-ACTRIS-10101",
+      "user_budget": 25000.0,
+      "style_preference": "transitional"
+    }
+  },
+  {
+    "eval_id": "eval-bedroom-living-traditional",
+    "file_name": "Screenshot 2026-07-17 at 5.47.14 PM.png",
+    "file_path": "/Users/maheshgoyal/Documents/Real-Estate-AI/images/Screenshot 2026-07-17 at 5.47.14 PM.png",
+    "property_scene": "Master Bedroom & Living Suite",
+    "ground_truth": {
+      "room_type_options": ["Bedroom", "Nursery", "Child Room", "Living Room", "Primary Bathroom"],
+      "expected_defects": ["worn_hardwood_floors", "worn_carpet_flooring", "dated_paint_color", "outdated_bathroom_fixtures"],
+      "min_condition_score": 6.0,
+      "max_condition_score": 8.5,
+      "target_condition_score": 7.4,
+      "expected_recommendation_categories": ["Flooring Replacement", "Interior Paint", "Bathroom Refresh"],
+      "min_expected_roi": 40.0,
+      "visual_modernization_targets": {
+        "styles": ["traditional", "farmhouse", "transitional"],
+        "required_resolution": [1200, 800],
+        "format": "image/png",
+        "structural_preservation": true,
+        "features": ["warm_honey_oak", "neutral_tone_grading", "hardwood_refresh", "architectural_hud"]
+      }
+    },
+    "test_metadata": {
+      "address": "405 Wood Hollow Ct, Austin, TX 78759",
+      "mls_id": "TX-ACTRIS-20202",
+      "user_budget": 15000.0,
+      "style_preference": "traditional"
+    }
+  }
+]
+

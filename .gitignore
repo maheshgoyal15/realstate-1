@@ -38,6 +38,8 @@ Thumbs.db
 # Environment and Credential files (Never commit secrets!)
 .env
 .env.*
+*.log
+*.pid
 jwt_secret.txt
 
 # Local databases & state
@@ -45,3 +47,7 @@ jwt_secret.txt
 *.sqlite
 *.sqlite3
 analysis_store.json
+backend/app/static/generated/
+new-images/
+*.png
+!images/*.png
