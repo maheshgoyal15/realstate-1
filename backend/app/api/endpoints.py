@@ -542,6 +542,15 @@ async def get_analysis_results(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                         detail="Analysis pipeline execution failed."
                     )
+                elif analysis_status == "processing":
+                    if 'conn' in locals() and conn:
+                        conn.close()
+                    return AnalysisResultResponse(
+                        status="processing",
+                        cv_results=_ensure_dict(cv_summary),
+                        recommendations=[],
+                        report_url=None,
+                    )
 
                 cur.execute(
                     "SELECT id, category, estimated_cost, projected_value_increase, roi_percentage, "

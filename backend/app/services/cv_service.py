@@ -81,7 +81,8 @@ def analyze_property_images(analysis_id: str, s3_keys: List[str], base64_images:
                 ]
             }
 
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_api_key}"
+            cv_model = os.getenv("GEMINI_CV_MODEL", "gemini-3.5-flash")
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{cv_model}:generateContent?key={gemini_api_key}"
             req = urllib.request.Request(
                 url,
                 data=json.dumps(payload).encode("utf-8"),
