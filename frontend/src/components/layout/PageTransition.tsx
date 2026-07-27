@@ -20,7 +20,7 @@ export const PageTransition: React.FC<{ children: React.ReactNode }> = ({ childr
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -8 }}
-        transition={{ duration: 0.22, ease: "easeInOut" }}
+        transition={{ duration: 0.18, ease: "easeInOut" }}
       >
         {children}
       </motion.div>

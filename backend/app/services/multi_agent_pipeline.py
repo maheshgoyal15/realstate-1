@@ -7,6 +7,7 @@ import logging
 import ssl
 import urllib.request
 import urllib.error
+import concurrent.futures
 from typing import List, Dict, Any, Tuple, Optional
 from PIL import Image, ImageFilter, ImageOps
 import psycopg2
@@ -19,6 +20,31 @@ logger = logging.getLogger(__name__)
 
 GENERATED_IMAGES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "generated")
 os.makedirs(GENERATED_IMAGES_DIR, exist_ok=True)
+
+# Cap on how many agent API calls (VLM inventory scans, master plans, renders)
+# run in parallel. The calls are network-bound (blocking urllib), so threads give
+# real concurrency and keep multi-photo wall-clock latency well under target.
+MAX_AGENT_WORKERS = 8
+
+# Pre-scale ceiling for the longest edge of any photo before it is base64-encoded
+# and uploaded to an API. High-res phone photos (4000px+) are needlessly large;
+# 1024px preserves plenty of detail for classification/rendering while cutting
+# payload size and upload latency dramatically.
+MAX_PROCESS_DIMENSION = 1024
+
+
+def _prescale_image(img: Image.Image, max_dim: int = MAX_PROCESS_DIMENSION) -> Image.Image:
+    """Downscale an image so its longest edge is at most max_dim, preserving aspect."""
+    im = img.copy()
+    im.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+    return im
+
+
+def _img_to_b64(img: Image.Image, quality: int = 85) -> str:
+    """Encode a PIL image to a compact base64 JPEG string for API upload."""
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=quality)
+    return base64.b64encode(buf.getvalue()).decode("utf-8")
 
 # Priority room weighting for Whole-House Budget Allocation
 ROOM_PRIORITY_WEIGHTS = {
@@ -215,6 +241,12 @@ def allocate_house_budget(weights: Dict[str, float], total_budget: float) -> Dic
         alloc = {r: round((w / sw) * total_budget, 2) for r, w in rooms.items()}
         under = [r for r, a in alloc.items() if a < MIN_VIABLE_ROOM_BUDGET]
         if not under or len(rooms) == 1:
+            # Reconcile rounding drift onto the highest-weight room so the room
+            # budgets sum to EXACTLY the whole-house ceiling (budget cap lock).
+            drift = round(total_budget - sum(alloc.values()), 2)
+            if alloc and abs(drift) >= 0.01:
+                top = max(alloc, key=lambda r: rooms[r])
+                alloc[top] = round(alloc[top] + drift, 2)
             return alloc
         drop = min(under, key=lambda r: rooms[r])
         rooms.pop(drop)
@@ -232,11 +264,20 @@ def build_room_scope(room_budget: float, has_water: bool, specs: Dict[str, str])
     surf = specs.get("surface", "Upgraded surfaces")
     fix = specs.get("fixtures", "Architectural lighting")
     fixture_detail = "Upgraded sink, faucet and fixtures" if has_water else "New lighting and fixtures"
+    # Surface detail must never imply plumbing/countertops in a dry room.
+    surface_detail_full = (
+        "Premium stone/quartz surfaces replacing the existing countertops" if has_water
+        else "Premium feature-wall surfaces and trim detailing (no plumbing or countertops)"
+    )
+    surface_detail_mid = (
+        "Durable engineered/laminate surfaces with an updated backsplash" if has_water
+        else "Durable engineered feature-wall surfaces and trim (no plumbing or countertops)"
+    )
 
     if room_budget >= 8000:
         # Full renovation: structural cabinetry and stone surfaces are affordable.
         items = [
-            (f"Custom {surf}", 0.34, "Premium stone/quartz surfaces replacing the existing countertops"),
+            (f"Custom {surf}", 0.34, surface_detail_full),
             (cab, 0.40, "Full custom cabinetry with soft-close hardware"),
             (shelv, 0.14, "Built-in shelving and storage racks"),
             (fix, 0.12, fixture_detail),
@@ -245,7 +286,7 @@ def build_room_scope(room_budget: float, has_water: bool, specs: Dict[str, str])
         # Mid renovation: refacing and engineered surfaces, not a full rebuild.
         items = [
             (f"Cabinet refacing ({cab.split(',')[0]})", 0.42, "Reface existing cabinet boxes with new doors, fronts and hardware"),
-            (f"Engineered {surf}", 0.30, "Durable engineered/laminate surfaces with an updated backsplash"),
+            (f"Engineered {surf}", 0.30, surface_detail_mid),
             (shelv, 0.16, "Open shelving and storage organizers"),
             (fix, 0.12, fixture_detail),
         ]
@@ -399,43 +440,46 @@ def run_multi_agent_pipeline_for_images(
     parsed_images = []
     room_clusters: Dict[str, List[Dict[str, Any]]] = {}
 
-    for idx, img_b64 in enumerate(base64_images):
-        clean_b64 = img_b64.split(",")[1] if "," in img_b64 else img_b64
+    p2_prompt = """
+    Role: Senior Architectural Vision Specialist.
+    Identify the primary room type in this photograph and detect built-in storage or cabinetry.
+    Output strict JSON:
+    {
+      "room_type": "Kitchen | Bathroom | Bedroom | Living Room | Home Office | Laundry Room",
+      "detected_cabinets": true,
+      "detected_shelves_or_racks": true,
+      "has_sink_or_faucet": false,
+      "specific_objects_summary": ["cabinets", "shelves", "lighting"]
+    }
+    """
+
+    def _ingest_and_classify(idx: int, img_b64: str) -> Optional[Dict[str, Any]]:
+        """Decode, pre-scale, persist before/canny images and run the inventory
+        VLM scan for a single photo. Designed to run concurrently across photos."""
+        clean_in = img_b64.split(",")[1] if "," in img_b64 else img_b64
         try:
-            raw_bytes = base64.b64decode(clean_b64)
+            raw_bytes = base64.b64decode(clean_in)
             source_img = Image.open(io.BytesIO(raw_bytes)).convert("RGB")
         except Exception as e:
             logger.error(f"Failed to decode image index {idx}: {e}")
-            continue
+            return None
+
+        # Pre-scale high-resolution photos BEFORE any API upload to cut latency.
+        source_img = _prescale_image(source_img)
+        clean_b64 = _img_to_b64(source_img)
 
         rec_id = str(uuid.uuid4())
         before_filename = f"{rec_id}_before.png"
-        before_filepath = os.path.join(GENERATED_IMAGES_DIR, before_filename)
-        source_img.save(before_filepath, "PNG")
+        source_img.save(os.path.join(GENERATED_IMAGES_DIR, before_filename), "PNG")
         before_url = f"/api/v1/images/{before_filename}"
 
-        # Extract Canny Edge Map
-        gray_img = source_img.convert("L")
-        edge_map = gray_img.filter(ImageFilter.FIND_EDGES)
+        # Extract Canny Edge Map (structural scan)
+        edge_map = source_img.convert("L").filter(ImageFilter.FIND_EDGES)
         canny_edge_map = ImageOps.invert(edge_map)
         canny_filename = f"{rec_id}_canny.png"
-        canny_filepath = os.path.join(GENERATED_IMAGES_DIR, canny_filename)
-        canny_edge_map.save(canny_filepath, "PNG")
+        canny_edge_map.save(os.path.join(GENERATED_IMAGES_DIR, canny_filename), "PNG")
         canny_url = f"/api/v1/images/{canny_filename}"
 
-        # Object-Level Carpentry & Storage Inventory Scan
-        p2_prompt = """
-        Role: Senior Architectural Vision Specialist.
-        Identify the primary room type in this photograph and detect built-in storage or cabinetry.
-        Output strict JSON:
-        {
-          "room_type": "Kitchen | Bathroom | Bedroom | Living Room | Home Office | Laundry Room",
-          "detected_cabinets": true,
-          "detected_shelves_or_racks": true,
-          "has_sink_or_faucet": false,
-          "specific_objects_summary": ["cabinets", "shelves", "lighting"]
-        }
-        """
         inventory_res = _call_gemini_vlm(p2_prompt, clean_b64)
         try:
             inventory = json.loads(inventory_res)
@@ -448,23 +492,25 @@ def run_multi_agent_pipeline_for_images(
                 "specific_objects_summary": ["cabinets", "countertops"]
             }
 
-        room_type = inventory.get("room_type", "Kitchen")
-
-        image_item = {
+        return {
             "idx": idx,
             "rec_id": rec_id,
             "b64": clean_b64,
             "source_img": source_img,
             "before_url": before_url,
             "canny_url": canny_url,
-            "room_type": room_type,
-            "inventory": inventory
+            "room_type": inventory.get("room_type", "Kitchen"),
+            "inventory": inventory,
         }
 
+    # Run ingestion + inventory scans concurrently (network-bound VLM calls).
+    with concurrent.futures.ThreadPoolExecutor(max_workers=min(MAX_AGENT_WORKERS, max(1, len(base64_images)))) as ex:
+        ingested = list(ex.map(lambda t: _ingest_and_classify(*t), list(enumerate(base64_images))))
+
+    # Preserve upload order for deterministic room selection/clustering.
+    for image_item in sorted((r for r in ingested if r), key=lambda r: r["idx"]):
         parsed_images.append(image_item)
-        if room_type not in room_clusters:
-            room_clusters[room_type] = []
-        room_clusters[room_type].append(image_item)
+        room_clusters.setdefault(image_item["room_type"], []).append(image_item)
 
     # ------------------------------------------------------------------
     # PHASE 2B: Select Representative Rooms (Max 3–4 Rooms Total) &
@@ -513,11 +559,15 @@ def run_multi_agent_pipeline_for_images(
     # ------------------------------------------------------------------
     # PHASE 2C: Master Room Design Plan Agent (Global Style Lock)
     # ------------------------------------------------------------------
-    master_room_plans: Dict[str, Dict[str, Any]] = {}
-    for room_type, cluster in room_clusters.items():
+    def _build_master_plan(room_type: str) -> Tuple[str, Dict[str, Any]]:
+        cluster = room_clusters[room_type]
         first_img_b64 = cluster[0]["b64"]
         room_tax = _get_room_taxonomy(room_type, style_preference)
-        has_water = any(c["inventory"].get("has_sink_or_faucet", False) for c in cluster) or (room_type.lower() in ["kitchen", "bathroom"])
+        # A room only gets water fixtures if it's genuinely a wet room. This is the
+        # authoritative gate that keeps sinks/faucets out of dry rooms downstream.
+        has_water = any(c["inventory"].get("has_sink_or_faucet", False) for c in cluster) and (room_type.lower() in ["kitchen", "bathroom", "laundry room"])
+        if room_type.lower() in ["kitchen", "bathroom"]:
+            has_water = True
 
         master_prompt = f"""
         Role: Master Interior Design Director.
@@ -538,23 +588,76 @@ def run_multi_agent_pipeline_for_images(
         master_res = _call_gemini_vlm(master_prompt, first_img_b64)
         try:
             master_plan = json.loads(master_res)
+            # Never trust the model to relax the dry-room water gate.
+            master_plan["has_water_fixtures"] = has_water
+            if not has_water:
+                master_plan["fixture_spec"] = "Architectural warm LED cove lighting (no plumbing or faucets)"
         except Exception:
             master_plan = {
                 "room_type": room_type,
                 "cabinet_and_storage_spec": room_tax["cabinets"],
                 "shelving_and_rack_spec": room_tax["shelving_racks"],
                 "surface_spec": room_tax["primary_surface"],
-                "fixture_spec": room_tax["fixtures"] if has_water else "Architectural LED lighting",
+                "fixture_spec": room_tax["fixtures"] if has_water else "Architectural warm LED cove lighting (no plumbing or faucets)",
                 "has_water_fixtures": has_water,
                 "negative_tokens": room_tax["negative_tokens"]
             }
-        master_room_plans[room_type] = master_plan
+        return room_type, master_plan
 
-    # Cache canonical generated renders per room cluster so duplicate photos share their room's master render
-    canonical_room_renders: Dict[str, str] = {}
+    # Build all room design plans concurrently (network-bound VLM calls).
+    master_room_plans: Dict[str, Dict[str, Any]] = {}
+    room_type_list = list(room_clusters.keys())
+    with concurrent.futures.ThreadPoolExecutor(max_workers=min(MAX_AGENT_WORKERS, max(1, len(room_type_list)))) as ex:
+        for room_type, master_plan in ex.map(_build_master_plan, room_type_list):
+            master_room_plans[room_type] = master_plan
 
     # ------------------------------------------------------------------
-    # PHASE 3, 4 & 5: Representative Room Render Synthesis & Itemized Upgrade List
+    # PHASE 3: Concurrent Canonical Room Render Synthesis
+    # Heavy AI image generation is capped at the <=4 selected representative
+    # rooms; every duplicate angle of a room reuses that room's single render.
+    # ------------------------------------------------------------------
+    canonical_room_renders: Dict[str, str] = {}
+
+    def _render_canonical_room(room_type: str) -> Tuple[str, Optional[str]]:
+        cluster = room_clusters[room_type]
+        img_item = cluster[0]
+        master_plan = master_room_plans[room_type]
+        room_tax = _get_room_taxonomy(room_type, style_preference)
+        has_water = master_plan.get("has_water_fixtures", False)
+        room_share_budget = room_budget_allocations[room_type]
+
+        cab_spec = master_plan.get("cabinet_and_storage_spec") or room_tax["cabinets"]
+        shelv_spec = master_plan.get("shelving_and_rack_spec") or room_tax["shelving_racks"]
+        surf_spec = master_plan.get("surface_spec") or room_tax["primary_surface"]
+        fix_spec = master_plan.get("fixture_spec") or (room_tax["fixtures"] if has_water else "Architectural lighting")
+
+        carpentry_clause = f"Identify existing cabinets, shelves, racks, and wardrobes and replace with {cab_spec} and {shelv_spec}. "
+        water_clause = (
+            f"Upgrade sink and faucet to {fix_spec}. " if has_water else
+            "STRICT INSTRUCTION: This is a DRY room (bedroom/living room/home office). DO NOT add or generate any sink, faucet, countertop, backsplash, or plumbing fixture of any kind. "
+        )
+        neg_tokens = master_plan.get("negative_tokens") or room_tax.get("negative_tokens", "")
+        negative_clause = f"STRICT NEGATIVE PROMPT: {neg_tokens}, distorted layout"
+        selected_prompt = (
+            f"Modify this {room_type} photo with a whole-house ${room_share_budget:,.0f} budget share allocation in {style_preference.upper()} style. "
+            f"{timeline_spec['scope_modifier']} {carpentry_clause} "
+            f"Install {surf_spec}. {water_clause} {negative_clause}"
+        )
+        url = _generate_render_for_prompt(
+            img_item["source_img"], img_item["b64"], selected_prompt,
+            img_item["rec_id"], "house_allocated_tier", room_share_budget, room_type,
+        )
+        return room_type, url
+
+    render_rooms = [r for r in selected_room_types if r in room_budget_allocations]
+    if render_rooms:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(MAX_AGENT_WORKERS, len(render_rooms))) as ex:
+            for room_type, url in ex.map(_render_canonical_room, render_rooms):
+                if url:
+                    canonical_room_renders[room_type] = url
+
+    # ------------------------------------------------------------------
+    # PHASE 4 & 5: Itemized Upgrade List & Recommendation Assembly
     # ------------------------------------------------------------------
     all_recommendations = []
     aggregated_rooms = list(room_clusters.keys())
@@ -592,33 +695,10 @@ def run_multi_agent_pipeline_for_images(
             canny_url = img_item["canny_url"]
             inv = img_item.get("inventory", {})
 
-            # Decide whether to run heavy AI image synthesis (only for canonical primary image of each selected room)
-            is_canonical_room_view = (room_type in selected_room_types) and (room_type not in canonical_room_renders)
-
-            if is_canonical_room_view:
-                carpentry_clause = (
-                    f"Identify existing cabinets, shelves, racks, and wardrobes and replace with {cab_spec} and {shelv_spec}. "
-                )
-                water_clause = (
-                    f"Upgrade sink and faucet to {fix_spec}. " if has_water else
-                    "STRICT INSTRUCTION: DO NOT add any sink, faucet, or kitchen plumbing. Room is a bedroom/living area. "
-                )
-                neg_tokens = master_plan.get("negative_tokens") or room_tax.get("negative_tokens", "")
-                negative_clause = f"STRICT NEGATIVE PROMPT: {neg_tokens}, distorted layout"
-
-                selected_prompt = (
-                    f"Modify this {room_type} photo with a whole-house ${room_share_budget:,.0f} budget share allocation in {style_preference.upper()} style. "
-                    f"{timeline_spec['scope_modifier']} {carpentry_clause} "
-                    f"Install custom {surf_spec}. {water_clause} {negative_clause}"
-                )
-
-                master_render_url = _generate_render_for_prompt(source_img, clean_b64, selected_prompt, rec_id, "house_allocated_tier", room_share_budget, room_type)
-                canonical_room_renders[room_type] = master_render_url
-            else:
-                # Reuse the room's canonical render for duplicate angles. May be
-                # None when no genuine AI upgrade could be produced — we do NOT
-                # fall back to the before photo or any stock image.
-                master_render_url = canonical_room_renders.get(room_type)
+            # Every angle of the room shares the single canonical render generated
+            # in Phase 3. May be None when no genuine AI upgrade could be produced —
+            # we never fall back to the before photo or any stock image.
+            master_render_url = canonical_room_renders.get(room_type)
 
             # Phase 5 QA Audit
             audit = {"status": "PASS", "confidence_score": 0.98}

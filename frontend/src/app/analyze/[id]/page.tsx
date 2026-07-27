@@ -930,9 +930,10 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                     <Sparkles className="w-3.5 h-3.5 text-accent-600" />
                     <span>Exact Items Added to Picture</span>
                   </span>
-                  <span className="text-[10px] font-bold text-ink-muted">Tap a badge to highlight it</span>
+                  <span className="text-[10px] font-bold text-ink-muted">Tap an item to highlight it</span>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                {/* Explicit itemized grid: each exact item added + its individual cost */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {selectedItems.map((item, idx) => {
                     const active = selectedItemIdx === idx;
                     return (
@@ -951,16 +952,18 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                         aria-pressed={active}
                         title={item.details || item.label}
                         className={cn(
-                          "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-semibold transition-colors",
+                          "flex w-full items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left font-semibold transition-colors",
                           active
                             ? "bg-accent-600 border-accent-600 text-white shadow-card"
                             : "bg-white border-surface-border text-ink hover:border-accent-300 hover:bg-accent-50"
                         )}
                       >
-                        <span className={cn("font-mono", active ? "text-accent-200" : "text-accent-600")}>+</span>
-                        <span>{item.label}</span>
+                        <span className="flex items-center gap-1.5 min-w-0">
+                          <span className={cn("font-mono shrink-0", active ? "text-accent-200" : "text-accent-600")}>+</span>
+                          <span className="truncate">{item.label}</span>
+                        </span>
                         {item.cost > 0 && (
-                          <span className={cn("tabular-nums font-extrabold", active ? "text-white" : "text-ink-muted")}>
+                          <span className={cn("tabular-nums font-extrabold shrink-0", active ? "text-white" : "text-ink-muted")}>
                             {formatCurrency(displayCost(item.cost))}
                           </span>
                         )}
