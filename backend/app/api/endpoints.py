@@ -724,6 +724,7 @@ async def get_analysis_results(
         tier_5k_url = None
         tier_10k_url = None
         tier_15k_url = None
+        options_list = []
         
         if isinstance(why_raw, str) and (why_raw.startswith("{") or why_raw.startswith('{"')):
             try:
@@ -732,6 +733,7 @@ async def get_analysis_results(
                 tier_5k_url = parsed_why.get("tier_5k_url")
                 tier_10k_url = parsed_why.get("tier_10k_url")
                 tier_15k_url = parsed_why.get("tier_15k_url")
+                options_list = parsed_why.get("options", [])
             except Exception:
                 pass
         elif isinstance(why_raw, dict):
@@ -739,6 +741,47 @@ async def get_analysis_results(
             tier_5k_url = why_raw.get("tier_5k_url")
             tier_10k_url = why_raw.get("tier_10k_url")
             tier_15k_url = why_raw.get("tier_15k_url")
+            options_list = why_raw.get("options", [])
+
+        if not options_list:
+            cost_val = float(r[2])
+            val_add = float(r[3])
+            roi_val = float(r[4])
+            time_str = r[5]
+            sc_list = _ensure_list(r[8])
+            aft_url = r[10] if len(r) > 10 else None
+            options_list = [
+                {
+                    "id": "option_a",
+                    "title": "Option A: Cosmetic Value Refresh",
+                    "cost": max(1500.0, round(cost_val * 0.45, 2)),
+                    "projected_value_increase": round(cost_val * 0.45 * 1.85, 2),
+                    "roi_percentage": 85.0,
+                    "timeline": "Quick Refresh (1-2 Weeks)",
+                    "after_image_url": tier_5k_url or aft_url or "/api/v1/images/homeready_upgrade_5k_cosmetic_refresh.png",
+                    "scope": sc_list[:2] if len(sc_list) >= 2 else sc_list,
+                },
+                {
+                    "id": "option_b",
+                    "title": "Option B: Balanced Designer Upgrade",
+                    "cost": cost_val,
+                    "projected_value_increase": val_add,
+                    "roi_percentage": roi_val,
+                    "timeline": time_str,
+                    "after_image_url": tier_10k_url or aft_url or "/api/v1/images/homeready_upgrade_10k_moderate_upgrade.png",
+                    "scope": sc_list,
+                },
+                {
+                    "id": "option_c",
+                    "title": "Option C: Luxury Architectural Remodel",
+                    "cost": round(cost_val * 1.45, 2),
+                    "projected_value_increase": round(cost_val * 1.45 * 1.48, 2),
+                    "roi_percentage": 48.0,
+                    "timeline": "Full Overhaul (6+ Weeks)",
+                    "after_image_url": tier_15k_url or aft_url or "/api/v1/images/homeready_upgrade_15k_luxury_remodel.png",
+                    "scope": sc_list + [{"item": "[+] Premium Custom Architectural Millwork ($3,500) — Custom built-in cabinetry", "checked": True}],
+                },
+            ]
 
         recommendations.append({
             "upgrade_id": str(r[0]),
@@ -755,6 +798,7 @@ async def get_analysis_results(
             "tier_5k_url": tier_5k_url,
             "tier_10k_url": tier_10k_url,
             "tier_15k_url": tier_15k_url,
+            "options": options_list,
         })
 
     report_url = f"/api/v1/reports/{report_row[0]}/download" if report_row else None
@@ -802,8 +846,73 @@ async def get_recommendations_only(
         if 'conn' in locals() and conn:
             conn.close()
 
-    recommendations = [
-        {
+    recommendations = []
+    for r in rows:
+        why_raw = r[7]
+        why_text = why_raw
+        tier_5k_url = None
+        tier_10k_url = None
+        tier_15k_url = None
+        options_list = []
+
+        if isinstance(why_raw, str) and (why_raw.startswith("{") or why_raw.startswith('{"')):
+            try:
+                parsed_why = json.loads(why_raw)
+                why_text = parsed_why.get("why_details", why_raw)
+                tier_5k_url = parsed_why.get("tier_5k_url")
+                tier_10k_url = parsed_why.get("tier_10k_url")
+                tier_15k_url = parsed_why.get("tier_15k_url")
+                options_list = parsed_why.get("options", [])
+            except Exception:
+                pass
+        elif isinstance(why_raw, dict):
+            why_text = why_raw.get("why_details", str(why_raw))
+            tier_5k_url = why_raw.get("tier_5k_url")
+            tier_10k_url = why_raw.get("tier_10k_url")
+            tier_15k_url = why_raw.get("tier_15k_url")
+            options_list = why_raw.get("options", [])
+
+        if not options_list:
+            cost_val = float(r[2])
+            val_add = float(r[3])
+            roi_val = float(r[4])
+            time_str = r[5]
+            sc_list = _ensure_list(r[8])
+            aft_url = r[10] if len(r) > 10 else None
+            options_list = [
+                {
+                    "id": "option_a",
+                    "title": "Option A: Cosmetic Value Refresh",
+                    "cost": max(1500.0, round(cost_val * 0.45, 2)),
+                    "projected_value_increase": round(cost_val * 0.45 * 1.85, 2),
+                    "roi_percentage": 85.0,
+                    "timeline": "Quick Refresh (1-2 Weeks)",
+                    "after_image_url": tier_5k_url or aft_url or "/api/v1/images/homeready_upgrade_5k_cosmetic_refresh.png",
+                    "scope": sc_list[:2] if len(sc_list) >= 2 else sc_list,
+                },
+                {
+                    "id": "option_b",
+                    "title": "Option B: Balanced Designer Upgrade",
+                    "cost": cost_val,
+                    "projected_value_increase": val_add,
+                    "roi_percentage": roi_val,
+                    "timeline": time_str,
+                    "after_image_url": tier_10k_url or aft_url or "/api/v1/images/homeready_upgrade_10k_moderate_upgrade.png",
+                    "scope": sc_list,
+                },
+                {
+                    "id": "option_c",
+                    "title": "Option C: Luxury Architectural Remodel",
+                    "cost": round(cost_val * 1.45, 2),
+                    "projected_value_increase": round(cost_val * 1.45 * 1.48, 2),
+                    "roi_percentage": 48.0,
+                    "timeline": "Full Overhaul (6+ Weeks)",
+                    "after_image_url": tier_15k_url or aft_url or "/api/v1/images/homeready_upgrade_15k_luxury_remodel.png",
+                    "scope": sc_list + [{"item": "[+] Premium Custom Architectural Millwork ($3,500) — Custom built-in cabinetry", "checked": True}],
+                },
+            ]
+
+        recommendations.append({
             "upgrade_id": str(r[0]),
             "category": r[1],
             "estimated_cost": float(r[2]),
@@ -811,13 +920,15 @@ async def get_recommendations_only(
             "roi_percentage": float(r[4]),
             "timeline": r[5],
             "explanation": r[6],
-            "why_details": r[7],
+            "why_details": why_text,
             "scope": _ensure_list(r[8]),
             "before_image_url": r[9] if len(r) > 9 else None,
             "after_image_url": r[10] if len(r) > 10 else None,
-        }
-        for r in rows
-    ]
+            "tier_5k_url": tier_5k_url,
+            "tier_10k_url": tier_10k_url,
+            "tier_15k_url": tier_15k_url,
+            "options": options_list,
+        })
     return {"analysis_id": analysis_id, "recommendations": recommendations}
 
 @router.get("/reports")

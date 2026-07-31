@@ -51,6 +51,10 @@ class RecommendationItem(BaseModel):
     scope: List[Dict[str, Any]]
     before_image_url: Optional[str] = None
     after_image_url: Optional[str] = None
+    tier_5k_url: Optional[str] = None
+    tier_10k_url: Optional[str] = None
+    tier_15k_url: Optional[str] = None
+    options: Optional[List[Dict[str, Any]]] = None
 
 class AnalysisResultResponse(BaseModel):
     status: str

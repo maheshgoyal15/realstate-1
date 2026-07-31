@@ -121,19 +121,51 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
   const getActiveOption = (rec: any) => {
     if (!rec) return null;
     const key = activeOptionTier[rec.id] || "option_b";
-    if (rec.options && Array.isArray(rec.options)) {
+    if (rec.options && Array.isArray(rec.options) && rec.options.length > 0) {
       const found = rec.options.find((o: any) => o.id === key);
       if (found) return found;
     }
+    const cost = rec.estimatedCost || 10000;
+    const val = rec.projectedValueIncrease || 15000;
+    const roi = rec.roiPercentage || 50;
+    const time = rec.timeline || "2-4 Weeks";
+    const sc = Array.isArray(rec.scope) ? rec.scope : [];
+
+    if (key === "option_a") {
+      const aCost = Math.max(1500, Math.round(cost * 0.45));
+      return {
+        id: "option_a",
+        title: "Option A: Cosmetic Value Refresh",
+        cost: aCost,
+        projectedValueIncrease: Math.round(aCost * 1.85),
+        roiPercentage: 85,
+        timeline: "1-2 Weeks (Quick Refresh)",
+        afterImageUrl: rec.tier5kUrl || rec.afterImageUrl || "/api/v1/images/homeready_upgrade_5k_cosmetic_refresh.png",
+        scope: sc.slice(0, Math.max(1, Math.floor(sc.length / 2))),
+      };
+    }
+    if (key === "option_c") {
+      const cCost = Math.round(cost * 1.45);
+      return {
+        id: "option_c",
+        title: "Option C: Luxury Architectural Remodel",
+        cost: cCost,
+        projectedValueIncrease: Math.round(cCost * 1.48),
+        roiPercentage: 48,
+        timeline: "6+ Weeks (Full Overhaul)",
+        afterImageUrl: rec.tier15kUrl || rec.afterImageUrl || "/api/v1/images/homeready_upgrade_15k_luxury_remodel.png",
+        scope: sc.concat([{ item: "[+] Premium Custom Architectural Millwork ($3,500) — Custom built-in cabinetry", checked: true }]),
+      };
+    }
     return {
       id: "option_b",
-      title: rec.category,
-      cost: rec.estimatedCost,
-      projectedValueIncrease: rec.projectedValueIncrease,
-      roiPercentage: rec.roiPercentage,
-      timeline: rec.timeline,
-      afterImageUrl: rec.afterImageUrl,
-      scope: rec.scope,
+      title: "Option B: Balanced Designer Upgrade",
+      cost: cost,
+      projectedValueIncrease: val,
+      roiPercentage: roi,
+      timeline: time,
+      afterImageUrl: rec.tier10kUrl || rec.afterImageUrl || "/api/v1/images/homeready_upgrade_10k_moderate_upgrade.png",
+      scope: sc,
     };
   };
 
