@@ -973,31 +973,89 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                     <p className="text-[10px] text-ink-muted">Inpaint wall to Sherwin-Williams Repose Gray</p>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => handleTriggerInpaint("accent_wall", "paint_evergreen_fog")}
-                    disabled={inpaintLoading}
-                    className="p-2.5 bg-surface-raised hover:bg-accent-50 border border-surface-border hover:border-accent-400 rounded-xl text-left transition-all text-xs space-y-1 cursor-pointer disabled:opacity-50"
-                  >
-                    <div className="font-semibold text-ink flex items-center justify-between">
-                      <span>🎨 Evergreen Fog Wall</span>
-                      <span className="text-[9px] font-mono bg-accent-100 text-accent-700 px-1.5 py-0.5 rounded">SW 9130</span>
-                    </div>
-                    <p className="text-[10px] text-ink-muted">Inpaint wall to Sherwin-Williams Organic Green</p>
-                  </button>
+                  {/* Option 2: Room-Aware Wall / Vanity / Hardware */}
+                  {selectedRec?.category?.toLowerCase().includes("bath") ? (
+                    <button
+                      type="button"
+                      onClick={() => handleTriggerInpaint("lighting", "brass_vanity_mirror")}
+                      disabled={inpaintLoading}
+                      className="p-2.5 bg-surface-raised hover:bg-accent-50 border border-surface-border hover:border-accent-400 rounded-xl text-left transition-all text-xs space-y-1 cursor-pointer disabled:opacity-50"
+                    >
+                      <div className="font-semibold text-ink flex items-center justify-between">
+                        <span>🪞 Brass Framed Mirror</span>
+                        <span className="text-[9px] font-mono bg-accent-100 text-accent-700 px-1.5 py-0.5 rounded">Vanity</span>
+                      </div>
+                      <p className="text-[10px] text-ink-muted">Upgrade vanity mirror to brushed brass backlit frame</p>
+                    </button>
+                  ) : selectedRec?.category?.toLowerCase().includes("kitchen") ? (
+                    <button
+                      type="button"
+                      onClick={() => handleTriggerInpaint("cabinetry", "brass_cabinet_hardware")}
+                      disabled={inpaintLoading}
+                      className="p-2.5 bg-surface-raised hover:bg-accent-50 border border-surface-border hover:border-accent-400 rounded-xl text-left transition-all text-xs space-y-1 cursor-pointer disabled:opacity-50"
+                    >
+                      <div className="font-semibold text-ink flex items-center justify-between">
+                        <span>✨ Brass Hardware</span>
+                        <span className="text-[9px] font-mono bg-accent-100 text-accent-700 px-1.5 py-0.5 rounded">Modern</span>
+                      </div>
+                      <p className="text-[10px] text-ink-muted">Upgrade cabinet pulls to designer brushed brass</p>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleTriggerInpaint("accent_wall", "paint_evergreen_fog")}
+                      disabled={inpaintLoading}
+                      className="p-2.5 bg-surface-raised hover:bg-accent-50 border border-surface-border hover:border-accent-400 rounded-xl text-left transition-all text-xs space-y-1 cursor-pointer disabled:opacity-50"
+                    >
+                      <div className="font-semibold text-ink flex items-center justify-between">
+                        <span>🎨 Evergreen Fog Wall</span>
+                        <span className="text-[9px] font-mono bg-accent-100 text-accent-700 px-1.5 py-0.5 rounded">SW 9130</span>
+                      </div>
+                      <p className="text-[10px] text-ink-muted">Inpaint wall to Sherwin-Williams Organic Green</p>
+                    </button>
+                  )}
 
-                  <button
-                    type="button"
-                    onClick={() => handleTriggerInpaint("window_drapes", "modern_blackout_drapes")}
-                    disabled={inpaintLoading}
-                    className="p-2.5 bg-surface-raised hover:bg-accent-50 border border-surface-border hover:border-accent-400 rounded-xl text-left transition-all text-xs space-y-1 cursor-pointer disabled:opacity-50"
-                  >
-                    <div className="font-semibold text-ink flex items-center justify-between">
-                      <span>🪟 Blackout Drapes</span>
-                      <span className="text-[9px] font-mono bg-success-subtle text-success px-1.5 py-0.5 rounded">Window</span>
-                    </div>
-                    <p className="text-[10px] text-ink-muted">Inpaint window treatments to tailored drapes</p>
-                  </button>
+                  {/* Option 3: Room-Aware Windows / Privacy Glass */}
+                  {selectedRec?.category?.toLowerCase().includes("bath") ? (
+                    <button
+                      type="button"
+                      onClick={() => handleTriggerInpaint("window_drapes", "frosted_privacy_glass")}
+                      disabled={inpaintLoading}
+                      className="p-2.5 bg-surface-raised hover:bg-accent-50 border border-surface-border hover:border-accent-400 rounded-xl text-left transition-all text-xs space-y-1 cursor-pointer disabled:opacity-50"
+                    >
+                      <div className="font-semibold text-ink flex items-center justify-between">
+                        <span>🚿 Frosted Privacy Glass</span>
+                        <span className="text-[9px] font-mono bg-success-subtle text-success px-1.5 py-0.5 rounded">Bath Window</span>
+                      </div>
+                      <p className="text-[10px] text-ink-muted">Inpaint window to frosted privacy glass & black frame</p>
+                    </button>
+                  ) : selectedRec?.category?.toLowerCase().includes("kitchen") ? (
+                    <button
+                      type="button"
+                      onClick={() => handleTriggerInpaint("lighting", "brass_chandelier")}
+                      disabled={inpaintLoading}
+                      className="p-2.5 bg-surface-raised hover:bg-accent-50 border border-surface-border hover:border-accent-400 rounded-xl text-left transition-all text-xs space-y-1 cursor-pointer disabled:opacity-50"
+                    >
+                      <div className="font-semibold text-ink flex items-center justify-between">
+                        <span>💡 Brass Pendant Lighting</span>
+                        <span className="text-[9px] font-mono bg-success-subtle text-success px-1.5 py-0.5 rounded">Ceiling</span>
+                      </div>
+                      <p className="text-[10px] text-ink-muted">Upgrade ceiling fixtures to brushed brass pendant lights</p>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleTriggerInpaint("window_drapes", "modern_blackout_drapes")}
+                      disabled={inpaintLoading}
+                      className="p-2.5 bg-surface-raised hover:bg-accent-50 border border-surface-border hover:border-accent-400 rounded-xl text-left transition-all text-xs space-y-1 cursor-pointer disabled:opacity-50"
+                    >
+                      <div className="font-semibold text-ink flex items-center justify-between">
+                        <span>🪟 Blackout Drapes</span>
+                        <span className="text-[9px] font-mono bg-success-subtle text-success px-1.5 py-0.5 rounded">Window</span>
+                      </div>
+                      <p className="text-[10px] text-ink-muted">Inpaint window treatments to tailored drapes</p>
+                    </button>
+                  )}
                 </div>
 
                 {inpaintLoading && (

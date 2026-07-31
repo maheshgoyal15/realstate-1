@@ -75,6 +75,24 @@ SELECTIVE_OPTIONS_CATALOG = {
         "title": "Brushed Brass Architectural Light Fixture",
         "prompt": "Replace the existing ceiling lighting with a stunning minimalist brushed brass chandelier ceiling fixture with glowing warm bulbs.",
         "paint_code": ""
+    },
+    "frosted_privacy_glass": {
+        "zone": "window_drapes",
+        "title": "Frosted Privacy Glass Window & Black Accent Frame",
+        "prompt": "Replace clear window glass or blinds with sleek frosted privacy glass in a minimalist matte black window frame.",
+        "paint_code": ""
+    },
+    "brass_vanity_mirror": {
+        "zone": "lighting",
+        "title": "Modern Brushed Brass Framed Vanity Mirror",
+        "prompt": "Upgrade the bathroom vanity mirror to a sleek modern brushed brass framed designer mirror with warm ambient backlight.",
+        "paint_code": ""
+    },
+    "brass_cabinet_hardware": {
+        "zone": "cabinetry",
+        "title": "Brushed Brass Bar Cabinet Hardware",
+        "prompt": "Upgrade cabinet doors and drawers with modern designer brushed brass bar pulls and hardware.",
+        "paint_code": ""
     }
 }
 
