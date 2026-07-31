@@ -36,43 +36,43 @@ SELECTIVE_OPTIONS_CATALOG = {
     "paint_repose_gray": {
         "zone": "accent_wall",
         "title": "Sherwin-Williams Repose Gray (SW 7015)",
-        "prompt": "Repaint wall using Sherwin-Williams Repose Gray (SW 7015) low-VOC eggshell paint with clean trim lines.",
+        "prompt": "Repaint the interior walls of this room in Sherwin-Williams Repose Gray (SW 7015), a chic warm light gray paint color. Ensure clean, sharp contrast against existing white trim, ceilings, and flooring.",
         "paint_code": "SW 7015"
     },
     "paint_evergreen_fog": {
         "zone": "accent_wall",
         "title": "Sherwin-Williams Evergreen Fog (SW 9130)",
-        "prompt": "Repaint accent wall using Sherwin-Williams Evergreen Fog (SW 9130) soft matte organic green paint.",
+        "prompt": "Repaint the primary accent wall in this room in Sherwin-Williams Evergreen Fog (SW 9130), a calming sage green matte paint color. Ensure gorgeous contrast against existing furniture, trim, and flooring.",
         "paint_code": "SW 9130"
     },
     "paint_alabaster": {
         "zone": "accent_wall",
         "title": "Sherwin-Williams Alabaster (SW 7008)",
-        "prompt": "Repaint wall using Sherwin-Williams Alabaster (SW 7008) warm crisp off-white paint.",
+        "prompt": "Repaint the walls in this room in Sherwin-Williams Alabaster (SW 7008), a warm crisp designer off-white paint color.",
         "paint_code": "SW 7008"
     },
     "modern_blackout_drapes": {
         "zone": "window_drapes",
         "title": "Tailored Blackout Drapes & Brushed Metal Rod",
-        "prompt": "Replace window blinds with tailored floor-length blackout drapes and a matte black curtain rod.",
+        "prompt": "Replace any existing window blinds or curtains with luxury floor-length charcoal blackout drapes hanging from a sleek matte black metal curtain rod.",
         "paint_code": ""
     },
     "linen_sheer_drapes": {
         "zone": "window_drapes",
         "title": "Linen Sheer Filter Drapes",
-        "prompt": "Install warm organic white linen sheer window drapes with a brushed nickel curtain rod.",
+        "prompt": "Install elegant flowing white linen sheer window drapes from a brushed nickel curtain rod.",
         "paint_code": ""
     },
     "modern_sconces": {
         "zone": "lighting",
         "title": "Modern Warm LED Bedside Sconces & Fixture",
-        "prompt": "Install modern warm LED bedside sconces and a dimmable flush-mount ceiling light fixture.",
+        "prompt": "Add stylish modern black-and-brass LED bedside wall sconces with glowing warm ambient light.",
         "paint_code": ""
     },
     "brass_chandelier": {
         "zone": "lighting",
         "title": "Brushed Brass Architectural Light Fixture",
-        "prompt": "Install a minimalist modern brushed brass chandelier ceiling fixture.",
+        "prompt": "Replace the existing ceiling lighting with a stunning minimalist brushed brass chandelier ceiling fixture with glowing warm bulbs.",
         "paint_code": ""
     }
 }
@@ -147,10 +147,11 @@ def generate_selective_inpaint(
     })
 
     prompt_text = (
-        f"LOCALIZED INPAINTING EDIT OF MASKED ZONE ONLY. "
-        f"{option_info['prompt']} "
-        f"STRICT INPAINTING REQUIREMENT: Modify ONLY the masked region. Preserve all unmasked pixels, room geometry, furniture placement, windows, and flooring 100% bit-for-bit identical to the original image. "
-        f"STRICT NEGATIVE PROMPT: altered unmasked geometry, moved furniture, distorted room bounds, blurred artifacts."
+        f"STRICT INLINE PHOTO EDITING OF THIS ORIGINAL ROOM PHOTO ({option_info['title'].upper()}). "
+        f"CRITICAL LAYOUT & GEOMETRY LOCK: Preserve the exact camera angle, perspective, room layout, furniture arrangement, flooring, windows, and structural walls of the original photo. "
+        f"PERFORM THIS EXACT TARGETED DESIGN UPGRADE: {option_info['prompt']} "
+        f"Ensure the upgraded {zone_name.replace('_', ' ')} finish blends photorealistically with the room's existing lighting and shadows. "
+        f"DO NOT move furniture or change the room structure. High resolution interior design photography."
     )
 
     key = os.getenv("GEMINI_API_KEY")
@@ -187,7 +188,6 @@ def generate_selective_inpaint(
         "contents": [{
             "parts": [
                 {"inline_data": {"mime_type": "image/jpeg", "data": clean_source_b64}},
-                {"inline_data": {"mime_type": "image/png", "data": mask_b64}},
                 {"text": prompt_text}
             ]
         }]

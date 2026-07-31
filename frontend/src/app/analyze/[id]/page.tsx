@@ -416,10 +416,14 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
       if (res.ok) {
         const data = await res.json();
         if (data.inpainted_image_url) {
+          const newUrl = `${data.inpainted_image_url}?t=${Date.now()}`;
           setSelectedRec((prev: any) => ({
             ...prev,
-            afterImageUrl: data.inpainted_image_url
+            afterImageUrl: newUrl
           }));
+          setRecommendations((prevRecs: any[]) =>
+            prevRecs.map((r) => (r.id === selectedRec.id ? { ...r, afterImageUrl: newUrl } : r))
+          );
           setModalBeforeAfterPct(65);
         }
       }
