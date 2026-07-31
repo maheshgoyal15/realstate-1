@@ -657,137 +657,151 @@ async def get_generated_image(image_name: str):
 
 def _generate_smart_selective_options_for_rec(category: str, why_text: str, scope: List[Any]) -> Tuple[List[str], List[Dict[str, Any]]]:
     cat_lower = (category or "").lower()
+    scope_text = " ".join([
+        (str(item.get("feature", "")) + " " + str(item.get("item", "")) + " " + str(item.get("added_details", "")))
+        if isinstance(item, dict) else str(item)
+        for item in (scope or [])
+    ]).lower()
+    combined_context = f"{cat_lower} {(why_text or '').lower()} {scope_text}"
+
+    # Master library of AI-curated interactive surface & fixture customizations
+    all_candidate_options = [
+        {
+            "zone": "accent_wall",
+            "option_key": "paint_repose_gray",
+            "title": "🎨 SW Repose Gray Walls",
+            "badge": "SW 7015",
+            "description": "Sherwin-Williams Repose Gray low-VOC eggshell wall refresh",
+            "exclude_keywords": ["repose gray", "gray wall"]
+        },
+        {
+            "zone": "accent_wall",
+            "option_key": "paint_evergreen_fog",
+            "title": "🎨 Evergreen Fog Wall",
+            "badge": "SW 9130",
+            "description": "Sherwin-Williams Evergreen Fog soft organic sage green wall",
+            "exclude_keywords": ["evergreen fog", "green wall"]
+        },
+        {
+            "zone": "accent_wall",
+            "option_key": "paint_alabaster",
+            "title": "🎨 SW Alabaster Walls",
+            "badge": "SW 7008",
+            "description": "Sherwin-Williams Alabaster warm crisp designer off-white",
+            "exclude_keywords": ["alabaster", "white wall"]
+        },
+        {
+            "zone": "lighting",
+            "option_key": "brass_vanity_mirror",
+            "title": "🪞 Brass Framed Mirror",
+            "badge": "Vanity",
+            "description": "Modern brushed brass backlit framed designer vanity mirror",
+            "exclude_keywords": ["mirror", "vanity mirror", "framed mirror"]
+        },
+        {
+            "zone": "window_drapes",
+            "option_key": "frosted_privacy_glass",
+            "title": "🚿 Frosted Privacy Glass",
+            "badge": "Bath Window",
+            "description": "Sleek frosted privacy glass window in matte black frame",
+            "exclude_keywords": ["privacy glass", "frosted glass", "frosted window", "drapes", "curtains"]
+        },
+        {
+            "zone": "lighting",
+            "option_key": "modern_sconces",
+            "title": "💡 Warm Vanity Sconces",
+            "badge": "LED",
+            "description": "Stylish modern black-and-brass LED bedside/vanity wall sconces",
+            "exclude_keywords": ["sconce", "sconces", "wall sconce", "bedside lamp"]
+        },
+        {
+            "zone": "cabinetry",
+            "option_key": "brass_cabinet_hardware",
+            "title": "✨ Brass Hardware",
+            "badge": "Modern",
+            "description": "Designer brushed brass bar cabinet handles and drawer pulls",
+            "exclude_keywords": ["brass hardware", "cabinet pull", "hardware", "handles"]
+        },
+        {
+            "zone": "window_drapes",
+            "option_key": "modern_blackout_drapes",
+            "title": "🪟 Blackout Drapes",
+            "badge": "Window",
+            "description": "Tailored floor-length charcoal blackout curtains on metal rod",
+            "exclude_keywords": ["drape", "drapes", "curtain", "curtains", "blackout", "blind", "blinds"]
+        },
+        {
+            "zone": "window_drapes",
+            "option_key": "linen_sheer_drapes",
+            "title": "🪟 Linen Sheer Drapes",
+            "badge": "Sheers",
+            "description": "Elegant flowing organic white linen sheer window drapes",
+            "exclude_keywords": ["drape", "drapes", "curtain", "curtains", "sheer", "blind", "blinds"]
+        },
+        {
+            "zone": "lighting",
+            "option_key": "brass_chandelier",
+            "title": "💡 Brass Chandelier",
+            "badge": "Ceiling",
+            "description": "Minimalist brushed brass chandelier ceiling fixture with warm bulbs",
+            "exclude_keywords": ["chandelier", "pendant", "pendants", "ceiling fixture", "island light"]
+        },
+        {
+            "zone": "accent_wall",
+            "option_key": "crown_molding",
+            "title": "🪵 Crown Molding & Trim",
+            "badge": "Architectural",
+            "description": "Install crisp modern white architectural crown molding & trim",
+            "exclude_keywords": ["crown molding", "molding", "trim", "wainscot"]
+        },
+        {
+            "zone": "flooring",
+            "option_key": "white_oak_flooring",
+            "title": "🪵 White Oak Hardwood",
+            "badge": "Flooring",
+            "description": "Wide-plank European white oak hardwood flooring with natural matte finish",
+            "exclude_keywords": ["hardwood", "white oak floor", "wood floor", "engineered floor", "flooring"]
+        }
+    ]
+
+    # Filter out options where the photo/scope already has that feature
+    eligible_options = []
+    for opt in all_candidate_options:
+        # Check if any exclude keyword is already present in the photograph / scope text
+        if not any(kw in combined_context for kw in opt["exclude_keywords"]):
+            # Also ensure bathroom-only or bedroom-only logic is clean
+            if "bath" in cat_lower and opt["option_key"] in ["modern_blackout_drapes", "linen_sheer_drapes"]:
+                continue
+            if "kitchen" in cat_lower and opt["option_key"] in ["modern_blackout_drapes", "linen_sheer_drapes", "brass_vanity_mirror", "frosted_privacy_glass"]:
+                continue
+            if not ("bath" in cat_lower) and opt["option_key"] in ["brass_vanity_mirror", "frosted_privacy_glass"]:
+                continue
+            eligible_options.append(opt)
+
+    # Pick exactly 6 tailored options (pad with safe universal options if needed)
+    selected_options = eligible_options[:6]
+    if len(selected_options) < 6:
+        for opt in all_candidate_options:
+            if opt not in selected_options and not ("bath" in cat_lower and "drapes" in opt["option_key"]):
+                selected_options.append(opt)
+                if len(selected_options) == 6:
+                    break
+
+    # Extract 6 detected features present in the image
+    detected_features = []
     if "bath" in cat_lower:
-        detected_features = [
-            "Primary Vanity Mirror",
-            "Privacy Glass Bath Window",
-            "Sherwin-Williams Wall Paint",
-            "Brushed Brass Hardware",
-            "Calacatta Quartz Countertop",
-            "Warm LED Vanity Sconces"
-        ]
-        selective_options = [
-            {
-                "zone": "accent_wall",
-                "option_key": "paint_repose_gray",
-                "title": "🎨 SW Repose Gray Walls",
-                "badge": "SW 7015",
-                "description": "Sherwin-Williams Repose Gray low-VOC eggshell wall refresh"
-            },
-            {
-                "zone": "lighting",
-                "option_key": "brass_vanity_mirror",
-                "title": "🪞 Brass Framed Mirror",
-                "badge": "Vanity",
-                "description": "Modern brushed brass backlit framed designer vanity mirror"
-            },
-            {
-                "zone": "window_drapes",
-                "option_key": "frosted_privacy_glass",
-                "title": "🚿 Frosted Privacy Glass",
-                "badge": "Bath Window",
-                "description": "Sleek frosted privacy glass window in matte black frame"
-            },
-            {
-                "zone": "lighting",
-                "option_key": "modern_sconces",
-                "title": "💡 Warm Vanity Sconces",
-                "badge": "LED",
-                "description": "Stylish modern black-and-brass LED bedside/vanity wall sconces"
-            },
-            {
-                "zone": "cabinetry",
-                "option_key": "brass_cabinet_hardware",
-                "title": "✨ Brass Hardware",
-                "badge": "Modern",
-                "description": "Designer brushed brass bar cabinet handles and drawer pulls"
-            }
-        ]
+        detected_features = ["Vanity Mirror & Sconces", "Bathroom Privacy Window", "Sherwin-Williams Paint", "Vanity Hardware", "Quartz Countertop Surface", "Floor & Shower Tile"]
     elif "kitchen" in cat_lower:
-        detected_features = [
-            "Sherwin-Williams Wall Paint",
-            "Brushed Brass Cabinet Hardware",
-            "Architectural Brass Pendants",
-            "Subway Tile Backsplash",
-            "White Oak Island Base",
-            "Calacatta Quartz Countertops"
-        ]
-        selective_options = [
-            {
-                "zone": "accent_wall",
-                "option_key": "paint_repose_gray",
-                "title": "🎨 SW Repose Gray Walls",
-                "badge": "SW 7015",
-                "description": "Sherwin-Williams Repose Gray low-VOC eggshell wall refresh"
-            },
-            {
-                "zone": "cabinetry",
-                "option_key": "brass_cabinet_hardware",
-                "title": "✨ Brass Hardware",
-                "badge": "Modern",
-                "description": "Designer brushed brass bar cabinet handles and drawer pulls"
-            },
-            {
-                "zone": "lighting",
-                "option_key": "brass_chandelier",
-                "title": "💡 Brass Pendant Lighting",
-                "badge": "Ceiling",
-                "description": "Upgrade ceiling fixtures to brushed brass pendant lights"
-            },
-            {
-                "zone": "accent_wall",
-                "option_key": "paint_evergreen_fog",
-                "title": "🎨 Evergreen Fog Wall",
-                "badge": "SW 9130",
-                "description": "Inpaint wall to Sherwin-Williams Organic Green"
-            }
-        ]
+        detected_features = ["Cabinetry & Island", "Backsplash Tile Surface", "Countertop Surface", "Ceiling Pendant Lights", "Cabinet Hardware", "Wall Paint & Trim"]
     else:
-        detected_features = [
-            "Sherwin-Williams Wall Paint",
-            "Charcoal Blackout Drapes",
-            "Warm LED Lighting & Sconces",
-            "European White Oak Flooring",
-            "Modern Architectural Trim"
-        ]
-        selective_options = [
-            {
-                "zone": "accent_wall",
-                "option_key": "paint_repose_gray",
-                "title": "🎨 SW Repose Gray Walls",
-                "badge": "SW 7015",
-                "description": "Sherwin-Williams Repose Gray low-VOC eggshell wall refresh"
-            },
-            {
-                "zone": "accent_wall",
-                "option_key": "paint_evergreen_fog",
-                "title": "🎨 Evergreen Fog Wall",
-                "badge": "SW 9130",
-                "description": "Inpaint wall to Sherwin-Williams Organic Green"
-            },
-            {
-                "zone": "window_drapes",
-                "option_key": "modern_blackout_drapes",
-                "title": "🪟 Blackout Drapes",
-                "badge": "Window",
-                "description": "Inpaint window treatments to tailored floor-length drapes"
-            },
-            {
-                "zone": "lighting",
-                "option_key": "modern_sconces",
-                "title": "💡 Warm LED Sconces",
-                "badge": "Lighting",
-                "description": "Install modern warm LED bedside sconces"
-            },
-            {
-                "zone": "lighting",
-                "option_key": "brass_chandelier",
-                "title": "💡 Brass Chandelier",
-                "badge": "Ceiling",
-                "description": "Install minimalist brushed brass chandelier fixture"
-            }
-        ]
-    return detected_features, selective_options
+        detected_features = ["Wall Paint & Accent Wall", "Window Perimeter & Trim", "Ceiling & Lighting Fixtures", "Flooring Surface", "Architectural Molding", "Furniture & Layout"]
+
+    # Strip helper 'exclude_keywords' from returned dictionaries
+    clean_options = [
+        {k: v for k, v in opt.items() if k != "exclude_keywords"}
+        for opt in selected_options
+    ]
+    return detected_features, clean_options
 
 @router.get("/analyze/{analysis_id}", response_model=AnalysisResultResponse)
 async def get_analysis_results(

@@ -93,6 +93,18 @@ SELECTIVE_OPTIONS_CATALOG = {
         "title": "Brushed Brass Bar Cabinet Hardware",
         "prompt": "Upgrade cabinet doors and drawers with modern designer brushed brass bar pulls and hardware.",
         "paint_code": ""
+    },
+    "crown_molding": {
+        "zone": "accent_wall",
+        "title": "Modern Crown Molding & Architectural Trim",
+        "prompt": "Install crisp modern white architectural crown molding along the ceiling line and upgrade window and door trim.",
+        "paint_code": ""
+    },
+    "white_oak_flooring": {
+        "zone": "flooring",
+        "title": "Wide-Plank White Oak Hardwood Flooring",
+        "prompt": "Replace existing flooring with gorgeous wide-plank European white oak hardwood flooring with a natural matte finish.",
+        "paint_code": ""
     }
 }
 
