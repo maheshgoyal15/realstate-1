@@ -4,7 +4,7 @@ import uuid
 import logging
 import psycopg2
 import psycopg2.extras
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Header, BackgroundTasks, Response
 from fastapi.responses import FileResponse
 
