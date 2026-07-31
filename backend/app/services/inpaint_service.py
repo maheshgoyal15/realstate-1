@@ -106,15 +106,30 @@ def generate_selective_inpaint(
     t_start = uuid.uuid4().hex[:8]
     inpaint_id = str(uuid.uuid4())
 
-    # Decode source image
+    # Decode / load source image from URL, disk path, or base64 string
     try:
-        if "," in source_img_b64:
-            source_img_b64 = source_img_b64.split(",", 1)[1]
-        img_bytes = base64.b64decode(source_img_b64)
-        source_img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+        if source_img_b64.startswith("/api/v1/images/") or source_img_b64.startswith("/"):
+            filename_part = source_img_b64.split("/api/v1/images/")[-1].split("?")[0]
+            if filename_part.startswith("/"):
+                disk_path = filename_part
+            else:
+                disk_path = os.path.join(GENERATED_IMAGES_DIR, filename_part)
+            source_img = Image.open(disk_path).convert("RGB")
+        elif os.path.exists(source_img_b64):
+            source_img = Image.open(source_img_b64).convert("RGB")
+        else:
+            b64_str = source_img_b64
+            if "," in b64_str:
+                b64_str = b64_str.split(",", 1)[1]
+            img_bytes = base64.b64decode(b64_str)
+            source_img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+
+        buf_src = io.BytesIO()
+        source_img.save(buf_src, format="JPEG")
+        clean_source_b64 = base64.b64encode(buf_src.getvalue()).decode("utf-8")
     except Exception as e:
-        logger.error(f"Failed to decode source image for inpainting: {e}")
-        return {"status": "FAIL", "reason": "INVALID_SOURCE_IMAGE"}
+        logger.error(f"Failed to load source image for inpainting: {e}")
+        return {"status": "FAIL", "reason": f"INVALID_SOURCE_IMAGE: {str(e)}"}
 
     w, h = source_img.size
     mask_img = create_zone_mask((w, h), zone_name)
@@ -160,7 +175,7 @@ def generate_selective_inpaint(
         }
 
     # Call Gemini Image Model
-    model = os.getenv("GEMINI_IMAGE_MODEL", "gemini-3.1-flash-image")
+    model = os.getenv("GEMINI_IMAGE_MODEL", "gemini-2.5-flash-image")
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
 
     # Convert mask to b64
@@ -171,7 +186,7 @@ def generate_selective_inpaint(
     payload = {
         "contents": [{
             "parts": [
-                {"inline_data": {"mime_type": "image/jpeg", "data": source_img_b64}},
+                {"inline_data": {"mime_type": "image/jpeg", "data": clean_source_b64}},
                 {"inline_data": {"mime_type": "image/png", "data": mask_b64}},
                 {"text": prompt_text}
             ]
