@@ -530,7 +530,9 @@ async def perform_selective_inpaint(
         source_img_b64=payload.source_image,
         zone_name=payload.zone,
         option_key=payload.option_key,
-        style_preference=payload.style_preference
+        style_preference=payload.style_preference,
+        custom_prompt=payload.custom_prompt,
+        custom_title=payload.custom_title
     )
 
     if result.get("status") != "SUCCESS":
@@ -652,6 +654,140 @@ async def get_generated_image(image_name: str):
     if not os.path.exists(image_path):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
     return FileResponse(image_path, media_type="image/png")
+
+def _generate_smart_selective_options_for_rec(category: str, why_text: str, scope: List[Any]) -> Tuple[List[str], List[Dict[str, Any]]]:
+    cat_lower = (category or "").lower()
+    if "bath" in cat_lower:
+        detected_features = [
+            "Primary Vanity Mirror",
+            "Privacy Glass Bath Window",
+            "Sherwin-Williams Wall Paint",
+            "Brushed Brass Hardware",
+            "Calacatta Quartz Countertop",
+            "Warm LED Vanity Sconces"
+        ]
+        selective_options = [
+            {
+                "zone": "accent_wall",
+                "option_key": "paint_repose_gray",
+                "title": "🎨 SW Repose Gray Walls",
+                "badge": "SW 7015",
+                "description": "Sherwin-Williams Repose Gray low-VOC eggshell wall refresh"
+            },
+            {
+                "zone": "lighting",
+                "option_key": "brass_vanity_mirror",
+                "title": "🪞 Brass Framed Mirror",
+                "badge": "Vanity",
+                "description": "Modern brushed brass backlit framed designer vanity mirror"
+            },
+            {
+                "zone": "window_drapes",
+                "option_key": "frosted_privacy_glass",
+                "title": "🚿 Frosted Privacy Glass",
+                "badge": "Bath Window",
+                "description": "Sleek frosted privacy glass window in matte black frame"
+            },
+            {
+                "zone": "lighting",
+                "option_key": "modern_sconces",
+                "title": "💡 Warm Vanity Sconces",
+                "badge": "LED",
+                "description": "Stylish modern black-and-brass LED bedside/vanity wall sconces"
+            },
+            {
+                "zone": "cabinetry",
+                "option_key": "brass_cabinet_hardware",
+                "title": "✨ Brass Hardware",
+                "badge": "Modern",
+                "description": "Designer brushed brass bar cabinet handles and drawer pulls"
+            }
+        ]
+    elif "kitchen" in cat_lower:
+        detected_features = [
+            "Sherwin-Williams Wall Paint",
+            "Brushed Brass Cabinet Hardware",
+            "Architectural Brass Pendants",
+            "Subway Tile Backsplash",
+            "White Oak Island Base",
+            "Calacatta Quartz Countertops"
+        ]
+        selective_options = [
+            {
+                "zone": "accent_wall",
+                "option_key": "paint_repose_gray",
+                "title": "🎨 SW Repose Gray Walls",
+                "badge": "SW 7015",
+                "description": "Sherwin-Williams Repose Gray low-VOC eggshell wall refresh"
+            },
+            {
+                "zone": "cabinetry",
+                "option_key": "brass_cabinet_hardware",
+                "title": "✨ Brass Hardware",
+                "badge": "Modern",
+                "description": "Designer brushed brass bar cabinet handles and drawer pulls"
+            },
+            {
+                "zone": "lighting",
+                "option_key": "brass_chandelier",
+                "title": "💡 Brass Pendant Lighting",
+                "badge": "Ceiling",
+                "description": "Upgrade ceiling fixtures to brushed brass pendant lights"
+            },
+            {
+                "zone": "accent_wall",
+                "option_key": "paint_evergreen_fog",
+                "title": "🎨 Evergreen Fog Wall",
+                "badge": "SW 9130",
+                "description": "Inpaint wall to Sherwin-Williams Organic Green"
+            }
+        ]
+    else:
+        detected_features = [
+            "Sherwin-Williams Wall Paint",
+            "Charcoal Blackout Drapes",
+            "Warm LED Lighting & Sconces",
+            "European White Oak Flooring",
+            "Modern Architectural Trim"
+        ]
+        selective_options = [
+            {
+                "zone": "accent_wall",
+                "option_key": "paint_repose_gray",
+                "title": "🎨 SW Repose Gray Walls",
+                "badge": "SW 7015",
+                "description": "Sherwin-Williams Repose Gray low-VOC eggshell wall refresh"
+            },
+            {
+                "zone": "accent_wall",
+                "option_key": "paint_evergreen_fog",
+                "title": "🎨 Evergreen Fog Wall",
+                "badge": "SW 9130",
+                "description": "Inpaint wall to Sherwin-Williams Organic Green"
+            },
+            {
+                "zone": "window_drapes",
+                "option_key": "modern_blackout_drapes",
+                "title": "🪟 Blackout Drapes",
+                "badge": "Window",
+                "description": "Inpaint window treatments to tailored floor-length drapes"
+            },
+            {
+                "zone": "lighting",
+                "option_key": "modern_sconces",
+                "title": "💡 Warm LED Sconces",
+                "badge": "Lighting",
+                "description": "Install modern warm LED bedside sconces"
+            },
+            {
+                "zone": "lighting",
+                "option_key": "brass_chandelier",
+                "title": "💡 Brass Chandelier",
+                "badge": "Ceiling",
+                "description": "Install minimalist brushed brass chandelier fixture"
+            }
+        ]
+    return detected_features, selective_options
 
 @router.get("/analyze/{analysis_id}", response_model=AnalysisResultResponse)
 async def get_analysis_results(
@@ -814,6 +950,7 @@ async def get_analysis_results(
                 },
             ]
 
+        det_feats, sel_opts = _generate_smart_selective_options_for_rec(r[1], why_text, _ensure_list(r[8]))
         recommendations.append({
             "upgrade_id": str(r[0]),
             "category": r[1],
@@ -830,6 +967,8 @@ async def get_analysis_results(
             "tier_10k_url": tier_10k_url,
             "tier_15k_url": tier_15k_url,
             "options": options_list,
+            "detected_features": det_feats,
+            "selective_options": sel_opts,
         })
 
     report_url = f"/api/v1/reports/{report_row[0]}/download" if report_row else None
@@ -945,6 +1084,7 @@ async def get_recommendations_only(
                 },
             ]
 
+        det_feats, sel_opts = _generate_smart_selective_options_for_rec(r[1], why_text, _ensure_list(r[8]))
         recommendations.append({
             "upgrade_id": str(r[0]),
             "category": r[1],
@@ -961,6 +1101,8 @@ async def get_recommendations_only(
             "tier_10k_url": tier_10k_url,
             "tier_15k_url": tier_15k_url,
             "options": options_list,
+            "detected_features": det_feats,
+            "selective_options": sel_opts,
         })
     return {"analysis_id": analysis_id, "recommendations": recommendations}
 

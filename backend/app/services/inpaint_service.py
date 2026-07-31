@@ -117,7 +117,9 @@ def generate_selective_inpaint(
     source_img_b64: str,
     zone_name: str,
     option_key: str,
-    style_preference: str = "Modern Farmhouse"
+    style_preference: str = "Modern Farmhouse",
+    custom_prompt: Optional[str] = None,
+    custom_title: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Perform localized AI inpainting on a specific room zone while locking unmasked room geometry.
@@ -126,18 +128,23 @@ def generate_selective_inpaint(
     inpaint_id = str(uuid.uuid4())
 
     # Compute deterministic cache key so repeated selections generate instantly (< 10ms)
-    cache_key_str = f"{source_img_b64[:120]}_{zone_name}_{option_key}_{style_preference}"
+    cache_key_str = f"{source_img_b64[:120]}_{zone_name}_{option_key}_{style_preference}_{custom_prompt or ''}"
     cache_hash = hashlib.sha256(cache_key_str.encode("utf-8")).hexdigest()[:16]
     cached_filename = f"inpaint_cache_{cache_hash}.png"
     cached_filepath = os.path.join(GENERATED_IMAGES_DIR, cached_filename)
     cached_mask_filename = f"inpaint_mask_{cache_hash}.png"
 
-    option_info = SELECTIVE_OPTIONS_CATALOG.get(option_key, {
+    default_info = {
         "zone": zone_name,
-        "title": "Custom Upgrade",
-        "prompt": f"Refine {zone_name} matching {style_preference} design style.",
+        "title": custom_title or "Custom Upgrade",
+        "prompt": custom_prompt or f"Refine {zone_name} matching {style_preference} design style.",
         "paint_code": ""
-    })
+    }
+    option_info = SELECTIVE_OPTIONS_CATALOG.get(option_key, default_info)
+    if custom_prompt:
+        option_info = {**option_info, "prompt": custom_prompt}
+    if custom_title:
+        option_info = {**option_info, "title": custom_title}
 
     if os.path.exists(cached_filepath):
         logger.info(f"[Inpaint Engine] HIT disk cache for {option_key} -> returning instant result (<10ms)")
