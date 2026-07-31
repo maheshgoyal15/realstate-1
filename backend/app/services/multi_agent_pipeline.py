@@ -38,6 +38,25 @@ MAX_AGENT_WORKERS = 8
 # payload size and upload latency dramatically.
 MAX_PROCESS_DIMENSION = 1024
 
+# The phases the client renders as a progress list. Each entry is the stage
+# identifier persisted to analyses.stage, paired with the progress figure that
+# holds while it runs. Wording lives in the frontend so copy changes don't
+# require a backend deploy.
+#
+# The percentages are deliberately uneven: they track measured wall-clock share,
+# not step count. `render` covers image generation, which dominates runtime on a
+# multi-room house, so it owns the 55-90 band and reports sub-progress per room
+# as those renders land.
+PIPELINE_STAGES = {
+    "ingest": 10,      # decode + pre-scale uploads
+    "perception": 30,  # Sub-Agent 1: VLM room recognition & clustering
+    "budget": 45,      # Sub-Agent 2: FinOps whole-house allocation
+    "style": 55,       # Sub-Agent 3: style/spec synthesis
+    "render": 90,      # Sub-Agent 4: spatial renders (longest phase)
+    "audit": 96,       # Sub-Agent 5: scope audit & itemization
+    "done": 100,
+}
+
 
 def _prescale_image(img: Image.Image, max_dim: int = MAX_PROCESS_DIMENSION) -> Image.Image:
     """Downscale an image so its longest edge is at most max_dim, preserving aspect."""
@@ -375,12 +394,12 @@ def execute_multi_agent_pipeline(
     db = get_db()
 
     # Update state: Phase 1 Processing
-    _update_analysis_status(db, analysis_id, "processing", 15)
+    _update_analysis_status(db, analysis_id, "processing", PIPELINE_STAGES["ingest"], "ingest")
 
     # ------------------------------------------------------------------
     # PHASE 1 & 2: Parallel Ingestion, Pre-Scaling & Vision Perception Scan
     # ------------------------------------------------------------------
-    _update_analysis_status(db, analysis_id, "processing", 30)
+    _update_analysis_status(db, analysis_id, "processing", PIPELINE_STAGES["perception"], "perception")
     t_vlm_start = time.time()
 
     parsed_images = []
@@ -495,7 +514,7 @@ def execute_multi_agent_pipeline(
     # SUB-AGENT 2: Whole-House FinOps Capital Allocator Agent
     # ------------------------------------------------------------------
     t_finops_start = time.time()
-    _update_analysis_status(db, analysis_id, "processing", 50)
+    _update_analysis_status(db, analysis_id, "processing", PIPELINE_STAGES["budget"], "budget")
     total_house_budget = float(budget_ceiling or 15000.0)
 
     # Select representative primary rooms (capped at at most 3-4 distinct rooms per property)
@@ -531,7 +550,7 @@ def execute_multi_agent_pipeline(
     # SUB-AGENT 3: Style Synthesis & Prompt Specialist Sub-Agent
     # ------------------------------------------------------------------
     t_style_start = time.time()
-    _update_analysis_status(db, analysis_id, "processing", 70)
+    _update_analysis_status(db, analysis_id, "processing", PIPELINE_STAGES["style"], "style")
     timeline_key = "quick" if "1" in timeline_preference or "quick" in timeline_preference.lower() else ("full_overhaul" if "6" in timeline_preference or "full" in timeline_preference.lower() else "standard")
     timeline_spec = TIMELINE_TAXONOMY[timeline_key]
 
@@ -641,14 +660,35 @@ def execute_multi_agent_pipeline(
 
     render_rooms = [r for r in selected_room_types if r in room_budget_allocations]
     if render_rooms:
+        # Renders are the long pole, so the bar advances per completed room
+        # rather than sitting at one figure for the bulk of the run. The band
+        # between the style and render marks is divided across the rooms.
+        _render_span = PIPELINE_STAGES["render"] - PIPELINE_STAGES["style"]
+        _rooms_done = 0
+        _update_analysis_status(
+            db, analysis_id, "processing", PIPELINE_STAGES["style"], "render",
+            stage_detail=f"0 of {len(render_rooms)} rooms rendered",
+        )
         with concurrent.futures.ThreadPoolExecutor(max_workers=min(MAX_AGENT_WORKERS, len(render_rooms))) as ex:
             for room_type, urls_dict in ex.map(_render_canonical_room, render_rooms):
                 if urls_dict:
                     canonical_room_renders[room_type] = urls_dict
+                _rooms_done += 1
+                _update_analysis_status(
+                    db,
+                    analysis_id,
+                    "processing",
+                    PIPELINE_STAGES["style"] + int(_render_span * _rooms_done / len(render_rooms)),
+                    "render",
+                    stage_detail=f"{_rooms_done} of {len(render_rooms)} rooms rendered",
+                )
+    else:
+        _update_analysis_status(db, analysis_id, "processing", PIPELINE_STAGES["render"], "render")
 
     # ------------------------------------------------------------------
     # PHASE 4 & 5: Itemized Upgrade List & Recommendation Assembly
     # ------------------------------------------------------------------
+    _update_analysis_status(db, analysis_id, "processing", PIPELINE_STAGES["audit"], "audit")
     all_recommendations = []
     aggregated_rooms = list(room_clusters.keys())
     aggregated_defects = ["outdated_finishes", "budget_optimization"]
@@ -790,7 +830,7 @@ def execute_multi_agent_pipeline(
     # Save complete assessment results in database
     t_persist_start = time.time()
     _persist_analysis_result(db, analysis_id, property_id, aggregated_rooms, aggregated_defects, all_recommendations)
-    _update_analysis_status(db, analysis_id, "completed", 100)
+    _update_analysis_status(db, analysis_id, "completed", PIPELINE_STAGES["done"], "done")
     logger.info(f"[PERF] Database persistence & finalization completed in {(time.time() - t_persist_start)*1000:.1f}ms")
 
     total_pipeline_time_ms = (time.time() - t_start) * 1000
@@ -811,12 +851,30 @@ def execute_multi_agent_pipeline(
     return cv_summary, all_recommendations
 
 
-def _update_analysis_status(db, analysis_id: str, status_str: str, progress: int):
+def _update_analysis_status(
+    db,
+    analysis_id: str,
+    status_str: str,
+    progress: int,
+    stage: Optional[str] = None,
+    error: Optional[str] = None,
+    stage_detail: Optional[str] = None,
+):
+    """Record how far the pipeline has got so the client can show real progress.
+
+    Progress only ever moves forward: renders complete out of order across the
+    thread pool, so a late-finishing room must not drag the bar backwards.
+    """
     try:
         cur = db.cursor()
+        # stage_detail is assigned rather than coalesced so that advancing to a
+        # stage without a detail clears the previous stage's note instead of
+        # leaving it stranded under the new heading.
         cur.execute(
-            "UPDATE analyses SET status = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
-            (status_str, analysis_id)
+            "UPDATE analyses SET status = %s, progress = GREATEST(progress, %s), "
+            "stage = COALESCE(%s, stage), stage_detail = %s, error = COALESCE(%s, error), "
+            "updated_at = CURRENT_TIMESTAMP WHERE id = %s",
+            (status_str, int(progress), stage, stage_detail, error, analysis_id)
         )
         db.commit()
     except Exception as e:

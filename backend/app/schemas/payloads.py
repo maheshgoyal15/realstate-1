@@ -61,6 +61,17 @@ class AnalysisResultResponse(BaseModel):
     cv_results: Dict[str, Any]
     recommendations: List[RecommendationItem]
     report_url: Optional[str] = None
+    # Pipeline progress, so a client polling a minutes-long run can show real
+    # state instead of an indeterminate spinner. `stage` is one of the keys in
+    # PIPELINE_STAGES (services/multi_agent_pipeline.py); the client owns the
+    # human-readable wording for each.
+    progress: int = 0
+    stage: Optional[str] = None
+    stage_detail: Optional[str] = None
+    error: Optional[str] = None
+    # When the run began, so a client that reloads mid-analysis reports elapsed
+    # time against the pipeline rather than against its own page load.
+    started_at: Optional[str] = None
 
 class QuoteRequestPayload(BaseModel):
     # Optional: the contractors directory supports general "contact this
