@@ -161,52 +161,15 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
 
   const getActiveOption = (rec: any) => {
     if (!rec) return null;
-    const key = activeOptionTier[rec.id] || "option_b";
-    if (rec.options && Array.isArray(rec.options) && rec.options.length > 0) {
-      const found = rec.options.find((o: any) => o.id === key);
-      if (found) return found;
-    }
-    const cost = rec.estimatedCost || 10000;
-    const val = rec.projectedValueIncrease || 15000;
-    const roi = rec.roiPercentage || 50;
-    const time = rec.timeline || "2-4 Weeks";
-    const sc = Array.isArray(rec.scope) ? rec.scope : [];
-
-    if (key === "option_a") {
-      const aCost = Math.max(1500, Math.round(cost * 0.45));
-      return {
-        id: "option_a",
-        title: "Option A: Cosmetic Value Refresh",
-        cost: aCost,
-        projectedValueIncrease: Math.round(aCost * 1.85),
-        roiPercentage: 85,
-        timeline: "1-2 Weeks (Quick Refresh)",
-        afterImageUrl: rec.tier5kUrl || rec.afterImageUrl || "/api/v1/images/homeready_upgrade_5k_cosmetic_refresh.png",
-        scope: sc.slice(0, Math.max(1, Math.floor(sc.length / 2))),
-      };
-    }
-    if (key === "option_c") {
-      const cCost = Math.round(cost * 1.45);
-      return {
-        id: "option_c",
-        title: "Option C: Luxury Architectural Remodel",
-        cost: cCost,
-        projectedValueIncrease: Math.round(cCost * 1.48),
-        roiPercentage: 48,
-        timeline: "6+ Weeks (Full Overhaul)",
-        afterImageUrl: rec.tier15kUrl || rec.afterImageUrl || "/api/v1/images/homeready_upgrade_15k_luxury_remodel.png",
-        scope: sc.concat([{ item: "[+] Premium Custom Architectural Millwork ($3,500) — Custom built-in cabinetry", checked: true }]),
-      };
-    }
     return {
       id: "option_b",
-      title: "Option B: Balanced Designer Upgrade",
-      cost: cost,
-      projectedValueIncrease: val,
-      roiPercentage: roi,
-      timeline: time,
-      afterImageUrl: rec.tier10kUrl || rec.afterImageUrl || "/api/v1/images/homeready_upgrade_10k_moderate_upgrade.png",
-      scope: sc,
+      title: rec.category,
+      cost: rec.estimatedCost,
+      projectedValueIncrease: rec.projectedValueIncrease,
+      roiPercentage: rec.roiPercentage,
+      timeline: rec.timeline,
+      afterImageUrl: rec.afterImageUrl,
+      scope: rec.scope,
     };
   };
 
@@ -750,46 +713,6 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
 
                       <p className="text-ink-muted text-xs leading-relaxed">{rec.explanation}</p>
 
-                      {/* Interactive Option A / B / C Switcher */}
-                      <div className="flex flex-wrap items-center gap-1.5 bg-surface-sunken p-1.5 rounded-xl border border-surface-border w-fit my-2">
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setActiveOptionTier({ ...activeOptionTier, [rec.id]: "option_a" }); }}
-                          className={cn(
-                            "px-3 py-1 text-xs font-medium rounded-lg transition-all",
-                            (activeOptionTier[rec.id] || "option_b") === "option_a"
-                              ? "bg-accent-600 text-white"
-                              : "text-ink-muted hover:text-ink hover:bg-surface-raised"
-                          )}
-                        >
-                          Option A: Cosmetic ({formatCurrency(displayCost((rec.options?.find((o:any)=>o.id==="option_a")?.cost) || rec.estimatedCost * 0.45))})
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setActiveOptionTier({ ...activeOptionTier, [rec.id]: "option_b" }); }}
-                          className={cn(
-                            "px-3 py-1 text-xs font-medium rounded-lg transition-all",
-                            (activeOptionTier[rec.id] || "option_b") === "option_b"
-                              ? "bg-accent-600 text-white"
-                              : "text-ink-muted hover:text-ink hover:bg-surface-raised"
-                          )}
-                        >
-                          Option B: Balanced ({formatCurrency(displayCost((rec.options?.find((o:any)=>o.id==="option_b")?.cost) || rec.estimatedCost))})
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setActiveOptionTier({ ...activeOptionTier, [rec.id]: "option_c" }); }}
-                          className={cn(
-                            "px-3 py-1 text-xs font-medium rounded-lg transition-all",
-                            (activeOptionTier[rec.id] || "option_b") === "option_c"
-                              ? "bg-accent-600 text-white"
-                              : "text-ink-muted hover:text-ink hover:bg-surface-raised"
-                          )}
-                        >
-                          Option C: Luxury ({formatCurrency(displayCost((rec.options?.find((o:any)=>o.id==="option_c")?.cost) || rec.estimatedCost * 1.45))})
-                        </button>
-                      </div>
-
                       {/* Metrics Grid */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-surface-sunken p-4 rounded-xl border border-surface-border text-xs">
                         <div>
@@ -912,46 +835,8 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                         </span>
                       </div>
 
-                      {/* Interactive Option A/B/C Switcher & Budget share badge */}
+                      {/* Budget share badge */}
                       <div className="flex flex-wrap gap-2 items-center">
-                        <div className="flex items-center gap-1 bg-surface-sunken p-1 rounded-xl border border-surface-border">
-                          <button
-                            type="button"
-                            onClick={() => setActiveOptionTier({ ...activeOptionTier, [selectedRec.id]: "option_a" })}
-                            className={cn(
-                              "px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all",
-                              (activeOptionTier[selectedRec.id] || "option_b") === "option_a"
-                                ? "bg-accent-600 text-white"
-                                : "text-ink-muted hover:text-ink"
-                            )}
-                          >
-                            Option A: Cosmetic
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setActiveOptionTier({ ...activeOptionTier, [selectedRec.id]: "option_b" })}
-                            className={cn(
-                              "px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all",
-                              (activeOptionTier[selectedRec.id] || "option_b") === "option_b"
-                                ? "bg-accent-600 text-white"
-                                : "text-ink-muted hover:text-ink"
-                            )}
-                          >
-                            Option B: Balanced
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setActiveOptionTier({ ...activeOptionTier, [selectedRec.id]: "option_c" })}
-                            className={cn(
-                              "px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all",
-                              (activeOptionTier[selectedRec.id] || "option_b") === "option_c"
-                                ? "bg-accent-600 text-white"
-                                : "text-ink-muted hover:text-ink"
-                            )}
-                          >
-                            Option C: Luxury
-                          </button>
-                        </div>
                         <span className="text-[11px] font-semibold bg-success-subtle text-success border border-success-border px-3 py-1 rounded-lg">
                           {formatCurrency(displayCost(modalCost))} Whole-House Budget Share
                         </span>
