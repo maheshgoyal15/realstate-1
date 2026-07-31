@@ -77,12 +77,25 @@ function ensureArray<T = any>(val: any): T[] {
 // Backend scope items arrive as pre-formatted strings, e.g.
 // "[+] Calacatta Quartz Countertops ($2,850) — Honed finish". Pull them apart so
 // the UI can render each as a clickable pill badge with its own dollar figure.
-function parseScopeItem(raw: string): { label: string; cost: number; details: string } {
-  const m = raw.match(/^\s*\[\+\]\s*(.*?)\s*\(\$([\d,]+(?:\.\d+)?)\)\s*(?:[—-]\s*)?(.*)$/);
+function parseScopeItem(raw: any): { label: string; cost: number; details: string } {
+  if (raw && typeof raw === "object") {
+    if (raw.feature) {
+      return {
+        label: raw.feature,
+        cost: Number(raw.item_cost || 0),
+        details: raw.added_details || "",
+      };
+    }
+    if (raw.item) {
+      return parseScopeItem(String(raw.item));
+    }
+  }
+  const str = String(raw || "");
+  const m = str.match(/^\s*\[\+\]\s*(.*?)\s*\(\$([\d,]+(?:\.\d+)?)\)\s*(?:[—-]\s*)?(.*)$/);
   if (m) {
     return { label: m[1].trim(), cost: Number(m[2].replace(/,/g, "")), details: m[3].trim() };
   }
-  return { label: raw.replace(/^\s*\[\+\]\s*/, "").trim(), cost: 0, details: "" };
+  return { label: str.replace(/^\s*\[\+\]\s*/, "").trim(), cost: 0, details: "" };
 }
 
 // A recommendation category matches a contractor specialty loosely (e.g. "Kitchen

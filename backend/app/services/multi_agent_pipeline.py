@@ -322,7 +322,7 @@ def _generate_render_for_prompt(source_img: Image.Image, source_b64: str, prompt
         logger.info(f"No GEMINI_API_KEY configured; skipping AI render for {room_type} (no fabricated image will be shown).")
         return None
 
-    model = os.getenv("GEMINI_IMAGE_MODEL", "gemini-3.1-flash-image")
+    model = os.getenv("GEMINI_IMAGE_MODEL", "gemini-2.5-flash-image")
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
 
     filename = f"{rec_id}_{tier_name}.png"
@@ -613,7 +613,7 @@ def execute_multi_agent_pipeline(
         neg_tokens = master_plan.get("negative_tokens") or room_tax.get("negative_tokens", "")
 
         rendered_urls = {}
-        for opt_key in ["option_a", "option_b", "option_c"]:
+        def _render_single_option(opt_key: str):
             opt_data = room_opts[opt_key]
             inline_upgrades_text = " | ".join([
                 f"{item['feature']} (${item['item_cost']:,.0f}): {item['added_details']}"
@@ -634,7 +634,16 @@ def execute_multi_agent_pipeline(
                 img_item["source_img"], img_item["b64"], selected_prompt,
                 img_item["rec_id"], opt_key, opt_data["cost"], room_type,
             )
-            rendered_urls[opt_key] = url
+            return opt_key, url
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as opt_ex:
+            futures = [opt_ex.submit(_render_single_option, k) for k in ["option_a", "option_b", "option_c"]]
+            for f in concurrent.futures.as_completed(futures):
+                try:
+                    k, u = f.result()
+                    rendered_urls[k] = u
+                except Exception as e:
+                    logger.warning(f"Option render thread failed: {e}")
 
         logger.info(f"[PERF] Sub-Agent 4 AI Spatial Render for {room_type} completed in {(time.time() - t_single_render)*1000:.1f}ms -> Renders: {rendered_urls}")
         return room_type, rendered_urls
