@@ -202,13 +202,68 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
     return () => { cancelled = true; };
   }, []);
 
-  // Auto-reset visualizer theme when selecting a different recommendation
+  // Auto-reset visualizer theme & eager-prewarm AI inpainting cache when opening a recommendation modal
   useEffect(() => {
     if (selectedRec) {
       const theme = findVisualizerTheme(selectedRec.category);
       setVisualizerTheme(theme?.afterThemes[0]?.value ?? "");
       setModalBeforeAfterPct(50);
       setSelectedItemIdx(null);
+
+      // Eagerly pre-warm the disk cache for the 6 interactive customization options in the background.
+      // Because this runs asynchronously without setting inpaintLoading=true, the user sees the initial
+      // Before/After comparison immediately. By the time they click any option button, the image is
+      // already cached on disk and returns in <10ms!
+      const optsToPrewarm =
+        selectedRec.selectiveOptions ||
+        selectedRec.selective_options || (
+          selectedRec.category?.toLowerCase().includes("bath")
+            ? [
+                { zone: "accent_wall", option_key: "paint_repose_gray", title: "🎨 SW Repose Gray Walls" },
+                { zone: "lighting", option_key: "brass_vanity_mirror", title: "🪞 Brass Framed Mirror" },
+                { zone: "window_drapes", option_key: "frosted_privacy_glass", title: "🚿 Frosted Privacy Glass" },
+                { zone: "lighting", option_key: "modern_sconces", title: "💡 Warm Vanity Sconces" },
+                { zone: "cabinetry", option_key: "brass_cabinet_hardware", title: "✨ Brass Hardware" },
+                { zone: "accent_wall", option_key: "paint_evergreen_fog", title: "🎨 Evergreen Fog Wall" }
+              ]
+            : selectedRec.category?.toLowerCase().includes("kitchen")
+            ? [
+                { zone: "accent_wall", option_key: "paint_repose_gray", title: "🎨 SW Repose Gray Walls" },
+                { zone: "cabinetry", option_key: "brass_cabinet_hardware", title: "✨ Brass Hardware" },
+                { zone: "lighting", option_key: "brass_chandelier", title: "💡 Brass Pendant Lighting" },
+                { zone: "accent_wall", option_key: "paint_evergreen_fog", title: "🎨 Evergreen Fog Wall" },
+                { zone: "accent_wall", option_key: "paint_alabaster", title: "🎨 SW Alabaster Walls" },
+                { zone: "window_drapes", option_key: "linen_sheer_drapes", title: "🪟 Linen Sheer Drapes" }
+              ]
+            : [
+                { zone: "accent_wall", option_key: "paint_repose_gray", title: "🎨 SW Repose Gray Walls" },
+                { zone: "accent_wall", option_key: "paint_evergreen_fog", title: "🎨 Evergreen Fog Wall" },
+                { zone: "window_drapes", option_key: "modern_blackout_drapes", title: "🪟 Blackout Drapes" },
+                { zone: "lighting", option_key: "modern_sconces", title: "💡 Warm LED Sconces" },
+                { zone: "lighting", option_key: "brass_chandelier", title: "💡 Brass Chandelier" },
+                { zone: "window_drapes", option_key: "linen_sheer_drapes", title: "🪟 Linen Sheer Drapes" }
+              ]
+        );
+
+      const sourceImg = selectedRec.beforeImageUrl || uploadedBeforeImg || "";
+      if (sourceImg && optsToPrewarm.length > 0) {
+        optsToPrewarm.forEach((opt: any, idx: number) => {
+          setTimeout(() => {
+            apiFetch("/api/v1/inpaint", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                source_image: sourceImg,
+                zone: opt.zone,
+                option_key: opt.option_key || opt.optionKey,
+                style_preference: "Modern Farmhouse",
+                custom_prompt: opt.prompt,
+                custom_title: opt.title
+              })
+            }).catch(() => { /* silent fallback if background warm fails */ });
+          }, idx * 600); // stagger by 600ms to keep network & CPU smooth
+        });
+      }
     }
   }, [selectedRec]);
 
