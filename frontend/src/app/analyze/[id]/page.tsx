@@ -1020,15 +1020,15 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="flex items-center space-x-2">
                     <Sparkles className="w-4 h-4 text-accent-600" />
-                    <span className="text-xs font-semibold text-ink tracking-tight">Interactive Selective Inpainting Canvas (6 Dynamic Options)</span>
+                    <span className="text-xs font-semibold text-ink tracking-tight">Interactive Room Customizer (6 Tailored Options)</span>
                   </div>
                   <span className="text-[9px] font-semibold uppercase tracking-wider bg-accent-50 text-accent-700 border border-accent-200 px-2.5 py-0.5 rounded-full w-fit">
-                    AI Photo Surface Analyzer
+                    AI Photo Customizer
                   </span>
                 </div>
 
                 <p className="text-[11px] text-ink-muted">
-                  Select any option below to instantly inpaint and customize the detected surface in your photograph:
+                  Select any option below to preview how this upgrade transforms your photograph:
                 </p>
 
                 {/* 6 Interactive Customization Buttons Grid */}
@@ -1263,7 +1263,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                 {inpaintLoading && (
                   <div className="flex items-center justify-center space-x-2 py-2 text-xs font-medium text-ink-muted">
                     <Sparkles className="w-4 h-4 text-accent-500 animate-spin" />
-                    <span>Generating localized AI inpainting render...</span>
+                    <span>Updating your room photo with this upgrade...</span>
                   </div>
                 )}
               </div>
