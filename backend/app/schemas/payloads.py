@@ -87,3 +87,70 @@ class AnalysisSummaryResponse(BaseModel):
     cost: float
     reportUrl: Optional[str] = None
 
+
+class MLSImportRequest(BaseModel):
+    mls_id: str = Field(..., min_length=2, max_length=100, description="MLS Listing ID")
+    user_budget: float = Field(15000.0, ge=0.0, le=10000000.0, description="User budget ceiling in USD")
+    style_preference: str = Field("Modern Farmhouse", min_length=2, max_length=100, description="Design style preference")
+
+
+class MLSImportResponse(BaseModel):
+    mls_id: str
+    address: str
+    list_price: float
+    bedrooms: int
+    bathrooms: float
+    photos_imported_count: int
+    analysis_id: str
+    status: str
+
+
+class InpaintRequest(BaseModel):
+    source_image: str = Field(..., description="Base64 encoded source image string")
+    zone: str = Field(..., min_length=2, max_length=50, description="Target room zone (accent_wall | window_drapes | lighting | cabinetry)")
+    option_key: str = Field(..., min_length=2, max_length=100, description="Selective upgrade option key")
+    style_preference: str = Field("Modern Farmhouse", max_length=100, description="Style preference")
+
+
+class InpaintResponse(BaseModel):
+    status: str
+    inpaint_id: str
+    inpainted_image_url: str
+    mask_image_url: str
+    zone: str
+    option_title: str
+    paint_code: Optional[str] = ""
+
+
+# Category 1 Feature Payloads
+
+class UserProfileUpdateRequest(BaseModel):
+    full_name: Optional[str] = Field(None, min_length=1, max_length=255)
+    phone: Optional[str] = Field(None, max_length=50)
+    current_password: Optional[str] = Field(None, min_length=8, max_length=128)
+    new_password: Optional[str] = Field(None, min_length=12, max_length=128)
+
+class AgencyBrandingUpdateRequest(BaseModel):
+    company_name: Optional[str] = Field(None, max_length=255)
+    branding_color: Optional[str] = Field(None, max_length=20)
+    footer_text: Optional[str] = Field(None, max_length=500)
+
+class NotificationSettingsUpdateRequest(BaseModel):
+    analysis_complete_alerts: Optional[bool] = True
+    new_report_requests: Optional[bool] = True
+
+class PropertyCreatePayload(BaseModel):
+    address: str = Field(..., min_length=5, max_length=500)
+    mls_id: Optional[str] = Field(None, max_length=100)
+    style_preference: Optional[str] = Field("Modern", max_length=100)
+    budget_ceiling: Optional[float] = Field(0.0, ge=0.0)
+
+class TeamInvitePayload(BaseModel):
+    email: str = Field(..., min_length=5, max_length=255)
+    role: str = Field("Viewer", min_length=2, max_length=50)
+
+class ContractorReviewPayload(BaseModel):
+    rating: float = Field(..., ge=1.0, le=5.0)
+    review_text: str = Field(..., min_length=5, max_length=2000)
+
+

@@ -180,6 +180,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
   const [analysisDate, setAnalysisDate] = useState("");
   const [overallScore, setOverallScore] = useState(7);
   const [issuesCount, setIssuesCount] = useState(3);
+  const [detectedDefects, setDetectedDefects] = useState<string[]>([]);
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [detectedRooms, setDetectedRooms] = useState<any[]>([]);
 
@@ -322,6 +323,40 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
       setModalMessage("Couldn't submit the quote request right now. Please try again.");
     } finally {
       setSubmittingQuoteFor(null);
+    }
+  };
+
+  const [inpaintLoading, setInpaintLoading] = useState(false);
+
+  const handleTriggerInpaint = async (zone: string, optionKey: string) => {
+    if (!selectedRec) return;
+    setInpaintLoading(true);
+    try {
+      const sourceImg = selectedRec.beforeImageUrl || uploadedBeforeImg || "";
+      const res = await apiFetch("/api/v1/inpaint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source_image: sourceImg,
+          zone: zone,
+          option_key: optionKey,
+          style_preference: "Modern Farmhouse"
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.inpainted_image_url) {
+          setSelectedRec((prev: any) => ({
+            ...prev,
+            afterImageUrl: data.inpainted_image_url
+          }));
+          setModalBeforeAfterPct(65);
+        }
+      }
+    } catch (e) {
+      console.error("Inpainting error:", e);
+    } finally {
+      setInpaintLoading(false);
     }
   };
 
@@ -494,76 +529,22 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
         </div>
       </div>
 
-      {/* Live Whole-House Budget Dial */}
-      {recommendations.length > 0 && budgetTotal !== null && (
-        <Card hoverEffect={false} className="p-6 md:p-7 space-y-5">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div>
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-accent-600">
-                Whole-House Budget Allocator
-              </span>
-              <h3 className="text-lg font-bold text-ink tracking-tight">
-                Set your total remodel budget
-              </h3>
-              <p className="text-[11px] text-ink-muted mt-0.5">
-                Drag the dial — every room&apos;s allocated share updates instantly.
-              </p>
-            </div>
-            <div className="text-right shrink-0">
-              <p className="text-[9px] font-bold uppercase tracking-widest text-ink-subtle">Total House Budget</p>
-              <p className="text-3xl font-extrabold text-ink tabular-nums">{formatCurrency(budgetTotal)}</p>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <input
-              id="whole-house-budget-dial"
-              type="range"
-              min={5000}
-              max={100000}
-              step={1000}
-              value={budgetTotal}
-              onChange={(e) => setBudgetTotal(Number(e.target.value))}
-              aria-label="Whole-house remodel budget"
-              className="w-full accent-accent-600 cursor-pointer"
-            />
-            <div className="flex justify-between text-[10px] font-semibold text-ink-subtle tabular-nums">
-              <span>$5,000</span>
-              <span>$100,000</span>
-            </div>
-          </div>
-
-          {/* Per-room allocation preview, live-scaled from the dial */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-            {processedRecommendations.map((rec) => (
-              <div
-                key={`alloc-${rec.id}`}
-                className="bg-surface-sunken border border-surface-border rounded-xl p-3 text-xs"
-              >
-                <p className="font-semibold text-ink truncate" title={rec.category}>{rec.category}</p>
-                <p className="font-extrabold text-accent-600 tabular-nums mt-1">{formatCurrency(displayCost(rec.estimatedCost))}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
-
       {/* Two-Column Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
         {/* Left Column (40% width on Desktop) */}
         <aside className="lg:col-span-4 space-y-6">
           <Card hoverEffect={false} className="space-y-6">
-            {/* Analyzed Property Image Banner */}
+            {/* Property Image Banner */}
             {(uploadedBeforeImg || (recommendations.length > 0 && recommendations[0].beforeImageUrl)) && (
               <div className="w-full h-48 rounded-xl overflow-hidden relative border border-surface-border shadow-sm">
                 <img
                   src={uploadedBeforeImg || recommendations[0].beforeImageUrl}
-                  alt="Analyzed Property"
+                  alt="Original Property Photo"
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute top-2 left-2 bg-navy-950/80 backdrop-blur-sm text-white font-bold text-[10px] px-2.5 py-1 rounded-lg shadow-card border border-white/10">
-                  Analyzed Property Photo
+                  Original Property Photo
                 </div>
               </div>
             )}
@@ -608,9 +589,15 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                   <span className="font-bold text-ink">{issuesCount}</span>
                 </div>
                 <ul className="space-y-1.5 text-ink-muted list-disc list-inside">
-                  <li>Outdated kitchen cabinetry (built 1995)</li>
-                  <li>Wear shingles flags on roof corners</li>
-                  <li>Bathroom spa upgrade opportunities</li>
+                  {detectedDefects.length > 0 ? (
+                    detectedDefects.map((defect, i) => (
+                      <li key={i} className="capitalize">{defect.replace(/_/g, " ")}</li>
+                    ))
+                  ) : (
+                    recommendations.slice(0, 4).map((rec, i) => (
+                      <li key={i} className="capitalize">{rec.category} (High ROI Priority)</li>
+                    ))
+                  )}
                 </ul>
               </div>
             </div>
@@ -919,6 +906,70 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                   <div className="flex flex-col items-center justify-center w-full h-full text-ink-subtle p-4">
                     <Sparkles className="w-12 h-12 text-accent-400 mb-3" />
                     <p className="font-bold text-sm text-ink-muted">No concept preview available for this room.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Interactive Selective Inpainting Studio Toolbar */}
+              <div className="bg-surface-sunken border border-accent-300/80 rounded-2xl p-4 space-y-3">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center space-x-2">
+                    <Sparkles className="w-4 h-4 text-accent-600" />
+                    <span className="text-xs font-bold text-ink tracking-tight">Interactive Selective Inpainting Canvas</span>
+                  </div>
+                  <span className="text-[9px] font-extrabold uppercase tracking-wider bg-accent-50 text-accent-700 border border-accent-200 px-2.5 py-0.5 rounded-full">
+                    Live Zone Customizer
+                  </span>
+                </div>
+                <p className="text-[11px] text-ink-muted">
+                  Test localized AI inpainting customization directly on specific zones of your photograph:
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleTriggerInpaint("accent_wall", "paint_repose_gray")}
+                    disabled={inpaintLoading}
+                    className="p-2.5 bg-surface-raised hover:bg-accent-50 border border-surface-border hover:border-accent-400 rounded-xl text-left transition-all text-xs space-y-1 cursor-pointer disabled:opacity-50"
+                  >
+                    <div className="font-bold text-ink flex items-center justify-between">
+                      <span>🎨 Repose Gray Wall</span>
+                      <span className="text-[9px] font-mono bg-accent-100 text-accent-700 px-1.5 py-0.5 rounded">SW 7015</span>
+                    </div>
+                    <p className="text-[10px] text-ink-muted">Inpaint wall to Sherwin-Williams Repose Gray</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleTriggerInpaint("accent_wall", "paint_evergreen_fog")}
+                    disabled={inpaintLoading}
+                    className="p-2.5 bg-surface-raised hover:bg-accent-50 border border-surface-border hover:border-accent-400 rounded-xl text-left transition-all text-xs space-y-1 cursor-pointer disabled:opacity-50"
+                  >
+                    <div className="font-bold text-ink flex items-center justify-between">
+                      <span>🎨 Evergreen Fog Wall</span>
+                      <span className="text-[9px] font-mono bg-accent-100 text-accent-700 px-1.5 py-0.5 rounded">SW 9130</span>
+                    </div>
+                    <p className="text-[10px] text-ink-muted">Inpaint wall to Sherwin-Williams Organic Green</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleTriggerInpaint("window_drapes", "modern_blackout_drapes")}
+                    disabled={inpaintLoading}
+                    className="p-2.5 bg-surface-raised hover:bg-accent-50 border border-surface-border hover:border-accent-400 rounded-xl text-left transition-all text-xs space-y-1 cursor-pointer disabled:opacity-50"
+                  >
+                    <div className="font-bold text-ink flex items-center justify-between">
+                      <span>🪟 Blackout Drapes</span>
+                      <span className="text-[9px] font-mono bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">Window</span>
+                    </div>
+                    <p className="text-[10px] text-ink-muted">Inpaint window treatments to tailored drapes</p>
+                  </button>
+                </div>
+
+                {inpaintLoading && (
+                  <div className="flex items-center justify-center space-x-2 py-2 text-xs font-bold text-accent-600 animate-pulse">
+                    <Sparkles className="w-4 h-4 text-accent-500 animate-spin" />
+                    <span>Generating localized AI inpainting render...</span>
                   </div>
                 )}
               </div>

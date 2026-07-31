@@ -8,6 +8,8 @@ import {
   UploadCloud,
   Trash2,
   AlertTriangle,
+  Building,
+  Download,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -38,6 +40,11 @@ export default function AnalyzePropertyPage() {
   const [userBudget, setUserBudget] = useState<number | string>(24000);
   const [stylePreference, setStylePreference] = useState("traditional");
   const [timelinePreference, setTimelinePreference] = useState("quick");
+
+  // SimplyRETS MLS Import States
+  const [importMlsId, setImportMlsId] = useState("1005192");
+  const [mlsImportLoading, setMlsImportLoading] = useState(false);
+
 
   // Attached files/photos matching specs
   const [attachedFiles, setAttachedFiles] = useState<{ name: string; size: string; dataUrl: string; isLowQuality?: boolean }[]>([]);
@@ -92,6 +99,37 @@ export default function AnalyzePropertyPage() {
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       processFiles(e.dataTransfer.files);
+    }
+  };
+
+  const handleDirectMlsImport = async (targetMlsId?: string) => {
+    const idToUse = targetMlsId || importMlsId || mlsId;
+    if (!idToUse) {
+      setModalMessage("Please enter a valid MLS Listing ID.");
+      return;
+    }
+    setMlsImportLoading(true);
+    try {
+      const res = await apiFetch("/api/v1/mls/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mls_id: idToUse,
+          user_budget: Number(userBudget) || 24000,
+          style_preference: stylePreference || "modern"
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        router.push(`/analyze/${data.analysis_id}`);
+      } else {
+        const err = await res.json();
+        setModalMessage(err.detail || "MLS import failed.");
+      }
+    } catch (e) {
+      setModalMessage("Network error during MLS import.");
+    } finally {
+      setMlsImportLoading(false);
     }
   };
 
@@ -202,6 +240,67 @@ export default function AnalyzePropertyPage() {
         {step === 1 && (
           <div className="space-y-8">
             <h2 className="text-xl font-bold text-ink border-b border-surface-border pb-4">Step 1: Property Details</h2>
+
+            {/* SimplyRETS Live MLS Auto-Ingestion Card (Hidden/Commented)
+            <div className="bg-gradient-to-r from-navy-900 to-navy-800 border border-accent-500/30 rounded-2xl p-5 text-white space-y-4 shadow-card">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Building className="w-5 h-5 text-accent-400" />
+                  <h4 className="text-sm font-bold tracking-tight">Direct SimplyRETS MLS Import</h4>
+                </div>
+                <span className="text-[10px] uppercase font-mono bg-accent-500/20 text-accent-300 border border-accent-500/30 px-2 py-0.5 rounded-full font-bold">
+                  Live Feed Connected
+                </span>
+              </div>
+              <p className="text-xs text-slate-300">
+                Enter an MLS listing ID to pull live property details and photos directly from SimplyRETS, initialize analysis, and run AI ROI calculations without uploading photos manually.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    placeholder="Enter MLS ID (e.g. 1005192)"
+                    value={importMlsId}
+                    onChange={(e) => setImportMlsId(e.target.value)}
+                    className="w-full bg-navy-950/80 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-xs focus:border-accent-400 focus:outline-none placeholder-slate-500 font-mono"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleDirectMlsImport(importMlsId)}
+                  disabled={mlsImportLoading}
+                  className="bg-accent-500 hover:bg-accent-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-card flex items-center justify-center space-x-2 shrink-0 disabled:opacity-50"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>{mlsImportLoading ? "Importing MLS..." : "Import & Analyze Listing"}</span>
+                </button>
+              </div>
+
+              <div className="pt-2 border-t border-slate-700/60 flex flex-wrap items-center gap-2">
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Try Sandbox MLS IDs:</span>
+                {[
+                  { id: "1005192", name: "74434 East Sweet Bottom" },
+                  { id: "1005221", name: "8369 West MAJESTY Path" },
+                  { id: "1005252", name: "90678 South VELLUM Ext" },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setImportMlsId(item.id);
+                      handleDirectMlsImport(item.id);
+                    }}
+                    disabled={mlsImportLoading}
+                    className="bg-navy-950/60 hover:bg-slate-800 border border-slate-700 text-[11px] text-slate-200 px-2.5 py-1 rounded-lg transition-colors flex items-center space-x-1 font-mono"
+                  >
+                    <span>#{item.id}</span>
+                    <span className="text-slate-400 font-sans text-[10px]">({item.name})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            */}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Input
@@ -357,6 +456,67 @@ export default function AnalyzePropertyPage() {
               </p>
               <Button id="browse-files-btn" variant="secondary" size="sm">Browse Files</Button>
             </div>
+
+            {/* SimplyRETS Live MLS Auto-Ingestion Card (Hidden/Commented)
+            <div className="bg-gradient-to-r from-navy-900 to-navy-800 border border-accent-500/30 rounded-2xl p-5 text-white space-y-4 shadow-card">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Building className="w-5 h-5 text-accent-400" />
+                  <h4 className="text-sm font-bold tracking-tight">Direct SimplyRETS MLS Import</h4>
+                </div>
+                <span className="text-[10px] uppercase font-mono bg-accent-500/20 text-accent-300 border border-accent-500/30 px-2 py-0.5 rounded-full font-bold">
+                  Live Feed Connected
+                </span>
+              </div>
+              <p className="text-xs text-slate-300">
+                Enter an MLS listing ID to pull live property details and photos directly from SimplyRETS, initialize analysis, and run AI ROI calculations.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    placeholder="Enter MLS ID (e.g. 1005192)"
+                    value={importMlsId}
+                    onChange={(e) => setImportMlsId(e.target.value)}
+                    className="w-full bg-navy-950/80 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-xs focus:border-accent-400 focus:outline-none placeholder-slate-500 font-mono"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleDirectMlsImport(importMlsId)}
+                  disabled={mlsImportLoading}
+                  className="bg-accent-500 hover:bg-accent-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-card flex items-center justify-center space-x-2 shrink-0 disabled:opacity-50"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>{mlsImportLoading ? "Importing MLS..." : "Import & Analyze Listing"}</span>
+                </button>
+              </div>
+
+              <div className="pt-2 border-t border-slate-700/60 flex flex-wrap items-center gap-2">
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Try Sandbox MLS IDs:</span>
+                {[
+                  { id: "1005192", name: "74434 East Sweet Bottom" },
+                  { id: "1005221", name: "8369 West MAJESTY Path" },
+                  { id: "1005252", name: "90678 South VELLUM Ext" },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setImportMlsId(item.id);
+                      handleDirectMlsImport(item.id);
+                    }}
+                    disabled={mlsImportLoading}
+                    className="bg-navy-950/60 hover:bg-slate-800 border border-slate-700 text-[11px] text-slate-200 px-2.5 py-1 rounded-lg transition-colors flex items-center space-x-1 font-mono"
+                  >
+                    <span>#{item.id}</span>
+                    <span className="text-slate-400 font-sans text-[10px]">({item.name})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            */}
 
             {/* Quick Test with Sample Photos (Eval Set) */}
             <div className="bg-surface-sunken border border-surface-border rounded-2xl p-4 space-y-3">

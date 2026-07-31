@@ -17,6 +17,7 @@ import psycopg2.extras
 from app.core.config import settings
 from app.core.db import get_db
 from app.services.agents import audit_generated_render
+from app.services.agents.finops_budget_agent import build_room_scope as build_room_scope_agent
 
 logger = logging.getLogger(__name__)
 
@@ -255,61 +256,11 @@ def allocate_house_budget(weights: Dict[str, float], total_budget: float) -> Dic
     return {}
 
 
-def build_room_scope(room_budget: float, has_water: bool, specs: Dict[str, str]) -> List[Dict[str, Any]]:
+def build_room_scope(room_budget: float, has_water: bool, specs: Dict[str, str], room_type: str = "Kitchen", style_preference: str = "Modern") -> List[Dict[str, Any]]:
     """Return itemized upgrades whose costs sum exactly to room_budget, choosing a
-    scope tier the budget can realistically fund. Cosmetic budgets get paint /
-    hardware / lighting refreshes only — custom cabinetry and stone surfaces
-    appear only once the budget clears their real cost floor. This keeps the
-    itemized additions honest: a $2,500 room never claims a custom cabinet."""
-    cab = specs.get("cabinets", "Custom cabinetry")
-    shelv = specs.get("shelving", "Open shelving")
-    surf = specs.get("surface", "Upgraded surfaces")
-    fix = specs.get("fixtures", "Architectural lighting")
-    fixture_detail = "Upgraded sink, faucet and fixtures" if has_water else "New lighting and fixtures"
-    # Surface detail must never imply plumbing/countertops in a dry room.
-    surface_detail_full = (
-        "Premium stone/quartz surfaces replacing the existing countertops" if has_water
-        else "Premium feature-wall surfaces and trim detailing (no plumbing or countertops)"
-    )
-    surface_detail_mid = (
-        "Durable engineered/laminate surfaces with an updated backsplash" if has_water
-        else "Durable engineered feature-wall surfaces and trim (no plumbing or countertops)"
-    )
-
-    if room_budget >= 8000:
-        # Full renovation: structural cabinetry and stone surfaces are affordable.
-        items = [
-            (f"Custom {surf}", 0.34, surface_detail_full),
-            (cab, 0.40, "Full custom cabinetry with soft-close hardware"),
-            (shelv, 0.14, "Built-in shelving and storage racks"),
-            (fix, 0.12, fixture_detail),
-        ]
-    elif room_budget >= 4000:
-        # Mid renovation: refacing and engineered surfaces, not a full rebuild.
-        items = [
-            (f"Cabinet refacing ({cab.split(',')[0]})", 0.42, "Reface existing cabinet boxes with new doors, fronts and hardware"),
-            (f"Engineered {surf}", 0.30, surface_detail_mid),
-            (shelv, 0.16, "Open shelving and storage organizers"),
-            (fix, 0.12, fixture_detail),
-        ]
-    else:
-        # Cosmetic refresh only: no cabinet or surface replacement claimed.
-        items = [
-            ("Repaint existing cabinetry & trim", 0.40, "Professional repaint of existing cabinets and millwork (no replacement)"),
-            ("Updated hardware & fixtures", 0.20, "New handles, pulls and fixtures"),
-            ("Refreshed lighting", 0.22, "Updated ceiling and task lighting"),
-            ("Floating accent shelves", 0.18, "Lightweight wall-mounted display shelves"),
-        ]
-
-    scope = [
-        {"feature": label, "item_cost": round(room_budget * weight, 2), "added_details": detail}
-        for label, weight, detail in items
-    ]
-    # Reconcile rounding drift so the itemized costs sum to the budget exactly.
-    drift = round(room_budget - sum(i["item_cost"] for i in scope), 2)
-    if scope:
-        scope[0]["item_cost"] = round(scope[0]["item_cost"] + drift, 2)
-    return scope
+    scope tier the budget can realistically fund. Delegates to the FinOps Budget Agent
+    for room-appropriate, non-elevated inline itemization with exact paint codes."""
+    return build_room_scope_agent(room_budget, has_water, specs, room_type, style_preference)
 
 
 def _get_gemini_api_key() -> str:
@@ -434,14 +385,21 @@ def execute_multi_agent_pipeline(
 
     p2_prompt = """
     Role: Senior Architectural Vision Specialist.
-    Identify the primary room type in this photograph and detect built-in storage or cabinetry.
+    Analyze this photograph of a residential property:
+    1. Identify primary room type (Kitchen, Bathroom, Bedroom, Living Room, Home Office, Laundry Room).
+    2. Check if this is an Open-Concept space (e.g. Living room with dining area or kitchen in background).
+    3. Detect specific key furniture pieces that MUST be preserved (e.g., dining_table, dining_chairs, sofa, bed, tv).
+    4. Detect storage/fixtures (cabinets, shelves, sink/faucets).
+    
     Output strict JSON:
     {
       "room_type": "Kitchen | Bathroom | Bedroom | Living Room | Home Office | Laundry Room",
+      "is_open_concept": false,
+      "detected_furniture_to_preserve": ["dining_table", "dining_chairs"],
       "detected_cabinets": true,
       "detected_shelves_or_racks": true,
       "has_sink_or_faucet": false,
-      "specific_objects_summary": ["cabinets", "shelves", "lighting"]
+      "specific_objects_summary": ["cabinets", "dining table"]
     }
     """
 
@@ -621,18 +579,51 @@ def execute_multi_agent_pipeline(
         surf_spec = master_plan.get("surface_spec") or room_tax["primary_surface"]
         fix_spec = master_plan.get("fixture_spec") or (room_tax["fixtures"] if has_water else "Architectural lighting")
 
-        carpentry_clause = f"Identify existing cabinets, shelves, racks, and wardrobes and replace with {cab_spec} and {shelv_spec}. "
+        itemized_additions = build_room_scope(
+            room_share_budget,
+            has_water,
+            {"cabinets": cab_spec, "shelving": shelv_spec, "surface": surf_spec, "fixtures": fix_spec},
+            room_type,
+        )
+
+        inline_upgrades_text = " | ".join([
+            f"{item['feature']} (${item['item_cost']:,.0f}): {item['added_details']}"
+            for item in itemized_additions
+        ])
+
+        inv = img_item.get("inventory", {})
+        preserved_furniture = inv.get("detected_furniture_to_preserve") or []
+        furniture_lock_clause = ""
+        if preserved_furniture:
+            f_str = ", ".join(preserved_furniture)
+            furniture_lock_clause = (
+                f"FURNITURE & OPEN-CONCEPT LOCK: The following detected furniture pieces MUST be preserved exactly as they are: {f_str}. "
+                f"DO NOT replace the dining table, dining chairs, or main seating with cabinets, kitchen counters, or wall units. Leave background dining nooks and secondary open-concept zones unaltered. "
+            )
+
+        window_clearance_clause = (
+            "STRICT WINDOW CLEARANCE DIRECTIVE: DO NOT place, build, or render any shelves, cabinets, bookcases, wall units, or decor over, across, or covering any window. "
+            "All windows MUST remain 100% unobstructed, clear, and open to natural light. "
+        )
+
         water_clause = (
             f"Upgrade sink and faucet to {fix_spec}. " if has_water else
             "STRICT INSTRUCTION: This is a DRY room (bedroom/living room/home office). DO NOT add or generate any sink, faucet, countertop, backsplash, or plumbing fixture of any kind. "
         )
         neg_tokens = master_plan.get("negative_tokens") or room_tax.get("negative_tokens", "")
-        negative_clause = f"STRICT NEGATIVE PROMPT: {neg_tokens}, distorted layout"
+
         selected_prompt = (
-            f"Modify this {room_type} photo with a whole-house ${room_share_budget:,.0f} budget share allocation in {style_preference.upper()} style. "
-            f"{timeline_spec['scope_modifier']} {carpentry_clause} "
-            f"Install {surf_spec}. {water_clause} {negative_clause}"
+            f"STRICT INLINE PHOTO EDITING OF THIS ORIGINAL {room_type.upper()} PHOTO. "
+            f"CRITICAL LAYOUT & GEOMETRY LOCK: Preserve the exact camera angle, perspective, wall positions, window placement, door locations, and furniture arrangement of the original photo. "
+            f"{furniture_lock_clause}"
+            f"{window_clearance_clause}"
+            f"DO NOT move furniture or change the room layout. DO NOT add non-existent floor-to-ceiling cabinetry, built-in wardrobes, libraries, or wall units. "
+            f"Perform ONLY realistic inline surface edits directly onto existing elements in the photo for a total room budget share of ${room_share_budget:,.0f} in {style_preference.upper()} style: "
+            f"{inline_upgrades_text}. "
+            f"{water_clause} "
+            f"STRICT NEGATIVE PROMPT: {neg_tokens}, shelves covering window, shelves over window, cabinets blocking window, bookcase covering window, obscured window glass, blocked natural light, replace dining table with cabinet, replace table with counter, altered room layout, moved furniture, moved bed, moved window, floor-to-ceiling built-in wardrobes, luxury library units, massive wall cabinetry, distorted room structure."
         )
+
         url = _generate_render_for_prompt(
             img_item["source_img"], img_item["b64"], selected_prompt,
             img_item["rec_id"], "house_allocated_tier", room_share_budget, room_type,
@@ -673,6 +664,7 @@ def execute_multi_agent_pipeline(
             room_share_budget,
             has_water,
             {"cabinets": cab_spec, "shelving": shelv_spec, "surface": surf_spec, "fixtures": fix_spec},
+            room_type,
         )
 
         for img_idx, img_item in enumerate(cluster):

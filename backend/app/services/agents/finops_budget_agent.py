@@ -47,10 +47,17 @@ def build_room_scope(
     has_water: bool,
     specs: Dict[str, str],
     room_type: str = "Kitchen",
+    style_preference: str = "Modern",
 ) -> List[Dict[str, Any]]:
     """Return itemized upgrades whose costs sum exactly to room_budget, choosing
-    room-appropriate upgrades (e.g. feature walls for bedrooms vs stone countertops
-    for kitchens)."""
+    room-appropriate upgrades with exact designer paint codes for low budget tiers."""
+    from app.services.agents.style_synthesis_agent import get_designer_paint_spec
+
+    paint_spec = get_designer_paint_spec(style_preference)
+    main_paint = paint_spec["main_wall"]
+    accent_paint = paint_spec["accent_wall"]
+    cab_paint = paint_spec["cabinet_accent"]
+
     cab = specs.get("cabinets", "Custom cabinetry")
     shelv = specs.get("shelving", "Open shelving")
     surf = specs.get("surface", "Upgraded surfaces")
@@ -90,47 +97,47 @@ def build_room_scope(
         elif room_budget >= 3500:
             items = [
                 (
-                    "Tailored Accent Wall & Designer Paint Finish",
-                    0.40,
-                    "Fresh designer low-VOC paint and millwork trim",
+                    f"Designer Accent Wall Repaint ({accent_paint})",
+                    0.38,
+                    f"Repaint accent wall behind bed using designer code {accent_paint} with subtle wood trim",
                 ),
                 (
-                    "Closet Storage Rack & Shelving Refresh",
-                    0.28,
-                    "Internal closet hanging racks and shoe organizers",
-                ),
-                (
-                    "Plush Area Rug & Window Drapes",
-                    0.18,
-                    "Custom woven window treatments and wool rug",
+                    "Modern Window Treatments & Drapes",
+                    0.24,
+                    "Floor-length tailored drapes and brushed metal curtain rod",
                 ),
                 (
                     "Updated Bedside & Ceiling Light Fixtures",
-                    0.14,
-                    "Modern ambient light fixtures",
+                    0.20,
+                    "Modern ambient bedside sconces and dimmable ceiling light fixture",
+                ),
+                (
+                    "Luxury Bedding Ensemble & Hardware",
+                    0.18,
+                    "Hotel-quality linen bedding ensemble, accent pillows, and modern hardware",
                 ),
             ]
         else:
             items = [
                 (
-                    "Designer Neutral Wall Repaint & Trim Touch-up",
-                    0.45,
-                    "Professional architectural wall refresh",
+                    f"Accent Wall Repaint ({accent_paint})",
+                    0.35,
+                    f"Professional low-VOC repaint using designer code {accent_paint} with {main_paint} main wall trim",
                 ),
                 (
-                    "Floating Wall Bedside Shelves",
-                    0.22,
-                    "Wall-mounted bedside reading shelves",
+                    "Modern Window Drapes & Curtain Rod",
+                    0.25,
+                    "Custom tailored blackout window drapes replacing thin blinds",
                 ),
                 (
-                    "Updated LED Lighting Fixtures",
-                    0.18,
-                    "Dimmable flush-mount lighting",
+                    "Bedside Lamps & Ceiling Light Fixture",
+                    0.20,
+                    "Updated modern nightstand lamps and dimmable ceiling light",
                 ),
                 (
-                    "Closet Organizer Accessories",
-                    0.15,
-                    "Drawer and rack organizer modules",
+                    "Decorative Wall Shelves & Hardware Touch-Up",
+                    0.20,
+                    "Minimalist floating wall shelves mounted on interior side-walls (never blocking windows) and hardware refresh",
                 ),
             ]
     elif is_living:

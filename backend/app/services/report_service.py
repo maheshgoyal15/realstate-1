@@ -17,14 +17,25 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 logger = logging.getLogger(__name__)
 
 
-def _render_report_pdf(address: str, budget: float, recommendations: List[Dict[str, Any]]) -> bytes:
-    """Render a simple pre-listing report PDF. Layout/branding polish is a
-    follow-up - this produces a real, correct document, not a placeholder."""
+def _render_report_pdf(
+    address: str, budget: float, recommendations: List[Dict[str, Any]], branding: Dict[str, Any] = None
+) -> bytes:
+    """Render a pre-listing report PDF with optional custom agency branding."""
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=LETTER, topMargin=0.75 * inch, bottomMargin=0.75 * inch)
     styles = getSampleStyleSheet()
+
+    agency_name = (branding or {}).get("company_name") or "HomeReady AI"
+    color_hex = (branding or {}).get("branding_color") or "#1e293b"
+    footer_text = (branding or {}).get("footer_text") or "Prepared by HomeReady AI Upgrade Advisory Group"
+
+    try:
+        header_color = colors.HexColor(color_hex)
+    except Exception:
+        header_color = colors.HexColor("#1e293b")
+
     story = [
-        Paragraph("HomeReady AI &mdash; Pre-Listing Upgrade Report", styles["Title"]),
+        Paragraph(f"{agency_name} &mdash; Pre-Listing Upgrade Report", styles["Title"]),
         Spacer(1, 0.15 * inch),
         Paragraph(address, styles["Heading2"]),
         Paragraph(f"Budget ceiling: ${budget:,.0f}", styles["Normal"]),
@@ -43,7 +54,7 @@ def _render_report_pdf(address: str, budget: float, recommendations: List[Dict[s
             ])
         table = Table(table_data, hAlign="LEFT")
         table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e293b")),
+            ("BACKGROUND", (0, 0), (-1, 0), header_color),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
             ("FONTSIZE", (0, 0), (-1, -1), 9),
             ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
@@ -60,13 +71,16 @@ def _render_report_pdf(address: str, budget: float, recommendations: List[Dict[s
     else:
         story.append(Paragraph("No recommendations were generated for this analysis.", styles["Normal"]))
 
+    story.append(Spacer(1, 0.3 * inch))
+    story.append(Paragraph(f"<i>{footer_text}</i>", styles["Italic"]))
+
     doc.build(story)
     return buffer.getvalue()
 
 
 @celery_app.task(name="app.services.report_service.generate_prelisting_report")
 def generate_prelisting_report(
-    analysis_id: str, address: str, budget: float, cv_summary: Dict[str, Any], recommendations: List[Dict[str, Any]]
+    analysis_id: str, address: str, budget: float, cv_summary: Dict[str, Any], recommendations: List[Dict[str, Any]], branding: Dict[str, Any] = None
 ) -> Dict[str, Any]:
     """
     Renders a real PDF report and persists it (as bytes, in Postgres - see
@@ -75,7 +89,7 @@ def generate_prelisting_report(
     """
     logger.info(f"Generating pre-listing PDF report for analysis_id: {analysis_id}")
 
-    pdf_bytes = _render_report_pdf(address, budget, recommendations)
+    pdf_bytes = _render_report_pdf(address, budget, recommendations, branding=branding)
     shareable_token = uuid.uuid4().hex
     # Logical placeholder key - bytes currently live in reports.pdf_data; a
     # real S3 migration would upload here and populate this with the actual

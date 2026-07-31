@@ -18,9 +18,30 @@ def init_sqlite_db():
             email TEXT UNIQUE NOT NULL,
             password_hash TEXT,
             full_name TEXT NOT NULL,
+            phone TEXT,
             role TEXT NOT NULL DEFAULT 'homeowner',
+            organization_id TEXT,
+            white_label_config TEXT DEFAULT '{}',
             oauth_provider TEXT,
             oauth_id TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS organization_members (
+            id TEXT PRIMARY KEY,
+            organization_id TEXT NOT NULL,
+            user_id TEXT,
+            email TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'Viewer',
+            name TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS contractor_reviews (
+            id TEXT PRIMARY KEY,
+            contractor_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            author_name TEXT NOT NULL,
+            rating REAL NOT NULL,
+            review_text TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         CREATE TABLE IF NOT EXISTS properties (
@@ -145,6 +166,9 @@ def init_sqlite_db():
 
         # Safely add any columns missing from older existing SQLite tables
         missing_columns = [
+            ("users", "phone", "TEXT"),
+            ("users", "white_label_config", "TEXT DEFAULT '{}'"),
+            ("users", "organization_id", "TEXT"),
             ("properties", "budget_ceiling", "REAL DEFAULT 0.0"),
             ("properties", "style_preference", "TEXT"),
             ("properties", "raw_mls_data", "TEXT DEFAULT '{}'"),

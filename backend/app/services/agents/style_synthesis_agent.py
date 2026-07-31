@@ -141,6 +141,46 @@ ROOM_STYLE_TAXONOMY: Dict[str, Dict[str, Dict[str, str]]] = {
     },
 }
 
+DESIGNER_PAINT_CATALOG: Dict[str, Dict[str, str]] = {
+    "farmhouse": {
+        "main_wall": "Sherwin-Williams Alabaster (SW 7008)",
+        "accent_wall": "Sherwin-Williams Evergreen Fog (SW 9130)",
+        "trim_doors": "Benjamin Moore Simply White (OC-117)",
+        "cabinet_accent": "Benjamin Moore Hale Navy (HC-154)",
+        "summary": "Sherwin-Williams Alabaster (SW 7008) with SW 9130 Evergreen Fog accent wall",
+    },
+    "modern": {
+        "main_wall": "Benjamin Moore Chantilly Lace (OC-65)",
+        "accent_wall": "Sherwin-Williams Repose Gray (SW 7015)",
+        "trim_doors": "Sherwin-Williams Pure White (SW 7005)",
+        "cabinet_accent": "Sherwin-Williams Iron Ore (SW 7069)",
+        "summary": "Benjamin Moore Chantilly Lace (OC-65) with SW 7015 Repose Gray accent wall",
+    },
+    "midcentury": {
+        "main_wall": "Sherwin-Williams Accessible Beige (SW 7036)",
+        "accent_wall": "Sherwin-Williams Urbane Bronze (SW 7048)",
+        "trim_doors": "Benjamin Moore White Dove (OC-17)",
+        "cabinet_accent": "Benjamin Moore Smoke (2122-40)",
+        "summary": "Sherwin-Williams Accessible Beige (SW 7036) with SW 7048 Urbane Bronze accent wall",
+    },
+    "default": {
+        "main_wall": "Sherwin-Williams Agreeable Gray (SW 7029)",
+        "accent_wall": "Sherwin-Williams Peppercorn (SW 7674)",
+        "trim_doors": "Sherwin-Williams Extra White (SW 7006)",
+        "cabinet_accent": "Sherwin-Williams Naval (SW 6244)",
+        "summary": "Sherwin-Williams Agreeable Gray (SW 7029) with SW 7674 Peppercorn accent wall",
+    },
+}
+
+
+def get_designer_paint_spec(style_pref: str) -> Dict[str, str]:
+    st_key = style_pref.lower()
+    for s_name in ["farmhouse", "midcentury", "modern"]:
+        if s_name in st_key:
+            return DESIGNER_PAINT_CATALOG[s_name]
+    return DESIGNER_PAINT_CATALOG["default"]
+
+
 TIMELINE_TAXONOMY: Dict[str, Dict[str, str]] = {
     "quick": {
         "label": "Quick Refresh (1-2 Weeks)",
