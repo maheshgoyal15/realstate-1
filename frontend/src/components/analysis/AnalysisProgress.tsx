@@ -27,6 +27,13 @@ const STAGES: { id: string; label: string; note: string }[] = [
   { id: "audit", label: "Auditing the scope", note: "Checking every line item against your budget" },
 ];
 
+// Progress at which each stage above begins, mirroring PIPELINE_STAGES. Used
+// only to place an unrecognised stage name (see activeIndex). `style` and
+// `render` share 55 because the backend enters the render phase at the style
+// mark; picking the last match therefore resolves to `render`, which is the
+// right guess — `style` is near-instantaneous while `render` owns 55-90.
+const STAGE_FLOORS = [0, 30, 45, 55, 55, 96];
+
 function formatDuration(totalSeconds: number): string {
   const s = Math.max(0, Math.round(totalSeconds));
   if (s < 60) return `${s}s`;
@@ -74,9 +81,18 @@ export const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
     return () => clearInterval(t);
   }, [startedAt]);
 
-  const activeIndex = Math.max(0, STAGES.findIndex((s) => s.id === stage));
-  const remaining = estimateRemaining(elapsed, progress);
   const clamped = Math.min(100, Math.max(0, Math.round(progress)));
+  const remaining = estimateRemaining(elapsed, progress);
+
+  // An unrecognised stage (a name this build predates, or a run that failed
+  // partway) must not silently mean "index 0" — that would light up the first
+  // row as active while the bar sat at 90%. Fall back to whichever stage the
+  // reported progress lands in, so the two halves of the screen always agree.
+  const namedIndex = STAGES.findIndex((s) => s.id === stage);
+  const activeIndex =
+    namedIndex >= 0
+      ? namedIndex
+      : Math.max(0, STAGE_FLOORS.filter((floor) => clamped >= floor).length - 1);
 
   return (
     <div className="min-h-screen bg-surface flex items-center justify-center px-6 py-16">
@@ -87,9 +103,13 @@ export const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
 
         <h1 className="mt-3 text-3xl text-ink">Designing your whole-house remodel</h1>
 
+        {/* No agent count here on purpose: the pipeline runs five sub-agents but
+            this list shows six phases (ingest is I/O, not an agent), so any
+            number stated would be wrong against one of them — and would rot the
+            next time a phase is added. */}
         <p className="mt-3 max-w-[58ch] text-sm text-ink-muted">
-          Six agents are working through your photos — recognising each room, dividing your
-          budget across them, then rendering what the upgrades look like.
+          We&apos;re working through your photos — recognising each room, dividing your budget
+          across them, then rendering what the upgrades look like.
         </p>
 
         {/* The one element allowed to be big. At squint distance the completion
