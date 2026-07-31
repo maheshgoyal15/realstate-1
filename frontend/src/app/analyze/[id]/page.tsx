@@ -153,6 +153,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
 
   // Modal Details State
   const [selectedRec, setSelectedRec] = useState<any | null>(null);
+  const [activeInpaintItems, setActiveInpaintItems] = useState<any[] | null>(null);
   const [modalBeforeAfterPct, setModalBeforeAfterPct] = useState(50);
   const [visualizerTheme, setVisualizerTheme] = useState<string>("");
   // Which added item's badge is currently highlighted on the before/after slider.
@@ -209,6 +210,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
       setVisualizerTheme(theme?.afterThemes[0]?.value ?? "");
       setModalBeforeAfterPct(50);
       setSelectedItemIdx(null);
+      setActiveInpaintItems(null);
 
       // Eagerly pre-warm the disk cache for the 6 interactive customization options in the background.
       // Because this runs asynchronously without setting inpaintLoading=true, the user sees the initial
@@ -268,16 +270,19 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
   }, [selectedRec]);
 
   // Parsed, structured list of items added to the currently open recommendation.
+  // Dynamically changes with the change in images when the user clicks each customization button!
   const selectedItems = useMemo(
     () => {
       if (!selectedRec) return [];
-      const opt = getActiveOption(selectedRec);
-      const targetScope = opt?.scope || selectedRec.scope;
+      const targetScope =
+        activeInpaintItems ||
+        getActiveOption(selectedRec)?.scope ||
+        selectedRec.scope;
       return ensureArray<any>(targetScope).map((s: any) =>
         parseScopeItem(typeof s === "string" ? s : s?.item ?? String(s))
       );
     },
-    [selectedRec, activeOptionTier]
+    [selectedRec, activeOptionTier, activeInpaintItems]
   );
 
   const matchedContractors = useMemo(() => {
@@ -457,10 +462,14 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
     zone: string,
     optionKey: string,
     customPrompt?: string,
-    customTitle?: string
+    customTitle?: string,
+    itemsAdded?: any[]
   ) => {
     if (!selectedRec) return;
     setInpaintLoading(true);
+    if (itemsAdded && itemsAdded.length > 0) {
+      setActiveInpaintItems(itemsAdded);
+    }
     try {
       const sourceImg = selectedRec.beforeImageUrl || uploadedBeforeImg || "";
       const res = await apiFetch("/api/v1/inpaint", {
@@ -1018,33 +1027,6 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                   </span>
                 </div>
 
-                {/* Captured / Detected Features in Photograph Bar */}
-                <div className="bg-surface-raised p-3 rounded-xl border border-surface-border space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-accent-700 flex items-center gap-1.5">
-                      <Sparkles className="w-3 h-3 text-accent-600" />
-                      <span>Captured Features in Photograph</span>
-                    </span>
-                    <span className="text-[10px] text-ink-muted">AI detected 6 customizable surfaces</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {(
-                      selectedRec?.detectedFeatures ||
-                      selectedRec?.detected_features || (
-                        selectedRec?.category?.toLowerCase().includes("bath")
-                          ? ["Primary Vanity Mirror", "Privacy Glass Bath Window", "Sherwin-Williams Wall Paint", "Brushed Brass Hardware", "Calacatta Quartz Countertop", "Warm LED Vanity Sconces"]
-                          : selectedRec?.category?.toLowerCase().includes("kitchen")
-                          ? ["Sherwin-Williams Wall Paint", "Brushed Brass Cabinet Hardware", "Architectural Brass Pendants", "Subway Tile Backsplash", "White Oak Island Base", "Calacatta Quartz Countertops"]
-                          : ["Sherwin-Williams Wall Paint", "Charcoal Blackout Drapes", "Warm LED Lighting & Sconces", "European White Oak Flooring", "Modern Architectural Trim", "Organic Green Accent Wall"]
-                      )
-                    ).map((feat: string, idx: number) => (
-                      <span key={idx} className="text-[10px] font-medium bg-surface-sunken border border-surface-border px-2.5 py-1 rounded-lg text-ink">
-                        ✓ {feat}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
                 <p className="text-[11px] text-ink-muted">
                   Select any option below to instantly inpaint and customize the detected surface in your photograph:
                 </p>
@@ -1056,36 +1038,216 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                     selectedRec?.selective_options || (
                       selectedRec?.category?.toLowerCase().includes("bath")
                         ? [
-                            { zone: "accent_wall", option_key: "paint_repose_gray", title: "🎨 SW Repose Gray Walls", badge: "SW 7015", description: "Repaint bathroom walls to chic warm light gray eggshell" },
-                            { zone: "lighting", option_key: "brass_vanity_mirror", title: "🪞 Brass Framed Mirror", badge: "Vanity", description: "Upgrade vanity mirror to brushed brass backlit frame" },
-                            { zone: "window_drapes", option_key: "frosted_privacy_glass", title: "🚿 Frosted Privacy Glass", badge: "Bath Window", description: "Inpaint bath window to frosted privacy glass & black frame" },
-                            { zone: "lighting", option_key: "modern_sconces", title: "💡 Warm Vanity Sconces", badge: "LED", description: "Install modern black-and-brass LED bedside/vanity sconces" },
-                            { zone: "cabinetry", option_key: "brass_cabinet_hardware", title: "✨ Brass Hardware", badge: "Modern", description: "Upgrade vanity pulls to designer brushed brass bar handles" },
-                            { zone: "accent_wall", option_key: "paint_evergreen_fog", title: "🎨 Evergreen Fog Wall", badge: "SW 9130", description: "Repaint accent wall to soft organic sage green matte" }
+                            {
+                              zone: "accent_wall",
+                              option_key: "paint_repose_gray",
+                              title: "🎨 SW Repose Gray Walls",
+                              badge: "SW 7015",
+                              description: "Repaint bathroom walls to chic warm light gray eggshell",
+                              items_added: [
+                                { item: "[+] Sherwin-Williams Repose Gray (SW 7015) Low-VOC Eggshell Wall Paint ($650)", checked: true },
+                                { item: "[+] Professional Surface Prep, Priming & 2-Coat Application ($450)", checked: true }
+                              ]
+                            },
+                            {
+                              zone: "lighting",
+                              option_key: "brass_vanity_mirror",
+                              title: "🪞 Brass Framed Mirror",
+                              badge: "Vanity",
+                              description: "Upgrade vanity mirror to brushed brass backlit frame",
+                              items_added: [
+                                { item: "[+] Modern Brushed Brass Framed Vanity Mirror with LED Backlighting ($850)", checked: true },
+                                { item: "[+] Professional Mirror Wall Mounting & Concealed Electrical ($350)", checked: true }
+                              ]
+                            },
+                            {
+                              zone: "window_drapes",
+                              option_key: "frosted_privacy_glass",
+                              title: "🚿 Frosted Privacy Glass",
+                              badge: "Bath Window",
+                              description: "Inpaint bath window to frosted privacy glass & black frame",
+                              items_added: [
+                                { item: "[+] Sleek Frosted Privacy Glass Bath Window with Matte Black Frame ($1,150)", checked: true },
+                                { item: "[+] Weatherproofing, Sealing & Interior Window Trim ($320)", checked: true }
+                              ]
+                            },
+                            {
+                              zone: "lighting",
+                              option_key: "modern_sconces",
+                              title: "💡 Warm Vanity Sconces",
+                              badge: "LED",
+                              description: "Install modern black-and-brass LED bedside/vanity sconces",
+                              items_added: [
+                                { item: "[+] Stylish Black-and-Brass Dimmable Warm LED Wall Sconces ($640)", checked: true },
+                                { item: "[+] Wall Junction Box Installation & Dedicated Dimmer Switch ($380)", checked: true }
+                              ]
+                            },
+                            {
+                              zone: "cabinetry",
+                              option_key: "brass_cabinet_hardware",
+                              title: "✨ Brass Hardware",
+                              badge: "Modern",
+                              description: "Upgrade vanity pulls to designer brushed brass bar handles",
+                              items_added: [
+                                { item: "[+] Designer Brushed Brass Solid Bar Handles & Drawer Pulls ($520)", checked: true },
+                                { item: "[+] Precision Template Drilling & Custom Hardware Mounting ($280)", checked: true }
+                              ]
+                            },
+                            {
+                              zone: "accent_wall",
+                              option_key: "paint_evergreen_fog",
+                              title: "🎨 Evergreen Fog Wall",
+                              badge: "SW 9130",
+                              description: "Repaint accent wall to soft organic sage green matte",
+                              items_added: [
+                                { item: "[+] Sherwin-Williams Evergreen Fog (SW 9130) Organic Accent Wall ($750)", checked: true },
+                                { item: "[+] Designer Feature Wall Prep & Edge Cutting ($350)", checked: true }
+                              ]
+                            }
                           ]
                         : selectedRec?.category?.toLowerCase().includes("kitchen")
                         ? [
-                            { zone: "accent_wall", option_key: "paint_repose_gray", title: "🎨 SW Repose Gray Walls", badge: "SW 7015", description: "Repaint kitchen walls to Sherwin-Williams Repose Gray" },
-                            { zone: "cabinetry", option_key: "brass_cabinet_hardware", title: "✨ Brass Hardware", badge: "Modern", description: "Upgrade cabinet pulls to designer brushed brass handles" },
-                            { zone: "lighting", option_key: "brass_chandelier", title: "💡 Brass Pendant Lighting", badge: "Ceiling", description: "Upgrade ceiling fixtures to brushed brass pendant lights" },
-                            { zone: "accent_wall", option_key: "paint_evergreen_fog", title: "🎨 Evergreen Fog Wall", badge: "SW 9130", description: "Repaint wall to Sherwin-Williams Organic Green" },
-                            { zone: "accent_wall", option_key: "paint_alabaster", title: "🎨 SW Alabaster Walls", badge: "SW 7008", description: "Repaint kitchen walls to warm crisp designer off-white" },
-                            { zone: "window_drapes", option_key: "linen_sheer_drapes", title: "🪟 Linen Sheer Drapes", badge: "Window", description: "Install flowing organic white linen sheer window drapes" }
+                            {
+                              zone: "accent_wall",
+                              option_key: "paint_repose_gray",
+                              title: "🎨 SW Repose Gray Walls",
+                              badge: "SW 7015",
+                              description: "Repaint kitchen walls to Sherwin-Williams Repose Gray",
+                              items_added: [
+                                { item: "[+] Sherwin-Williams Repose Gray (SW 7015) Low-VOC Eggshell Wall Paint ($650)", checked: true },
+                                { item: "[+] Professional Surface Prep, Priming & 2-Coat Application ($450)", checked: true }
+                              ]
+                            },
+                            {
+                              zone: "cabinetry",
+                              option_key: "brass_cabinet_hardware",
+                              title: "✨ Brass Hardware",
+                              badge: "Modern",
+                              description: "Upgrade cabinet pulls to designer brushed brass handles",
+                              items_added: [
+                                { item: "[+] Designer Brushed Brass Solid Bar Handles & Drawer Pulls ($520)", checked: true },
+                                { item: "[+] Precision Template Drilling & Custom Hardware Mounting ($280)", checked: true }
+                              ]
+                            },
+                            {
+                              zone: "lighting",
+                              option_key: "brass_chandelier",
+                              title: "💡 Brass Pendant Lighting",
+                              badge: "Ceiling",
+                              description: "Upgrade ceiling fixtures to brushed brass pendant lights",
+                              items_added: [
+                                { item: "[+] Minimalist Brushed Brass Chandelier Ceiling Light Fixture ($920)", checked: true },
+                                { item: "[+] Ceiling Box Reinforcement & Electrical Hookup ($350)", checked: true }
+                              ]
+                            },
+                            {
+                              zone: "accent_wall",
+                              option_key: "paint_evergreen_fog",
+                              title: "🎨 Evergreen Fog Wall",
+                              badge: "SW 9130",
+                              description: "Repaint wall to Sherwin-Williams Organic Green",
+                              items_added: [
+                                { item: "[+] Sherwin-Williams Evergreen Fog (SW 9130) Organic Accent Wall ($750)", checked: true },
+                                { item: "[+] Designer Feature Wall Prep & Edge Cutting ($350)", checked: true }
+                              ]
+                            },
+                            {
+                              zone: "accent_wall",
+                              option_key: "paint_alabaster",
+                              title: "🎨 SW Alabaster Walls",
+                              badge: "SW 7008",
+                              description: "Repaint kitchen walls to warm crisp designer off-white",
+                              items_added: [
+                                { item: "[+] Sherwin-Williams Alabaster (SW 7008) Warm Off-White Paint ($680)", checked: true },
+                                { item: "[+] Complete Room Priming & Architectural Trim Coat ($420)", checked: true }
+                              ]
+                            },
+                            {
+                              zone: "window_drapes",
+                              option_key: "linen_sheer_drapes",
+                              title: "🪟 Linen Sheer Drapes",
+                              badge: "Window",
+                              description: "Install flowing organic white linen sheer window drapes",
+                              items_added: [
+                                { item: "[+] Elegant Flowing Organic White Linen Sheer Drapery Panels ($690)", checked: true },
+                                { item: "[+] Custom Architectural Track Rod & Professional Hanging ($290)", checked: true }
+                              ]
+                            }
                           ]
                         : [
-                            { zone: "accent_wall", option_key: "paint_repose_gray", title: "🎨 SW Repose Gray Walls", badge: "SW 7015", description: "Repaint room walls to Sherwin-Williams Repose Gray" },
-                            { zone: "accent_wall", option_key: "paint_evergreen_fog", title: "🎨 Evergreen Fog Wall", badge: "SW 9130", description: "Repaint accent wall to Sherwin-Williams Organic Green" },
-                            { zone: "window_drapes", option_key: "modern_blackout_drapes", title: "🪟 Blackout Drapes", badge: "Window", description: "Inpaint window treatments to tailored blackout drapes" },
-                            { zone: "lighting", option_key: "modern_sconces", title: "💡 Warm LED Sconces", badge: "Lighting", description: "Install modern warm LED bedside sconces" },
-                            { zone: "lighting", option_key: "brass_chandelier", title: "💡 Brass Chandelier", badge: "Ceiling", description: "Install minimalist brushed brass chandelier fixture" },
-                            { zone: "window_drapes", option_key: "linen_sheer_drapes", title: "🪟 Linen Sheer Drapes", badge: "Sheers", description: "Install elegant flowing white linen sheer drapes" }
+                            {
+                              zone: "accent_wall",
+                              option_key: "paint_repose_gray",
+                              title: "🎨 SW Repose Gray Walls",
+                              badge: "SW 7015",
+                              description: "Repaint room walls to Sherwin-Williams Repose Gray",
+                              items_added: [
+                                { item: "[+] Sherwin-Williams Repose Gray (SW 7015) Low-VOC Eggshell Wall Paint ($650)", checked: true },
+                                { item: "[+] Professional Surface Prep, Priming & 2-Coat Application ($450)", checked: true }
+                              ]
+                            },
+                            {
+                              zone: "accent_wall",
+                              option_key: "paint_evergreen_fog",
+                              title: "🎨 Evergreen Fog Wall",
+                              badge: "SW 9130",
+                              description: "Repaint accent wall to Sherwin-Williams Organic Green",
+                              items_added: [
+                                { item: "[+] Sherwin-Williams Evergreen Fog (SW 9130) Organic Accent Wall ($750)", checked: true },
+                                { item: "[+] Designer Feature Wall Prep & Edge Cutting ($350)", checked: true }
+                              ]
+                            },
+                            {
+                              zone: "window_drapes",
+                              option_key: "modern_blackout_drapes",
+                              title: "🪟 Blackout Drapes",
+                              badge: "Window",
+                              description: "Inpaint window treatments to tailored blackout drapes",
+                              items_added: [
+                                { item: "[+] Tailored Floor-Length Charcoal Blackout Curtains ($780)", checked: true },
+                                { item: "[+] Heavy-Duty Matte Black Metal Traverse Drapery Rod & Hardware ($320)", checked: true }
+                              ]
+                            },
+                            {
+                              zone: "lighting",
+                              option_key: "modern_sconces",
+                              title: "💡 Warm LED Sconces",
+                              badge: "Lighting",
+                              description: "Install modern warm LED bedside sconces",
+                              items_added: [
+                                { item: "[+] Stylish Black-and-Brass Dimmable Warm LED Wall Sconces ($640)", checked: true },
+                                { item: "[+] Wall Junction Box Installation & Dedicated Dimmer Switch ($380)", checked: true }
+                              ]
+                            },
+                            {
+                              zone: "lighting",
+                              option_key: "brass_chandelier",
+                              title: "💡 Brass Chandelier",
+                              badge: "Ceiling",
+                              description: "Install minimalist brushed brass chandelier fixture",
+                              items_added: [
+                                { item: "[+] Minimalist Brushed Brass Chandelier Ceiling Light Fixture ($920)", checked: true },
+                                { item: "[+] Ceiling Box Reinforcement & Electrical Hookup ($350)", checked: true }
+                              ]
+                            },
+                            {
+                              zone: "window_drapes",
+                              option_key: "linen_sheer_drapes",
+                              title: "🪟 Linen Sheer Drapes",
+                              badge: "Sheers",
+                              description: "Install elegant flowing white linen sheer drapes",
+                              items_added: [
+                                { item: "[+] Elegant Flowing Organic White Linen Sheer Drapery Panels ($690)", checked: true },
+                                { item: "[+] Custom Architectural Track Rod & Professional Hanging ($290)", checked: true }
+                              ]
+                            }
                           ]
                     )
                   ).map((opt: any, idx: number) => (
                     <button
                       key={idx}
                       type="button"
-                      onClick={() => handleTriggerInpaint(opt.zone, opt.option_key || opt.optionKey, opt.prompt, opt.title)}
+                      onClick={() => handleTriggerInpaint(opt.zone, opt.option_key || opt.optionKey, opt.prompt, opt.title, opt.items_added || opt.itemsAdded)}
                       disabled={inpaintLoading}
                       className="p-2.5 bg-surface-raised hover:bg-accent-50 border border-surface-border hover:border-accent-400 rounded-xl text-left transition-all text-xs space-y-1 cursor-pointer disabled:opacity-50 flex flex-col justify-between"
                     >
