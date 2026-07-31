@@ -105,6 +105,18 @@ SELECTIVE_OPTIONS_CATALOG = {
         "title": "Wide-Plank White Oak Hardwood Flooring",
         "prompt": "Replace existing flooring with gorgeous wide-plank European white oak hardwood flooring with a natural matte finish.",
         "paint_code": ""
+    },
+    "calacatta_countertop": {
+        "zone": "cabinetry",
+        "title": "Calacatta Quartz Vanity Countertop",
+        "prompt": "Resurface bathroom vanity or countertops with luxury seamless Calacatta white quartz featuring subtle elegant gray veining.",
+        "paint_code": ""
+    },
+    "white_oak_vanity": {
+        "zone": "cabinetry",
+        "title": "Natural Rift-Cut White Oak Cabinetry",
+        "prompt": "Reface cabinets or bathroom vanity base in warm natural rift-cut white oak wood grain finish with matte sealing.",
+        "paint_code": ""
     }
 }
 

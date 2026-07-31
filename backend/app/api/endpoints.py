@@ -672,7 +672,11 @@ def _generate_smart_selective_options_for_rec(category: str, why_text: str, scop
             "title": "🎨 SW Repose Gray Walls",
             "badge": "SW 7015",
             "description": "Sherwin-Williams Repose Gray low-VOC eggshell wall refresh",
-            "exclude_keywords": ["repose gray", "gray wall"]
+            "exclude_keywords": ["repose gray", "gray wall"],
+            "items_added": [
+                {"item": "[+] Sherwin-Williams Repose Gray (SW 7015) Low-VOC Eggshell Wall Paint ($650)", "checked": True},
+                {"item": "[+] Professional Surface Prep, Priming & 2-Coat Application ($450)", "checked": True}
+            ]
         },
         {
             "zone": "accent_wall",
@@ -680,7 +684,11 @@ def _generate_smart_selective_options_for_rec(category: str, why_text: str, scop
             "title": "🎨 Evergreen Fog Wall",
             "badge": "SW 9130",
             "description": "Sherwin-Williams Evergreen Fog soft organic sage green wall",
-            "exclude_keywords": ["evergreen fog", "green wall"]
+            "exclude_keywords": ["evergreen fog", "green wall"],
+            "items_added": [
+                {"item": "[+] Sherwin-Williams Evergreen Fog (SW 9130) Organic Accent Wall ($750)", "checked": True},
+                {"item": "[+] Designer Feature Wall Prep & Edge Cutting ($350)", "checked": True}
+            ]
         },
         {
             "zone": "accent_wall",
@@ -688,7 +696,11 @@ def _generate_smart_selective_options_for_rec(category: str, why_text: str, scop
             "title": "🎨 SW Alabaster Walls",
             "badge": "SW 7008",
             "description": "Sherwin-Williams Alabaster warm crisp designer off-white",
-            "exclude_keywords": ["alabaster", "white wall"]
+            "exclude_keywords": ["alabaster", "white wall"],
+            "items_added": [
+                {"item": "[+] Sherwin-Williams Alabaster (SW 7008) Warm Off-White Paint ($680)", "checked": True},
+                {"item": "[+] Complete Room Priming & Architectural Trim Coat ($420)", "checked": True}
+            ]
         },
         {
             "zone": "lighting",
@@ -696,7 +708,11 @@ def _generate_smart_selective_options_for_rec(category: str, why_text: str, scop
             "title": "🪞 Brass Framed Mirror",
             "badge": "Vanity",
             "description": "Modern brushed brass backlit framed designer vanity mirror",
-            "exclude_keywords": ["mirror", "vanity mirror", "framed mirror"]
+            "exclude_keywords": ["mirror", "vanity mirror", "framed mirror"],
+            "items_added": [
+                {"item": "[+] Modern Brushed Brass Framed Vanity Mirror with LED Backlighting ($850)", "checked": True},
+                {"item": "[+] Professional Mirror Wall Mounting & Concealed Electrical ($350)", "checked": True}
+            ]
         },
         {
             "zone": "window_drapes",
@@ -704,7 +720,11 @@ def _generate_smart_selective_options_for_rec(category: str, why_text: str, scop
             "title": "🚿 Frosted Privacy Glass",
             "badge": "Bath Window",
             "description": "Sleek frosted privacy glass window in matte black frame",
-            "exclude_keywords": ["privacy glass", "frosted glass", "frosted window", "drapes", "curtains"]
+            "exclude_keywords": ["privacy glass", "frosted glass", "frosted window", "drapes", "curtains"],
+            "items_added": [
+                {"item": "[+] Sleek Frosted Privacy Glass Bath Window with Matte Black Frame ($1,150)", "checked": True},
+                {"item": "[+] Weatherproofing, Sealing & Interior Window Trim ($320)", "checked": True}
+            ]
         },
         {
             "zone": "lighting",
@@ -712,7 +732,11 @@ def _generate_smart_selective_options_for_rec(category: str, why_text: str, scop
             "title": "💡 Warm Vanity Sconces",
             "badge": "LED",
             "description": "Stylish modern black-and-brass LED bedside/vanity wall sconces",
-            "exclude_keywords": ["sconce", "sconces", "wall sconce", "bedside lamp"]
+            "exclude_keywords": ["sconce", "sconces", "wall sconce", "bedside lamp"],
+            "items_added": [
+                {"item": "[+] Stylish Black-and-Brass Dimmable Warm LED Wall Sconces ($640)", "checked": True},
+                {"item": "[+] Wall Junction Box Installation & Dedicated Dimmer Switch ($380)", "checked": True}
+            ]
         },
         {
             "zone": "cabinetry",
@@ -720,7 +744,11 @@ def _generate_smart_selective_options_for_rec(category: str, why_text: str, scop
             "title": "✨ Brass Hardware",
             "badge": "Modern",
             "description": "Designer brushed brass bar cabinet handles and drawer pulls",
-            "exclude_keywords": ["brass hardware", "cabinet pull", "hardware", "handles"]
+            "exclude_keywords": ["brass hardware", "cabinet pull", "hardware", "handles"],
+            "items_added": [
+                {"item": "[+] Designer Brushed Brass Solid Bar Handles & Drawer Pulls ($520)", "checked": True},
+                {"item": "[+] Precision Template Drilling & Custom Hardware Mounting ($280)", "checked": True}
+            ]
         },
         {
             "zone": "window_drapes",
@@ -728,7 +756,11 @@ def _generate_smart_selective_options_for_rec(category: str, why_text: str, scop
             "title": "🪟 Blackout Drapes",
             "badge": "Window",
             "description": "Tailored floor-length charcoal blackout curtains on metal rod",
-            "exclude_keywords": ["drape", "drapes", "curtain", "curtains", "blackout", "blind", "blinds"]
+            "exclude_keywords": ["drape", "drapes", "curtain", "curtains", "blackout", "blind", "blinds"],
+            "items_added": [
+                {"item": "[+] Tailored Floor-Length Charcoal Blackout Curtains ($780)", "checked": True},
+                {"item": "[+] Heavy-Duty Matte Black Metal Traverse Drapery Rod & Hardware ($320)", "checked": True}
+            ]
         },
         {
             "zone": "window_drapes",
@@ -736,7 +768,11 @@ def _generate_smart_selective_options_for_rec(category: str, why_text: str, scop
             "title": "🪟 Linen Sheer Drapes",
             "badge": "Sheers",
             "description": "Elegant flowing organic white linen sheer window drapes",
-            "exclude_keywords": ["drape", "drapes", "curtain", "curtains", "sheer", "blind", "blinds"]
+            "exclude_keywords": ["drape", "drapes", "curtain", "curtains", "sheer", "blind", "blinds"],
+            "items_added": [
+                {"item": "[+] Elegant Flowing Organic White Linen Sheer Drapery Panels ($690)", "checked": True},
+                {"item": "[+] Custom Architectural Track Rod & Professional Hanging ($290)", "checked": True}
+            ]
         },
         {
             "zone": "lighting",
@@ -744,7 +780,11 @@ def _generate_smart_selective_options_for_rec(category: str, why_text: str, scop
             "title": "💡 Brass Chandelier",
             "badge": "Ceiling",
             "description": "Minimalist brushed brass chandelier ceiling fixture with warm bulbs",
-            "exclude_keywords": ["chandelier", "pendant", "pendants", "ceiling fixture", "island light"]
+            "exclude_keywords": ["chandelier", "pendant", "pendants", "ceiling fixture", "island light"],
+            "items_added": [
+                {"item": "[+] Minimalist Brushed Brass Chandelier Ceiling Light Fixture ($920)", "checked": True},
+                {"item": "[+] Ceiling Box Reinforcement & Electrical Hookup ($350)", "checked": True}
+            ]
         },
         {
             "zone": "accent_wall",
@@ -752,7 +792,11 @@ def _generate_smart_selective_options_for_rec(category: str, why_text: str, scop
             "title": "🪵 Crown Molding & Trim",
             "badge": "Architectural",
             "description": "Install crisp modern white architectural crown molding & trim",
-            "exclude_keywords": ["crown molding", "molding", "trim", "wainscot"]
+            "exclude_keywords": ["crown molding", "molding", "trim", "wainscot"],
+            "items_added": [
+                {"item": "[+] Crisp White Modern Architectural Crown Molding & Trim ($1,100)", "checked": True},
+                {"item": "[+] Precision Mitering, Caulking & Enamel Topcoat ($450)", "checked": True}
+            ]
         },
         {
             "zone": "flooring",
@@ -760,21 +804,55 @@ def _generate_smart_selective_options_for_rec(category: str, why_text: str, scop
             "title": "🪵 White Oak Hardwood",
             "badge": "Flooring",
             "description": "Wide-plank European white oak hardwood flooring with natural matte finish",
-            "exclude_keywords": ["hardwood", "white oak floor", "wood floor", "engineered floor", "flooring"]
+            "exclude_keywords": ["hardwood", "white oak floor", "wood floor", "engineered floor", "flooring"],
+            "items_added": [
+                {"item": "[+] Wide-Plank European White Oak Engineered Hardwood Flooring ($2,850)", "checked": True},
+                {"item": "[+] Professional Subfloor Leveling, Underlayment & Installation ($1,200)", "checked": True}
+            ]
+        },
+        {
+            "zone": "cabinetry",
+            "option_key": "calacatta_countertop",
+            "title": "🪨 Calacatta Quartz Vanity",
+            "badge": "Countertop",
+            "description": "Resurface bathroom vanity or countertops with luxury Calacatta white quartz",
+            "exclude_keywords": ["quartz", "countertop", "marble surface", "calacatta"],
+            "items_added": [
+                {"item": "[+] Luxury Seamless Calacatta White Quartz Vanity Countertop ($1,150)", "checked": True},
+                {"item": "[+] Professional Template, Fabrication & Undermount Sink Seal ($450)", "checked": True}
+            ]
+        },
+        {
+            "zone": "cabinetry",
+            "option_key": "white_oak_vanity",
+            "title": "🪵 White Oak Vanity Base",
+            "badge": "Cabinetry",
+            "description": "Reface bathroom vanity cabinetry in warm natural rift-cut white oak finish",
+            "exclude_keywords": ["white oak vanity", "wood vanity", "oak cabinet", "vanity base"],
+            "items_added": [
+                {"item": "[+] Custom Rift-Cut European White Oak Vanity Refacing ($1,400)", "checked": True},
+                {"item": "[+] Moisture-Resistant Matte Polyurethane Protective Finish ($380)", "checked": True}
+            ]
         }
     ]
 
-    # Filter out options where the photo/scope already has that feature
+    # Filter out options where the photo/scope already has that feature or lacks required room geometry
     eligible_options = []
     for opt in all_candidate_options:
         # Check if any exclude keyword is already present in the photograph / scope text
         if not any(kw in combined_context for kw in opt["exclude_keywords"]):
+            # If option targets window treatments or privacy glass, verify the room photograph actually has a window!
+            if opt["zone"] == "window_drapes" or "glass" in opt["option_key"] or "drape" in opt["option_key"]:
+                has_window = any(w in combined_context for w in ["window", "windows", "natural light", "drape", "curtain", "blind", "skylight"])
+                if not has_window:
+                    continue
+
             # Also ensure bathroom-only or bedroom-only logic is clean
             if "bath" in cat_lower and opt["option_key"] in ["modern_blackout_drapes", "linen_sheer_drapes"]:
                 continue
-            if "kitchen" in cat_lower and opt["option_key"] in ["modern_blackout_drapes", "linen_sheer_drapes", "brass_vanity_mirror", "frosted_privacy_glass"]:
+            if "kitchen" in cat_lower and opt["option_key"] in ["modern_blackout_drapes", "linen_sheer_drapes", "brass_vanity_mirror", "frosted_privacy_glass", "white_oak_vanity"]:
                 continue
-            if not ("bath" in cat_lower) and opt["option_key"] in ["brass_vanity_mirror", "frosted_privacy_glass"]:
+            if not ("bath" in cat_lower) and opt["option_key"] in ["brass_vanity_mirror", "frosted_privacy_glass", "white_oak_vanity"]:
                 continue
             eligible_options.append(opt)
 
@@ -782,7 +860,7 @@ def _generate_smart_selective_options_for_rec(category: str, why_text: str, scop
     selected_options = eligible_options[:6]
     if len(selected_options) < 6:
         for opt in all_candidate_options:
-            if opt not in selected_options and not ("bath" in cat_lower and "drapes" in opt["option_key"]):
+            if opt not in selected_options and not ("bath" in cat_lower and ("drapes" in opt["option_key"] or "glass" in opt["option_key"])):
                 selected_options.append(opt)
                 if len(selected_options) == 6:
                     break

@@ -223,7 +223,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
             ? [
                 { zone: "accent_wall", option_key: "paint_repose_gray", title: "🎨 SW Repose Gray Walls" },
                 { zone: "lighting", option_key: "brass_vanity_mirror", title: "🪞 Brass Framed Mirror" },
-                { zone: "window_drapes", option_key: "frosted_privacy_glass", title: "🚿 Frosted Privacy Glass" },
+                { zone: "cabinetry", option_key: "calacatta_countertop", title: "🪨 Calacatta Quartz Vanity" },
                 { zone: "lighting", option_key: "modern_sconces", title: "💡 Warm Vanity Sconces" },
                 { zone: "cabinetry", option_key: "brass_cabinet_hardware", title: "✨ Brass Hardware" },
                 { zone: "accent_wall", option_key: "paint_evergreen_fog", title: "🎨 Evergreen Fog Wall" }
@@ -1061,14 +1061,14 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                               ]
                             },
                             {
-                              zone: "window_drapes",
-                              option_key: "frosted_privacy_glass",
-                              title: "🚿 Frosted Privacy Glass",
-                              badge: "Bath Window",
-                              description: "Inpaint bath window to frosted privacy glass & black frame",
+                              zone: "cabinetry",
+                              option_key: "calacatta_countertop",
+                              title: "🪨 Calacatta Quartz Vanity",
+                              badge: "Countertop",
+                              description: "Resurface bathroom vanity with luxury Calacatta white quartz surface",
                               items_added: [
-                                { item: "[+] Sleek Frosted Privacy Glass Bath Window with Matte Black Frame ($1,150)", checked: true },
-                                { item: "[+] Weatherproofing, Sealing & Interior Window Trim ($320)", checked: true }
+                                { item: "[+] Luxury Seamless Calacatta White Quartz Vanity Countertop ($1,150)", checked: true },
+                                { item: "[+] Professional Template, Fabrication & Undermount Sink Seal ($450)", checked: true }
                               ]
                             },
                             {
