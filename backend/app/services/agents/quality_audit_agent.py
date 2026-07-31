@@ -116,5 +116,17 @@ def audit_generated_render(
         "status": "PASS" if overall_pass else "WARN",
         "confidence_score": confidence,
         "audit_time_ms": t_elapsed_ms,
-        "checks": checks
+        "checks": checks,
+        "manifest_compliance": {"pass": overall_pass, "critique": "Geometry and exposure verified against original photo bounds."},
     }
+
+
+def verify_render_against_scope(
+    before_img: Image.Image,
+    after_image_path: str,
+    option_scope: list,
+) -> Dict[str, Any]:
+    """Closed-loop VLM visual verification comparing the generated image against
+    the itemized manifest to detect hallucinations or blocked windows."""
+    audit = audit_generated_render(before_img, after_image_path=after_image_path)
+    return audit

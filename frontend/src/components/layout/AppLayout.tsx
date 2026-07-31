@@ -134,6 +134,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             <span className="text-lg font-bold font-serif tracking-tight text-navy-800">
               HomeReady
             </span>
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-50 text-accent-700 border border-accent-200 text-[10px] font-extrabold uppercase tracking-widest shadow-sm">
+              <Sparkles className="w-3 h-3 text-accent-600 animate-pulse" />
+              <span>AI Studio Active</span>
+            </span>
           </a>
         </div>
 

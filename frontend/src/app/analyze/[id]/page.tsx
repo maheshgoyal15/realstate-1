@@ -116,6 +116,26 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
   const [visualizerTheme, setVisualizerTheme] = useState<string>("");
   // Which added item's badge is currently highlighted on the before/after slider.
   const [selectedItemIdx, setSelectedItemIdx] = useState<number | null>(null);
+  const [activeOptionTier, setActiveOptionTier] = useState<Record<string, string>>({});
+
+  const getActiveOption = (rec: any) => {
+    if (!rec) return null;
+    const key = activeOptionTier[rec.id] || "option_b";
+    if (rec.options && Array.isArray(rec.options)) {
+      const found = rec.options.find((o: any) => o.id === key);
+      if (found) return found;
+    }
+    return {
+      id: "option_b",
+      title: rec.category,
+      cost: rec.estimatedCost,
+      projectedValueIncrease: rec.projectedValueIncrease,
+      roiPercentage: rec.roiPercentage,
+      timeline: rec.timeline,
+      afterImageUrl: rec.afterImageUrl,
+      scope: rec.scope,
+    };
+  };
 
   // Live whole-house budget dial. Null until results load, then seeded from the
   // backend's allocated total so the slider starts at the real figure.
@@ -158,13 +178,15 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
 
   // Parsed, structured list of items added to the currently open recommendation.
   const selectedItems = useMemo(
-    () =>
-      selectedRec
-        ? ensureArray<any>(selectedRec.scope).map((s: any) =>
-            parseScopeItem(typeof s === "string" ? s : s?.item ?? String(s))
-          )
-        : [],
-    [selectedRec]
+    () => {
+      if (!selectedRec) return [];
+      const opt = getActiveOption(selectedRec);
+      const targetScope = opt?.scope || selectedRec.scope;
+      return ensureArray<any>(targetScope).map((s: any) =>
+        parseScopeItem(typeof s === "string" ? s : s?.item ?? String(s))
+      );
+    },
+    [selectedRec, activeOptionTier]
   );
 
   const matchedContractors = useMemo(() => {
@@ -269,6 +291,10 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
             scope: rec.scope,
             beforeImageUrl: rec.before_image_url,
             afterImageUrl: rec.after_image_url,
+            options: rec.options || [],
+            tier5kUrl: rec.tier_5k_url,
+            tier10kUrl: rec.tier_10k_url,
+            tier15kUrl: rec.tier_15k_url,
           })));
 
           setLoading(false);
@@ -678,68 +704,116 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                 <p className="text-ink-muted text-sm font-semibold">No recommendations match the active filter criteria.</p>
               </div>
             ) : (
-              processedRecommendations.map((rec) => (
-                <Card
-                  key={rec.id}
-                  id={`rec-card-${rec.id}`}
-                  className="flex flex-col md:flex-row justify-between gap-6 p-6 md:p-8"
-                >
-                  <div className="space-y-3 flex-1">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="text-lg font-extrabold text-accent-600">#{rec.rank}</span>
-                      <h3 className="text-lg font-bold text-ink tracking-tight">{rec.category}</h3>
-                      <div className="flex gap-2">
-                        <Badge variant={rec.roiType}>ROI: {rec.roiPercentage}%</Badge>
-                        <Badge variant={rec.timelineType}>{rec.timeline}</Badge>
-                      </div>
-                    </div>
+              processedRecommendations.map((rec) => {
+                const opt = getActiveOption(rec);
+                const optCost = opt?.cost || rec.estimatedCost;
+                const optValue = opt?.projectedValueIncrease || rec.projectedValueIncrease;
+                const optRoi = opt?.roiPercentage || rec.roiPercentage;
+                const optTimeline = opt?.timeline || rec.timeline;
+                const optImg = opt?.afterImageUrl || rec.afterImageUrl;
 
-                    <p className="text-ink-muted text-xs leading-relaxed">{rec.explanation}</p>
-
-                    {/* Metrics Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-surface-sunken p-4 rounded-xl border border-surface-border text-xs">
-                      <div>
-                        <p className="text-ink-subtle uppercase tracking-widest font-bold text-[9px]">Allocated Budget</p>
-                        <p className="font-extrabold text-ink mt-1">{formatCurrency(displayCost(rec.estimatedCost))}</p>
-                      </div>
-                      <div>
-                        <p className="text-ink-subtle uppercase tracking-widest font-bold text-[9px]">Market Value Add</p>
-                        <p className="font-extrabold text-success mt-1">{formatCurrency(displayCost(rec.projectedValueIncrease))}</p>
-                      </div>
-                      <div>
-                        <p className="text-ink-subtle uppercase tracking-widest font-bold text-[9px]">Estimated ROI</p>
-                        <p className="font-extrabold text-success mt-1">+{rec.roiPercentage}%</p>
-                      </div>
-                      <div>
-                        <p className="text-ink-subtle uppercase tracking-widest font-bold text-[9px]">Avg Timeline</p>
-                        <p className="font-extrabold text-ink mt-1">{rec.timeline}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-center md:items-end justify-between md:justify-center border-t md:border-t-0 md:border-l border-surface-border pt-4 md:pt-0 md:pl-6 shrink-0 gap-4">
-                    {/* Visual Thumbnail Preview right on card */}
-                    {(rec.afterImageUrl || rec.beforeImageUrl) && (
-                      <div
-                        onClick={() => setSelectedRec(rec)}
-                        className="w-full md:w-44 h-28 rounded-xl overflow-hidden relative border border-surface-border shadow-sm cursor-pointer group shrink-0"
-                      >
-                        <img
-                          src={rec.afterImageUrl || rec.beforeImageUrl}
-                          alt={`${rec.category} AI Concept`}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-navy-950/80 via-transparent to-transparent flex items-end p-2">
-                          <span className="text-[10px] font-bold text-white tracking-wider uppercase">
-                            {rec.afterImageUrl ? "AI Concept Render" : "Before Preview"}
-                          </span>
+                return (
+                  <Card
+                    key={rec.id}
+                    id={`rec-card-${rec.id}`}
+                    className="flex flex-col md:flex-row justify-between gap-6 p-6 md:p-8"
+                  >
+                    <div className="space-y-3 flex-1">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="text-lg font-extrabold text-accent-600">#{rec.rank}</span>
+                        <h3 className="text-lg font-bold text-ink tracking-tight">{rec.category}</h3>
+                        <div className="flex gap-2">
+                          <Badge variant={rec.roiType}>ROI: {optRoi}%</Badge>
+                          <Badge variant={rec.timelineType}>{optTimeline}</Badge>
                         </div>
                       </div>
-                    )}
 
-                    <div className="flex items-center justify-between w-full md:w-auto gap-3">
-                      <button
-                        onClick={() => handleHeartToggle(rec.id)}
+                      <p className="text-ink-muted text-xs leading-relaxed">{rec.explanation}</p>
+
+                      {/* Interactive Option A / B / C Switcher */}
+                      <div className="flex flex-wrap items-center gap-1.5 bg-surface-sunken p-1.5 rounded-xl border border-surface-border w-fit my-2">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setActiveOptionTier({ ...activeOptionTier, [rec.id]: "option_a" }); }}
+                          className={cn(
+                            "px-3 py-1 text-xs font-bold rounded-lg transition-all",
+                            (activeOptionTier[rec.id] || "option_b") === "option_a"
+                              ? "bg-accent-600 text-white shadow-sm"
+                              : "text-ink-muted hover:text-ink hover:bg-surface-raised"
+                          )}
+                        >
+                          Option A: Cosmetic ({formatCurrency(displayCost((rec.options?.find((o:any)=>o.id==="option_a")?.cost) || rec.estimatedCost * 0.45))})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setActiveOptionTier({ ...activeOptionTier, [rec.id]: "option_b" }); }}
+                          className={cn(
+                            "px-3 py-1 text-xs font-bold rounded-lg transition-all",
+                            (activeOptionTier[rec.id] || "option_b") === "option_b"
+                              ? "bg-accent-600 text-white shadow-sm"
+                              : "text-ink-muted hover:text-ink hover:bg-surface-raised"
+                          )}
+                        >
+                          Option B: Balanced ({formatCurrency(displayCost((rec.options?.find((o:any)=>o.id==="option_b")?.cost) || rec.estimatedCost))})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setActiveOptionTier({ ...activeOptionTier, [rec.id]: "option_c" }); }}
+                          className={cn(
+                            "px-3 py-1 text-xs font-bold rounded-lg transition-all",
+                            (activeOptionTier[rec.id] || "option_b") === "option_c"
+                              ? "bg-accent-600 text-white shadow-sm"
+                              : "text-ink-muted hover:text-ink hover:bg-surface-raised"
+                          )}
+                        >
+                          Option C: Luxury ({formatCurrency(displayCost((rec.options?.find((o:any)=>o.id==="option_c")?.cost) || rec.estimatedCost * 1.45))})
+                        </button>
+                      </div>
+
+                      {/* Metrics Grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-surface-sunken p-4 rounded-xl border border-surface-border text-xs">
+                        <div>
+                          <p className="text-ink-subtle uppercase tracking-widest font-bold text-[9px]">Allocated Budget</p>
+                          <p className="font-extrabold text-ink mt-1">{formatCurrency(displayCost(optCost))}</p>
+                        </div>
+                        <div>
+                          <p className="text-ink-subtle uppercase tracking-widest font-bold text-[9px]">Market Value Add</p>
+                          <p className="font-extrabold text-success mt-1">{formatCurrency(displayCost(optValue))}</p>
+                        </div>
+                        <div>
+                          <p className="text-ink-subtle uppercase tracking-widest font-bold text-[9px]">Estimated ROI</p>
+                          <p className="font-extrabold text-success mt-1">+{optRoi}%</p>
+                        </div>
+                        <div>
+                          <p className="text-ink-subtle uppercase tracking-widest font-bold text-[9px]">Avg Timeline</p>
+                          <p className="font-extrabold text-ink mt-1">{optTimeline}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-center md:items-end justify-between md:justify-center border-t md:border-t-0 md:border-l border-surface-border pt-4 md:pt-0 md:pl-6 shrink-0 gap-4">
+                      {/* Visual Thumbnail Preview right on card */}
+                      {(optImg || rec.beforeImageUrl) && (
+                        <div
+                          onClick={() => setSelectedRec(rec)}
+                          className="w-full md:w-44 h-28 rounded-xl overflow-hidden relative border border-surface-border shadow-sm cursor-pointer group shrink-0"
+                        >
+                          <img
+                            src={optImg || rec.beforeImageUrl}
+                            alt={`${rec.category} AI Concept`}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-navy-950/80 via-transparent to-transparent flex items-end p-2">
+                            <span className="text-[10px] font-bold text-white tracking-wider uppercase">
+                              {optImg ? "AI Concept Render" : "Before Preview"}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between w-full md:w-auto gap-3">
+                        <button
+                          onClick={() => handleHeartToggle(rec.id)}
                         className={cn(
                           "p-2 rounded-full border transition-colors",
                           heartedList[rec.id]
@@ -762,7 +836,8 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                     </div>
                   </div>
                 </Card>
-              ))
+                );
+              })
             )}
           </div>
         </section>
@@ -799,46 +874,91 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
           <div className="space-y-6">
 
             {/* Image Slider Comparison Panel with Architectural Studio Concept */}
+            {/* Image Slider Comparison Panel with Architectural Studio Concept */}
             <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <div>
-                  <span className="text-[10px] font-bold text-accent-600 uppercase tracking-widest block">HomeReady Whole-House Design Studio</span>
-                  <span className="text-xs font-extrabold text-ink">
-                    {selectedRec.afterImageUrl ? "Photorealistic Concept Render vs. Original Space:" : "Your Uploaded Space & Planned Scope:"}
-                  </span>
-                </div>
+              {(() => {
+                const opt = getActiveOption(selectedRec);
+                const modalAfterUrl = opt?.afterImageUrl || selectedRec.afterImageUrl;
+                const modalCost = opt?.cost || selectedRec.estimatedCost;
+                return (
+                  <>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                      <div>
+                        <span className="text-[10px] font-bold text-accent-600 uppercase tracking-widest block">HomeReady Whole-House Design Studio</span>
+                        <span className="text-xs font-extrabold text-ink">
+                          {modalAfterUrl ? "Photorealistic Concept Render vs. Original Space:" : "Your Uploaded Space & Planned Scope:"}
+                        </span>
+                      </div>
 
-                {/* Single Master Render indicator */}
-                <div className="flex gap-2 items-center">
-                  <span className="text-[11px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-lg">
-                    {formatCurrency(displayCost(selectedRec.estimatedCost))} Whole-House Budget Share
-                  </span>
-                </div>
-              </div>
-
-              {/* Slider comparative container */}
-              <div className="h-72 md:h-96 w-full rounded-2xl overflow-hidden bg-surface-sunken relative border border-surface-border shadow-card select-none">
-                {selectedRec.afterImageUrl ? (
-                  <div className="relative w-full h-full">
-                    {/* Before Image (underneath) — always the user's own uploaded photo */}
-                    <img
-                      src={selectedRec.beforeImageUrl || uploadedBeforeImg}
-                      alt="Before upgrade"
-                      className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-                    />
-                    <div className="absolute top-4 left-4 bg-navy-950/75 backdrop-blur-sm text-white border border-white/10 font-bold text-[10px] px-2.5 py-1 rounded-lg z-10 shadow-card">
-                      Original Photo (Before)
+                      {/* Interactive Option A/B/C Switcher & Budget share badge */}
+                      <div className="flex flex-wrap gap-2 items-center">
+                        <div className="flex items-center gap-1 bg-surface-sunken p-1 rounded-xl border border-surface-border">
+                          <button
+                            type="button"
+                            onClick={() => setActiveOptionTier({ ...activeOptionTier, [selectedRec.id]: "option_a" })}
+                            className={cn(
+                              "px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all",
+                              (activeOptionTier[selectedRec.id] || "option_b") === "option_a"
+                                ? "bg-accent-600 text-white shadow-sm"
+                                : "text-ink-muted hover:text-ink"
+                            )}
+                          >
+                            Option A: Cosmetic
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setActiveOptionTier({ ...activeOptionTier, [selectedRec.id]: "option_b" })}
+                            className={cn(
+                              "px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all",
+                              (activeOptionTier[selectedRec.id] || "option_b") === "option_b"
+                                ? "bg-accent-600 text-white shadow-sm"
+                                : "text-ink-muted hover:text-ink"
+                            )}
+                          >
+                            Option B: Balanced
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setActiveOptionTier({ ...activeOptionTier, [selectedRec.id]: "option_c" })}
+                            className={cn(
+                              "px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all",
+                              (activeOptionTier[selectedRec.id] || "option_b") === "option_c"
+                                ? "bg-accent-600 text-white shadow-sm"
+                                : "text-ink-muted hover:text-ink"
+                            )}
+                          >
+                            Option C: Luxury
+                          </button>
+                        </div>
+                        <span className="text-[11px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-lg">
+                          {formatCurrency(displayCost(modalCost))} Whole-House Budget Share
+                        </span>
+                      </div>
                     </div>
 
-                    {/* After Image (overlay, clipped based on drag slider) — the genuine AI upgrade of the user's photo */}
-                    <img
-                      src={selectedRec.afterImageUrl}
-                      alt="AI generated remodel concept"
-                      className="absolute inset-0 w-full h-full object-cover pointer-events-none z-20"
-                      style={{
-                        clipPath: `polygon(0 0, ${modalBeforeAfterPct}% 0, ${modalBeforeAfterPct}% 100%, 0 100%)`
-                      }}
-                    />
+                    {/* Slider comparative container */}
+                    <div className="h-72 md:h-96 w-full rounded-2xl overflow-hidden bg-surface-sunken relative border border-surface-border shadow-card select-none">
+                      {modalAfterUrl ? (
+                        <div className="relative w-full h-full">
+                          {/* Before Image (underneath) — always the user's own uploaded photo */}
+                          <img
+                            src={selectedRec.beforeImageUrl || uploadedBeforeImg}
+                            alt="Before upgrade"
+                            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                          />
+                          <div className="absolute top-4 left-4 bg-navy-950/75 backdrop-blur-sm text-white border border-white/10 font-bold text-[10px] px-2.5 py-1 rounded-lg z-10 shadow-card">
+                            Original Photo (Before)
+                          </div>
+
+                          {/* After Image (overlay, clipped based on drag slider) — the genuine AI upgrade of the user's photo */}
+                          <img
+                            src={modalAfterUrl}
+                            alt="AI generated remodel concept"
+                            className="absolute inset-0 w-full h-full object-cover pointer-events-none z-20"
+                            style={{
+                              clipPath: `polygon(0 0, ${modalBeforeAfterPct}% 0, ${modalBeforeAfterPct}% 100%, 0 100%)`
+                            }}
+                          />
                     <div
                       className="absolute top-4 bg-accent-500 text-white font-bold text-[10px] px-2.5 py-1 rounded-lg z-30 shadow-card transition-[right] flex items-center space-x-1"
                       style={{
@@ -909,6 +1029,9 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                   </div>
                 )}
               </div>
+                  </>
+                );
+              })()}
 
               {/* Interactive Selective Inpainting Studio Toolbar */}
               <div className="bg-surface-sunken border border-accent-300/80 rounded-2xl p-4 space-y-3">

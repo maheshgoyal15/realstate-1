@@ -17,7 +17,10 @@ import psycopg2.extras
 from app.core.config import settings
 from app.core.db import get_db
 from app.services.agents import audit_generated_render
-from app.services.agents.finops_budget_agent import build_room_scope as build_room_scope_agent
+from app.services.agents.finops_budget_agent import (
+    build_room_scope as build_room_scope_agent,
+    build_room_options as build_room_options_agent,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -563,9 +566,9 @@ def execute_multi_agent_pipeline(
     # PHASE 3: Concurrent Canonical Room Render Synthesis
     # ------------------------------------------------------------------
     t_render_start = time.time()
-    canonical_room_renders: Dict[str, str] = {}
+    canonical_room_renders: Dict[str, Dict[str, Optional[str]]] = {}
 
-    def _render_canonical_room(room_type: str) -> Tuple[str, Optional[str]]:
+    def _render_canonical_room(room_type: str) -> Tuple[str, Dict[str, Optional[str]]]:
         t_single_render = time.time()
         cluster = room_clusters[room_type]
         img_item = cluster[0]
@@ -579,17 +582,14 @@ def execute_multi_agent_pipeline(
         surf_spec = master_plan.get("surface_spec") or room_tax["primary_surface"]
         fix_spec = master_plan.get("fixture_spec") or (room_tax["fixtures"] if has_water else "Architectural lighting")
 
-        itemized_additions = build_room_scope(
+        room_opts = build_room_options_agent(
             room_share_budget,
             has_water,
             {"cabinets": cab_spec, "shelving": shelv_spec, "surface": surf_spec, "fixtures": fix_spec},
             room_type,
+            style_preference,
+            total_house_budget,
         )
-
-        inline_upgrades_text = " | ".join([
-            f"{item['feature']} (${item['item_cost']:,.0f}): {item['added_details']}"
-            for item in itemized_additions
-        ])
 
         inv = img_item.get("inventory", {})
         preserved_furniture = inv.get("detected_furniture_to_preserve") or []
@@ -612,31 +612,39 @@ def execute_multi_agent_pipeline(
         )
         neg_tokens = master_plan.get("negative_tokens") or room_tax.get("negative_tokens", "")
 
-        selected_prompt = (
-            f"STRICT INLINE PHOTO EDITING OF THIS ORIGINAL {room_type.upper()} PHOTO. "
-            f"CRITICAL LAYOUT & GEOMETRY LOCK: Preserve the exact camera angle, perspective, wall positions, window placement, door locations, and furniture arrangement of the original photo. "
-            f"{furniture_lock_clause}"
-            f"{window_clearance_clause}"
-            f"DO NOT move furniture or change the room layout. DO NOT add non-existent floor-to-ceiling cabinetry, built-in wardrobes, libraries, or wall units. "
-            f"Perform ONLY realistic inline surface edits directly onto existing elements in the photo for a total room budget share of ${room_share_budget:,.0f} in {style_preference.upper()} style: "
-            f"{inline_upgrades_text}. "
-            f"{water_clause} "
-            f"STRICT NEGATIVE PROMPT: {neg_tokens}, shelves covering window, shelves over window, cabinets blocking window, bookcase covering window, obscured window glass, blocked natural light, replace dining table with cabinet, replace table with counter, altered room layout, moved furniture, moved bed, moved window, floor-to-ceiling built-in wardrobes, luxury library units, massive wall cabinetry, distorted room structure."
-        )
+        rendered_urls = {}
+        for opt_key in ["option_a", "option_b", "option_c"]:
+            opt_data = room_opts[opt_key]
+            inline_upgrades_text = " | ".join([
+                f"{item['feature']} (${item['item_cost']:,.0f}): {item['added_details']}"
+                for item in opt_data["scope"]
+            ])
+            selected_prompt = (
+                f"STRICT INLINE PHOTO EDITING OF THIS ORIGINAL {room_type.upper()} PHOTO ({opt_data['title'].upper()}). "
+                f"CRITICAL LAYOUT & GEOMETRY LOCK: Preserve the exact camera angle, perspective, wall positions, window placement, door locations, and furniture arrangement of the original photo. "
+                f"{furniture_lock_clause}"
+                f"{window_clearance_clause}"
+                f"DO NOT move furniture or change the room layout. DO NOT add non-existent floor-to-ceiling cabinetry, built-in wardrobes, libraries, or wall units. "
+                f"Perform ONLY realistic inline surface edits directly onto existing elements in the photo for a total room budget share of ${opt_data['cost']:,.0f} in {style_preference.upper()} style: "
+                f"{inline_upgrades_text}. "
+                f"{water_clause} "
+                f"STRICT NEGATIVE PROMPT: {neg_tokens}, shelves covering window, shelves over window, cabinets blocking window, bookcase covering window, obscured window glass, blocked natural light, replace dining table with cabinet, replace table with counter, altered room layout, moved furniture, moved bed, moved window, floor-to-ceiling built-in wardrobes, luxury library units, massive wall cabinetry, distorted room structure."
+            )
+            url = _generate_render_for_prompt(
+                img_item["source_img"], img_item["b64"], selected_prompt,
+                img_item["rec_id"], opt_key, opt_data["cost"], room_type,
+            )
+            rendered_urls[opt_key] = url
 
-        url = _generate_render_for_prompt(
-            img_item["source_img"], img_item["b64"], selected_prompt,
-            img_item["rec_id"], "house_allocated_tier", room_share_budget, room_type,
-        )
-        logger.info(f"[PERF] Sub-Agent 4 AI Spatial Render for {room_type} completed in {(time.time() - t_single_render)*1000:.1f}ms")
-        return room_type, url
+        logger.info(f"[PERF] Sub-Agent 4 AI Spatial Render for {room_type} completed in {(time.time() - t_single_render)*1000:.1f}ms -> Renders: {rendered_urls}")
+        return room_type, rendered_urls
 
     render_rooms = [r for r in selected_room_types if r in room_budget_allocations]
     if render_rooms:
         with concurrent.futures.ThreadPoolExecutor(max_workers=min(MAX_AGENT_WORKERS, len(render_rooms))) as ex:
-            for room_type, url in ex.map(_render_canonical_room, render_rooms):
-                if url:
-                    canonical_room_renders[room_type] = url
+            for room_type, urls_dict in ex.map(_render_canonical_room, render_rooms):
+                if urls_dict:
+                    canonical_room_renders[room_type] = urls_dict
 
     # ------------------------------------------------------------------
     # PHASE 4 & 5: Itemized Upgrade List & Recommendation Assembly
@@ -660,23 +668,53 @@ def execute_multi_agent_pipeline(
         surf_spec = master_plan.get("surface_spec") or room_tax["primary_surface"]
         fix_spec = master_plan.get("fixture_spec") or (room_tax["fixtures"] if has_water else "Architectural lighting")
 
-        itemized_additions = build_room_scope(
+        room_options_dict = build_room_options_agent(
             room_share_budget,
             has_water,
             {"cabinets": cab_spec, "shelving": shelv_spec, "surface": surf_spec, "fixtures": fix_spec},
             room_type,
+            style_preference,
+            total_house_budget,
         )
+        itemized_additions = room_options_dict["option_b"]["scope"]
 
         for img_idx, img_item in enumerate(cluster):
             rec_id = img_item["rec_id"]
             before_url = img_item["before_url"]
             canny_url = img_item["canny_url"]
 
-            master_render_url = canonical_room_renders.get(room_type)
+            rendered_dict = canonical_room_renders.get(room_type, {})
+            if isinstance(rendered_dict, str):
+                rendered_dict = {"option_b": rendered_dict}
+
+            url_a = rendered_dict.get("option_a") or "/api/v1/images/homeready_upgrade_5k_cosmetic_refresh.png"
+            url_b = rendered_dict.get("option_b") or "/api/v1/images/homeready_upgrade_10k_moderate_upgrade.png"
+            url_c = rendered_dict.get("option_c") or "/api/v1/images/homeready_upgrade_15k_luxury_remodel.png"
+
+            master_render_url = url_b
             render_disk_path = None
             if master_render_url and "/api/v1/images/" in master_render_url:
                 render_disk_path = os.path.join(GENERATED_IMAGES_DIR, os.path.basename(master_render_url))
             audit = audit_generated_render(before_img=img_item["source_img"], after_image_path=render_disk_path)
+
+            options_list = []
+            for opt_key, opt_url in [("option_a", url_a), ("option_b", url_b), ("option_c", url_c)]:
+                opt_data = room_options_dict[opt_key]
+                options_list.append({
+                    "id": opt_data["id"],
+                    "title": opt_data["title"],
+                    "cost": opt_data["cost"],
+                    "projected_value_increase": opt_data["projected_value_increase"],
+                    "roi_percentage": opt_data["roi_percentage"],
+                    "timeline": opt_data["timeline"],
+                    "after_image_url": opt_url,
+                    "scope": [
+                        {"item": f"[+] {item['feature']} (${item['item_cost']:,.0f}) — {item['added_details']}", "checked": True}
+                        for item in opt_data["scope"]
+                    ],
+                    "itemized_additions": opt_data["scope"],
+                    "prompt_tokens": opt_data["prompt_tokens"],
+                })
 
             category_title = f"{room_type} Remodel View #{img_idx+1} (${room_share_budget:,.0f} House Budget Share)"
             rec_item = {
@@ -697,16 +735,17 @@ def execute_multi_agent_pipeline(
                     for item in itemized_additions
                 ],
                 "before_image_url": before_url,
-                "after_image_url": master_render_url or "/api/v1/images/homeready_upgrade_15k_luxury_remodel.png",
-                "tier_5k_url": master_render_url or "/api/v1/images/homeready_upgrade_5k_cosmetic_refresh.png",
-                "tier_10k_url": master_render_url or "/api/v1/images/homeready_upgrade_10k_moderate_upgrade.png",
-                "tier_15k_url": master_render_url or "/api/v1/images/homeready_upgrade_15k_luxury_remodel.png",
+                "after_image_url": url_b,
+                "tier_5k_url": url_a,
+                "tier_10k_url": url_b,
+                "tier_15k_url": url_c,
                 "canny_edge_url": canny_url,
                 "master_plan": master_plan,
                 "qa_audit": audit,
                 "room_share_budget": room_share_budget,
                 "total_house_budget": total_house_budget,
-                "itemized_additions": itemized_additions
+                "itemized_additions": itemized_additions,
+                "options": options_list,
             }
 
             all_recommendations.append(rec_item)
@@ -725,7 +764,8 @@ def execute_multi_agent_pipeline(
                             "qa_audit": audit,
                             "room_share_budget": room_share_budget,
                             "total_house_budget": total_house_budget,
-                            "itemized_additions": itemized_additions
+                            "itemized_additions": itemized_additions,
+                            "options": options_list,
                         })
                         cur.execute(
                             "INSERT INTO recommendations "
