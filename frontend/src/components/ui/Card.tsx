@@ -5,6 +5,11 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   hoverEffect?: boolean;
 }
 
+/**
+ * Flat hairline-bordered surface. Hover darkens the border only — the card does
+ * not lift, glow, or gain a shadow, because elevation here means "floating",
+ * and a card in a grid is not floating.
+ */
 export const Card: React.FC<CardProps> = ({
   children,
   className,
@@ -14,10 +19,8 @@ export const Card: React.FC<CardProps> = ({
   return (
     <div
       className={cn(
-        "bg-surface-raised border border-surface-border rounded-2xl p-6 shadow-card transition-[transform,box-shadow,border-color] duration-200",
-        {
-          "hover:border-accent-200 hover:shadow-card-hover hover:-translate-y-0.5": hoverEffect,
-        },
+        "rounded-2xl border border-surface-border bg-surface-raised p-6 transition-colors duration-150",
+        hoverEffect && "hover:border-surface-border-strong",
         className
       )}
       {...props}

@@ -13,22 +13,22 @@ export const Table: React.FC<TableProps> = ({
   ...props
 }) => {
   return (
-    <div className="w-full overflow-x-auto rounded-xl border border-surface-border bg-surface-raised">
-      <table className={cn("w-full text-left border-collapse", className)} {...props}>
+    <div className="w-full overflow-x-auto rounded-2xl border border-surface-border bg-surface-raised">
+      <table className={cn("w-full border-collapse text-left", className)} {...props}>
         <thead>
-          <tr className="bg-surface-sunken border-b border-surface-border">
+          <tr className="border-b border-surface-border">
             {headers.map((header, idx) => (
               <th
                 key={idx}
                 scope="col"
-                className="px-6 py-4 text-xs font-bold text-ink-muted uppercase tracking-wider"
+                className="whitespace-nowrap px-6 py-3.5 text-2xs font-medium uppercase tracking-[0.1em] text-ink-subtle"
               >
                 {header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-surface-border text-ink text-sm font-medium">
+        <tbody className="divide-y divide-surface-border text-sm text-ink">
           {children}
         </tbody>
       </table>
@@ -41,7 +41,7 @@ interface TableRowProps extends React.HTMLAttributes<HTMLTableRowElement> {}
 export const TableRow: React.FC<TableRowProps> = ({ children, className, ...props }) => {
   return (
     <tr
-      className={cn("hover:bg-surface-sunken transition-colors duration-150", className)}
+      className={cn("transition-colors duration-150 hover:bg-surface", className)}
       {...props}
     >
       {children}

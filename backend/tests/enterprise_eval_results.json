@@ -1,0 +1,68 @@
+{
+  "timestamp": "2026-07-22T15:33:21Z",
+  "overall_success": true,
+  "metrics": {
+    "room_classification_accuracy": 100.0,
+    "defect_detection_coverage": 100.0,
+    "condition_score_conformance": 100.0,
+    "condition_score_mae": 0.77,
+    "budget_roi_compliance": 100.0,
+    "modernized_image_generation_rate": 100.0
+  },
+  "scenarios": [
+    {
+      "eval_id": "eval-kitchen-primary-austin",
+      "file_name": "Screenshot 2026-07-17 at 5.46.46\u202fPM.png",
+      "analysis_id": "ec94d202-53e9-449a-b862-ece74b48db07",
+      "status": "completed",
+      "latency_ms": 921.6,
+      "room_classification_pass": true,
+      "defect_detection_pass": true,
+      "condition_score": 8.2,
+      "condition_score_pass": true,
+      "score_mae": 1.0,
+      "recommendations_count": 5,
+      "budget_roi_pass": true,
+      "modernized_images_verified": 5,
+      "direct_modernized_url": "/api/v1/images/mod_Screenshot_2026-07-17_at_5.46.46_PM_modern_after.png",
+      "report_url": "/api/v1/reports/a15f50290d4a47a6a10817e5dce6486f/download",
+      "overall_pass": true
+    },
+    {
+      "eval_id": "eval-kitchen-dining-angle",
+      "file_name": "Screenshot 2026-07-17 at 5.47.00\u202fPM.png",
+      "analysis_id": "9f8de6e5-c24e-42c2-90cf-89309756f188",
+      "status": "completed",
+      "latency_ms": 854.8,
+      "room_classification_pass": true,
+      "defect_detection_pass": true,
+      "condition_score": 7.8,
+      "condition_score_pass": true,
+      "score_mae": 1.0,
+      "recommendations_count": 5,
+      "budget_roi_pass": true,
+      "modernized_images_verified": 5,
+      "direct_modernized_url": "/api/v1/images/mod_Screenshot_2026-07-17_at_5.47.00_PM_transitional_after.png",
+      "report_url": "/api/v1/reports/d6f8bad85fb34975b9420c28121e321f/download",
+      "overall_pass": true
+    },
+    {
+      "eval_id": "eval-bedroom-living-traditional",
+      "file_name": "Screenshot 2026-07-17 at 5.47.14\u202fPM.png",
+      "analysis_id": "6d59bb21-e494-4bb8-bc53-607f2034dbc5",
+      "status": "completed",
+      "latency_ms": 1126.9,
+      "room_classification_pass": true,
+      "defect_detection_pass": true,
+      "condition_score": 7.1,
+      "condition_score_pass": true,
+      "score_mae": 0.3,
+      "recommendations_count": 4,
+      "budget_roi_pass": true,
+      "modernized_images_verified": 4,
+      "direct_modernized_url": "/api/v1/images/mod_Screenshot_2026-07-17_at_5.47.14_PM_traditional_after.png",
+      "report_url": "/api/v1/reports/43b6c660de274606812b2e34d5510926/download",
+      "overall_pass": true
+    }
+  ]
+}

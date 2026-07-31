@@ -56,28 +56,28 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-slate-950 px-4">
+    <div className="min-h-screen w-full flex items-center justify-center bg-neutral-950 px-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex items-center justify-center space-x-3 mb-8">
-          <div className="p-2 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-lg shadow-md">
+          <div className="p-2 bg-neutral-800 rounded-lg">
             <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
           </div>
-          <span className="text-lg font-extrabold tracking-tight bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+          <span className="text-lg font-semibold tracking-tight text-white">
             HomeReady
           </span>
         </div>
 
-        <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-8 shadow-2xl space-y-6">
+        <div className="bg-neutral-900 border border-white/10 rounded-2xl p-8 space-y-6">
           <div className="text-center space-y-1">
-            <h1 className="text-lg font-bold text-white">Sign in to your account</h1>
-            <p className="text-xs text-slate-400">Access your properties, reports, and recommendations.</p>
+            <h1 className="text-lg font-semibold text-white">Sign in to your account</h1>
+            <p className="text-xs text-neutral-400">Access your properties, reports, and recommendations.</p>
           </div>
 
           {formError && (
-            <div className="text-xs font-semibold text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+            <div className="text-xs font-semibold text-danger bg-danger-subtle border border-danger-border rounded-lg px-3 py-2">
               {formError}
             </div>
           )}
@@ -86,8 +86,8 @@ function LoginForm() {
             type="button"
             onClick={() => signIn("google", { callbackUrl })}
             className={cn(
-              "w-full flex items-center justify-center space-x-2 bg-white hover:bg-slate-100 text-slate-900",
-              "text-sm font-bold py-2.5 rounded-xl transition-colors"
+              "w-full flex items-center justify-center space-x-2 bg-white hover:bg-surface-sunken text-ink",
+              "text-sm font-semibold py-2.5 rounded-xl transition-colors"
             )}
           >
             <GoogleIcon />
@@ -96,13 +96,13 @@ function LoginForm() {
 
           <div className="flex items-center space-x-3">
             <div className="flex-1 h-px bg-white/10" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">or</span>
+            <span className="text-[10px] font-medium uppercase tracking-widest text-neutral-300">or</span>
             <div className="flex-1 h-px bg-white/10" />
           </div>
 
           <form onSubmit={handleCredentialsSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <label htmlFor="email" className="block text-xs font-semibold text-slate-300">
+              <label htmlFor="email" className="block text-xs font-semibold text-neutral-400">
                 Email
               </label>
               <input
@@ -111,12 +111,12 @@ function LoginForm() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full text-sm bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full text-sm bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white placeholder:text-neutral-300 focus:outline-none focus:border-accent-500 transition-colors"
                 placeholder="you@company.com"
               />
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="password" className="block text-xs font-semibold text-slate-300">
+              <label htmlFor="password" className="block text-xs font-semibold text-neutral-400">
                 Password
               </label>
               <input
@@ -125,14 +125,14 @@ function LoginForm() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full text-sm bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full text-sm bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white placeholder:text-neutral-300 focus:outline-none focus:border-accent-500 transition-colors"
                 placeholder="••••••••••••"
               />
             </div>
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-bold py-2.5 rounded-xl transition-colors shadow-lg shadow-blue-600/20"
+              className="w-full bg-accent-500 hover:bg-accent-600 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold py-2.5 rounded-xl transition-colors"
             >
               {submitting ? "Signing in..." : "Sign In"}
             </button>

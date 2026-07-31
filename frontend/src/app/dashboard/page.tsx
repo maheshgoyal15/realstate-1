@@ -3,13 +3,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Sparkles,
-  ArrowRight,
   TrendingUp,
-  Clock,
   CheckCircle,
-  FileText,
   Eye,
-  Download,
   Trash2,
   Share2,
 } from "lucide-react";
@@ -79,53 +75,55 @@ export default function DashboardPage() {
   };
 
   const handleShare = (prop: AnalysisSummary) => {
-    if (!prop.reportUrl) return;
-    setShareUrl(`${window.location.origin}${prop.reportUrl}`);
+    if (prop.status !== "status-complete") return;
+    setShareUrl(`${window.location.origin}/reports/${prop.id}`);
     setSelectedProperty(prop.address);
     setShareModalOpen(true);
   };
 
   return (
-    <div className="space-y-8 pb-12 animate-in fade-in duration-300">
-      {/* Welcome Banner */}
-      <Card className="bg-gradient-to-r from-blue-900/30 via-indigo-900/20 to-slate-900/50 border-blue-500/20 p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
-            Welcome back, Mahesh! 👋
-          </h1>
-          <p className="text-slate-400 text-sm max-w-xl">
+    <div className="pb-12">
+      {/* Page masthead — the one deliberately large element on the screen, so
+          hierarchy is obvious at squint distance without a colored banner. */}
+      <header className="flex flex-col gap-6 border-b border-surface-border pb-10 md:flex-row md:items-end md:justify-between">
+        <div className="max-w-xl space-y-3">
+          <span className="eyebrow">Workspace</span>
+          <h1 className="text-4xl">Welcome back, Mahesh</h1>
+          <p className="text-sm text-ink-muted">
             Our computer vision model finished scanning your new uploads. Ready to inspect recommended improvements?
           </p>
         </div>
-        <Button 
+        <Button
           id="hero-analyze-btn"
-          variant="primary" 
+          variant="accent"
+          size="lg"
           icon={<Sparkles className="w-4 h-4" />}
           onClick={() => window.location.href = "/analyze"}
         >
           Analyze New Property
         </Button>
-      </Card>
+      </header>
 
-      {/* Quick Stats Grid */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {stats.map((stat, idx) => (
-          <Card key={idx} hoverEffect={false} className="p-6 bg-slate-900/40 border-white/5 shadow-md">
-            <div className="space-y-1">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{stat.title}</span>
-              <h3 className="text-3xl font-extrabold text-white tracking-tight">{stat.value}</h3>
-              <p className="text-[11px] text-slate-400">{stat.desc}</p>
-            </div>
-          </Card>
+      {/* Stat strip — bare figures divided by hairlines rather than three
+          identical boxes, so the numbers read as data and not as cards. */}
+      <section className="grid grid-cols-1 divide-y divide-surface-border border-b border-surface-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        {stats.map((stat) => (
+          <div key={stat.title} className="py-8 sm:px-8 sm:first:pl-0 sm:last:pr-0">
+            <span className="eyebrow">{stat.title}</span>
+            <p className="mt-3 text-3xl font-semibold" data-numeric>
+              {stat.value}
+            </p>
+            <p className="mt-1 text-xs text-ink-subtle">{stat.desc}</p>
+          </div>
         ))}
       </section>
 
       {/* Recent Analyses Table */}
-      <section className="space-y-4">
-        <h2 className="text-xl font-bold tracking-tight text-white">Recent Property Analyses</h2>
+      <section className="space-y-4 pt-10">
+        <h2 className="text-xl">Recent Property Analyses</h2>
         {analyses.length === 0 ? (
-          <Card className="p-8 text-center bg-slate-900/40 border-white/5">
-            <p className="text-sm text-slate-400">
+          <Card className="p-8 text-center">
+            <p className="text-sm text-ink-muted">
               No analyses yet. Upload your first property to get started.
             </p>
           </Card>
@@ -133,19 +131,19 @@ export default function DashboardPage() {
         <Table headers={["Property Address", "Date Created", "Analysis Status", "Calculated ROI", "Actions"]}>
           {analyses.map((prop) => (
             <TableRow key={prop.id} id={`row-${prop.id}`}>
-              <TableCell className="font-bold text-white">{prop.address}</TableCell>
+              <TableCell className="font-semibold text-ink">{prop.address}</TableCell>
               <TableCell>{prop.date}</TableCell>
               <TableCell>
                 <Badge variant={prop.status}>{prop.statusLabel}</Badge>
               </TableCell>
-              <TableCell className="font-extrabold text-emerald-400">
+              <TableCell className="font-semibold text-success">
                 {typeof prop.roi === "number" ? `${prop.roi.toFixed(1)}%` : "--"}
               </TableCell>
               <TableCell>
                 <div className="flex items-center space-x-2">
-                  <Button 
+                  <Button
                     id={`view-btn-${prop.id}`}
-                    variant="ghost" 
+                    variant="ghost"
                     size="sm"
                     icon={<Eye className="w-3.5 h-3.5" />}
                     onClick={() => {
@@ -157,20 +155,25 @@ export default function DashboardPage() {
                   >
                     View
                   </Button>
-                  <Button 
+                  <Button
                     id={`share-btn-${prop.id}`}
-                    variant="ghost" 
+                    variant="ghost"
                     size="sm"
                     icon={<Share2 className="w-3.5 h-3.5" />}
                     onClick={() => handleShare(prop)}
-                    disabled={!prop.reportUrl}
+                    disabled={prop.status !== "status-complete"}
                   >
                     Share
                   </Button>
-                  <button 
+                  <button
                     id={`delete-btn-${prop.id}`}
-                    onClick={() => handleDelete(prop.id)}
-                    className="p-2 text-slate-500 hover:text-red-400 transition-colors"
+                    onClick={() => {
+                      if (window.confirm(`Delete the analysis for ${prop.address}? This can't be undone.`)) {
+                        handleDelete(prop.id);
+                      }
+                    }}
+                    aria-label={`Delete analysis for ${prop.address}`}
+                    className="p-2 text-ink-subtle hover:text-danger transition-colors rounded-lg hover:bg-danger-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -182,50 +185,53 @@ export default function DashboardPage() {
         )}
       </section>
 
-      {/* Trending Upgrades & Insights Section */}
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="p-6 space-y-4 bg-slate-900/40 border-white/5 shadow-md">
-          <div className="flex items-center space-x-2 text-indigo-400 font-bold">
-            <TrendingUp className="w-5 h-5" />
-            <h4 className="text-sm uppercase tracking-wider text-slate-300">Trending Upgrades (Agents Only)</h4>
+      {/* Insights — deliberately asymmetric (2fr / 1fr) so the row doesn't read
+          as another pair of identical boxes stacked under the table. */}
+      <section className="grid grid-cols-1 gap-6 pt-12 lg:grid-cols-3">
+        <Card hoverEffect={false} className="lg:col-span-2 space-y-5">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-accent-500" />
+            <h3 className="eyebrow">Trending Upgrades (Agents Only)</h3>
           </div>
-          <p className="text-xs text-slate-400 leading-normal">
+          <p className="max-w-prose text-sm text-ink-muted">
             Among local properties in the Austin MLS region, computer vision audits suggest prioritizing the following elements to secure higher buyer bidding premiums:
           </p>
-          <ul className="space-y-3 text-xs">
-            <li className="flex justify-between items-center bg-white/5 border border-white/5 rounded-xl p-3">
-              <span className="text-white font-semibold">• Modern Kitchen Remodel</span>
-              <span className="text-slate-400 font-bold">62% of scanned homes</span>
-            </li>
-            <li className="flex justify-between items-center bg-white/5 border border-white/5 rounded-xl p-3">
-              <span className="text-white font-semibold">• HVAC Unit Replacement</span>
-              <span className="text-slate-400 font-bold">48% of scanned homes</span>
-            </li>
-            <li className="flex justify-between items-center bg-white/5 border border-white/5 rounded-xl p-3">
-              <span className="text-white font-semibold">• Exterior Painting & Siding Audit</span>
-              <span className="text-slate-400 font-bold">35% of scanned homes</span>
-            </li>
+          <ul className="divide-y divide-surface-border border-t border-surface-border">
+            {[
+              { name: "Modern Kitchen Remodel", share: "62%" },
+              { name: "HVAC Unit Replacement", share: "48%" },
+              { name: "Exterior Painting & Siding Audit", share: "35%" },
+            ].map((item) => (
+              <li key={item.name} className="flex items-baseline justify-between gap-4 py-3.5">
+                <span className="text-sm text-ink">{item.name}</span>
+                <span className="shrink-0 text-sm font-medium text-ink-muted" data-numeric>
+                  {item.share}
+                  <span className="ml-1.5 text-2xs text-ink-subtle">of scanned homes</span>
+                </span>
+              </li>
+            ))}
           </ul>
         </Card>
 
-        <Card className="p-6 space-y-4 bg-slate-900/40 border-white/5 shadow-md justify-between flex flex-col">
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2 text-emerald-400 font-bold">
-              <CheckCircle className="w-5 h-5" />
-              <h4 className="text-sm uppercase tracking-wider text-slate-300">Workspace Health Indicator</h4>
+        <Card hoverEffect={false} className="flex flex-col justify-between gap-6 self-start">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-success" />
+              <h3 className="eyebrow">Workspace Health</h3>
             </div>
-            <p className="text-xs text-slate-400 leading-normal">
-              Your real estate team has generated <strong>8 comprehensive guides</strong> this month with a cumulative estimated valuation lift of <strong>+$185,500</strong>. Keep scanning listings to maximize contract conversions.
+            <p className="text-sm text-ink-muted">
+              Your team generated <span className="font-medium text-ink">8 guides</span> this month, with a cumulative estimated valuation lift of{" "}
+              <span className="font-medium text-ink" data-numeric>+$185,500</span>.
             </p>
           </div>
-          <Button 
+          <Button
             id="view-network-btn"
-            variant="secondary" 
+            variant="secondary"
             size="sm"
             onClick={() => window.location.href = "/contractors"}
-            className="w-full mt-4"
+            className="w-full"
           >
-            Manage Referrals & Contractor Network
+            Contractor Network
           </Button>
         </Card>
       </section>
@@ -242,24 +248,25 @@ export default function DashboardPage() {
         }
       >
         <div className="space-y-4">
-          <p className="text-xs text-slate-400">
-            Generate and copy a secure co-branded public URL for property sellers or buyers regarding: <strong>{selectedProperty}</strong>
+          <p className="text-xs text-ink-muted">
+            Generate and copy a secure co-branded public URL for property sellers or buyers regarding: <strong className="text-ink">{selectedProperty}</strong>
           </p>
-          <div className="flex items-center space-x-3 bg-slate-950 border border-slate-800 rounded-xl p-3">
+          <div className="flex items-center space-x-3 bg-surface-sunken border border-surface-border rounded-xl p-3">
             <input
               type="text"
               readOnly
               value={shareUrl}
-              className="flex-1 bg-transparent border-none text-xs text-indigo-300 focus:outline-none focus:ring-0"
+              aria-label="Shareable report URL"
+              className="flex-1 bg-transparent border-none text-xs text-ink focus:outline-none focus:ring-0"
             />
-            <button
+            <Button
+              size="sm"
               onClick={() => {
                 navigator.clipboard.writeText(shareUrl);
               }}
-              className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg transition-colors"
             >
               Copy
-            </button>
+            </Button>
           </div>
         </div>
       </Modal>

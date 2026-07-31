@@ -22,8 +22,8 @@ import {
 import { Card } from "@/components/ui/Card";
 
 // Unsplash premium architecture and design images allowed by Content-Security-Policy
-const INTERIOR_BEFORE = "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1200&q=80"; // Dated kitchen
-const INTERIOR_AFTER = "https://images.unsplash.com/photo-1556911220-1114b88a74e6?auto=format&fit=crop&w=1200&q=80";  // Modernized chef kitchen
+const INTERIOR_BEFORE = "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80"; // Dated kitchen
+const INTERIOR_AFTER = "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80";  // Modernized chef kitchen
 const HERO_IMAGE = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=80"; // Bright modern living room
 
 const SAMPLE_PROJECTS = [
@@ -158,7 +158,7 @@ export default function HomePage() {
   return (
     <div className="space-y-20 pb-12">
       {/* 1. Hero Search Section */}
-      <section className="relative overflow-hidden rounded-3xl border border-surface-border bg-surface-raised shadow-card">
+      <section className="relative overflow-hidden rounded-3xl border border-surface-border bg-surface-raised">
         <div className="absolute inset-0">
           <Image
             src={HERO_IMAGE}
@@ -168,16 +168,18 @@ export default function HomePage() {
             sizes="100vw"
             className="object-cover opacity-15"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-surface-raised via-surface-raised/95 to-surface-raised" />
+          {/* Flat scrim — the image is already at 15% and only needs to be held
+              back far enough for the headline to hold contrast. */}
+          <div className="absolute inset-0 bg-surface-raised/70" />
         </div>
 
         <div className="relative flex flex-col items-center justify-center text-center pt-16 pb-16 max-w-4xl mx-auto space-y-8 px-4">
-          <div className="inline-flex items-center space-x-2 bg-navy-50 border border-navy-200 px-4 py-1.5 rounded-full text-xs font-bold text-navy-700">
+          <div className="inline-flex items-center space-x-2 bg-neutral-50 border border-surface-border-strong px-4 py-1.5 rounded-full text-xs font-medium text-neutral-700">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Real Estate Pre-Listing Intelligence</span>
           </div>
 
-          <h1 className="text-4xl md:text-6xl font-bold font-serif tracking-tight text-navy-800 leading-tight">
+          <h1 className="text-4xl md:text-6xl font-semibold tracking-tight text-neutral-800 leading-tight">
             Unlock Your Home&apos;s <br />
             <span className="text-accent-500">Maximum Pre-Listing Value</span>
           </h1>
@@ -189,7 +191,7 @@ export default function HomePage() {
           {/* Address Search Form */}
           <form
             onSubmit={handleSearchSubmit}
-            className="w-full max-w-2xl bg-surface-raised border border-surface-border-strong p-2 rounded-2xl md:rounded-full flex flex-col md:flex-row items-center shadow-card-hover"
+            className="w-full max-w-2xl bg-surface-raised border border-surface-border-strong p-2 rounded-2xl md:rounded-full flex flex-col md:flex-row items-center"
           >
             <div className="flex items-center space-x-3 flex-1 px-4 py-3 w-full">
               <Search className="text-ink-subtle w-5 h-5 flex-shrink-0" />
@@ -204,7 +206,7 @@ export default function HomePage() {
 
             <button
               type="submit"
-              className="w-full md:w-auto bg-accent-500 hover:bg-accent-600 text-white font-extrabold px-8 py-4 rounded-xl md:rounded-full flex items-center justify-center space-x-2 shrink-0 cursor-pointer shadow-card transition-colors"
+              className="w-full md:w-auto bg-accent-500 hover:bg-accent-600 text-white font-semibold px-8 py-4 rounded-xl md:rounded-full flex items-center justify-center space-x-2 shrink-0 cursor-pointer transition-colors"
             >
               <span>Analyze My Home</span>
               <ArrowRight className="w-4 h-4" />
@@ -233,10 +235,10 @@ export default function HomePage() {
       <section className="card-surface p-6 md:p-10 relative overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-5 space-y-6">
-            <span className="bg-navy-50 text-navy-700 border border-navy-200 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+            <span className="bg-neutral-50 text-neutral-700 border border-surface-border-strong px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wider">
               Computer Vision Preview
             </span>
-            <h2 className="text-3xl font-bold font-serif tracking-tight text-ink">
+            <h2 className="text-4xl">
               Instant Photorealistic Upgrade Renders
             </h2>
             <p className="text-ink-muted text-sm md:text-base leading-relaxed">
@@ -245,11 +247,11 @@ export default function HomePage() {
 
             <div className="space-y-4 pt-4 border-t border-surface-border">
               <div className="flex items-start space-x-3">
-                <div className="p-2 bg-navy-50 rounded-lg text-navy-700 border border-navy-200">
+                <div className="p-2 bg-neutral-50 rounded-lg text-neutral-700 border border-surface-border-strong">
                   <Sparkles className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-ink">Context-Aware Textures</h4>
+                  <h4 className="text-sm font-semibold text-ink">Context-Aware Textures</h4>
                   <p className="text-xs text-ink-muted">Maintains native wall configurations, plumbing lines, and appliance layout to ensure structural feasibility.</p>
                 </div>
               </div>
@@ -259,7 +261,7 @@ export default function HomePage() {
                   <TrendingUp className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-ink">Targeted ROI Rationale</h4>
+                  <h4 className="text-sm font-semibold text-ink">Targeted ROI Rationale</h4>
                   <p className="text-xs text-ink-muted">Suggests specific design styles (e.g. Modern, Transitional) that match the highest-priced comps in your neighborhood.</p>
                 </div>
               </div>
@@ -268,7 +270,7 @@ export default function HomePage() {
             <div className="pt-2">
               <a
                 href="/analyze"
-                className="inline-flex items-center space-x-2 text-accent-600 hover:text-accent-700 font-extrabold text-sm group"
+                className="inline-flex items-center space-x-2 text-accent-600 hover:text-accent-700 font-semibold text-sm group"
               >
                 <span>Upload your room photos</span>
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -279,7 +281,7 @@ export default function HomePage() {
           {/* Sliding Before/After Image Container */}
           <div className="lg:col-span-7 flex flex-col items-center">
             <div
-              className="relative w-full aspect-[16/10] rounded-2xl overflow-hidden border border-surface-border shadow-card-hover select-none group"
+              className="relative w-full aspect-[16/10] rounded-2xl overflow-hidden border border-surface-border select-none group"
               onMouseEnter={() => setIsHoveredSlider(true)}
               onMouseLeave={() => setIsHoveredSlider(false)}
             >
@@ -291,7 +293,7 @@ export default function HomePage() {
                 sizes="(min-width: 1024px) 58vw, 100vw"
                 className="object-cover pointer-events-none"
               />
-              <div className="absolute top-4 right-4 bg-success text-white text-xs font-extrabold px-3 py-1.5 rounded-full z-20 shadow-card">
+              <div className="absolute top-4 right-4 bg-success text-white text-xs font-semibold px-3 py-1.5 rounded-full z-20">
                 AI Upgrade Render (After)
               </div>
 
@@ -307,7 +309,7 @@ export default function HomePage() {
                   sizes="(min-width: 1024px) 58vw, 100vw"
                   className="object-cover max-w-none pointer-events-none"
                 />
-                <div className="absolute top-4 left-4 bg-surface-raised/90 backdrop-blur-md border border-surface-border text-ink-muted text-xs font-bold px-3 py-1.5 rounded-full z-20 shadow-card">
+                <div className="absolute top-4 left-4 bg-surface-raised/90 backdrop-blur-md border border-surface-border text-ink-muted text-xs font-medium px-3 py-1.5 rounded-full z-20">
                   Original Space (Before)
                 </div>
               </div>
@@ -317,7 +319,7 @@ export default function HomePage() {
                 className="absolute top-0 bottom-0 w-1 bg-white cursor-ew-resize z-30 flex items-center justify-center"
                 style={{ left: `${beforeAfterSlider}%` }}
               >
-                <div className="w-10 h-10 bg-navy-800 border-2 border-white rounded-full flex items-center justify-center shadow-card-hover cursor-ew-resize select-none">
+                <div className="w-10 h-10 bg-neutral-800 border-2 border-white rounded-full flex items-center justify-center cursor-ew-resize select-none">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l-4 4 4 4m8-8l4 4-4 4" />
                   </svg>
@@ -348,10 +350,10 @@ export default function HomePage() {
           <div className="space-y-6">
             <div className="flex items-center space-x-2 text-accent-600">
               <TrendingUp className="w-5 h-5" />
-              <h3 className="text-lg font-bold uppercase tracking-wider text-ink-muted">Live ROI Estimator</h3>
+              <h3 className="text-lg font-semibold uppercase tracking-wider text-ink-muted">Live ROI Estimator</h3>
             </div>
 
-            <h3 className="text-3xl font-bold font-serif text-ink tracking-tight leading-tight">
+            <h3 className="text-4xl leading-tight">
               Pre-Listing Upgrade ROI Calculator
             </h3>
 
@@ -362,8 +364,8 @@ export default function HomePage() {
             {/* Interactive Slider */}
             <div className="space-y-4 pt-6 border-t border-surface-border">
               <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-ink-muted uppercase tracking-wider">Invested Budget</span>
-                <span className="text-2xl font-extrabold text-ink">${calculatorBudget.toLocaleString()}</span>
+                <span className="text-xs font-medium text-ink-muted uppercase tracking-wider">Invested Budget</span>
+                <span className="text-2xl font-semibold text-ink">${calculatorBudget.toLocaleString()}</span>
               </div>
               <input
                 type="range"
@@ -375,7 +377,7 @@ export default function HomePage() {
                 aria-label="Invested budget"
                 className="w-full accent-accent-500 bg-surface-sunken rounded-lg h-2 cursor-pointer"
               />
-              <div className="flex justify-between text-[10px] font-bold text-ink-subtle">
+              <div className="flex justify-between text-[10px] font-medium text-ink-subtle">
                 <span>$5,000</span>
                 <span>$50,000</span>
                 <span>$100,000</span>
@@ -386,13 +388,13 @@ export default function HomePage() {
           <div className="bg-surface-sunken border border-surface-border p-5 rounded-2xl space-y-3 mt-6">
             <div className="flex justify-between text-xs font-medium text-ink-muted">
               <span>Estimated Value Uplift:</span>
-              <span className="text-success font-bold">+${estimatedUplift.toLocaleString()}</span>
+              <span className="text-success font-semibold">+${estimatedUplift.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-xs font-medium text-ink-muted">
               <span>Average ROI Yield:</span>
-              <span className="text-success font-bold">{estimatedRoi}%</span>
+              <span className="text-success font-semibold">{estimatedRoi}%</span>
             </div>
-            <div className="border-t border-surface-border pt-2 flex justify-between text-sm font-extrabold text-ink">
+            <div className="border-t border-surface-border pt-2 flex justify-between text-sm font-semibold text-ink">
               <span>Estimated Net Equity Gain:</span>
               <span className="text-success">+${netProfit.toLocaleString()}</span>
             </div>
@@ -402,7 +404,7 @@ export default function HomePage() {
         {/* Dynamic Project Recommendations matching slider budget */}
         <div className="lg:col-span-7 space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-xl font-bold text-ink tracking-tight">
+            <h3 className="text-xl">
               Upgrade Package Allocation
             </h3>
             <span className="text-xs text-ink-muted">
@@ -428,22 +430,22 @@ export default function HomePage() {
                         <proj.icon className="w-5 h-5" />
                       </div>
                       <div className="text-right">
-                        <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider ${
+                        <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider ${
                           fitsBudget ? "bg-success-subtle text-success border border-success-border" : "bg-surface-sunken text-ink-subtle"
                         }`}>
                           {fitsBudget ? "Fits Budget" : "Out of Budget"}
                         </span>
-                        <p className="text-[10px] text-ink-subtle font-bold mt-1.5 uppercase tracking-wider">{proj.duration}</p>
+                        <p className="text-[10px] text-ink-subtle font-semibold mt-1.5 uppercase tracking-wider">{proj.duration}</p>
                       </div>
                     </div>
                     <div>
-                      <h4 className="text-base font-extrabold text-ink tracking-tight">{proj.title}</h4>
+                      <h4 className="text-base font-semibold text-ink tracking-tight">{proj.title}</h4>
                       <p className="text-xs font-semibold text-accent-600 mt-0.5">{proj.cost}</p>
                     </div>
                     <p className="text-xs text-ink-muted leading-relaxed font-normal">{proj.desc}</p>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs font-bold pt-3 mt-3 border-t border-surface-border">
+                  <div className="flex items-center justify-between text-xs font-medium pt-3 mt-3 border-t border-surface-border">
                     <span className="text-ink-muted">{proj.impact}</span>
                     <span className="text-success">{proj.valueAdd} ({proj.roi} ROI)</span>
                   </div>
@@ -457,7 +459,7 @@ export default function HomePage() {
       {/* 4. Local Market Comps - Case Studies */}
       <section className="space-y-6">
         <div className="text-center max-w-2xl mx-auto space-y-2">
-          <h2 className="text-3xl font-bold font-serif tracking-tight text-ink">
+          <h2 className="text-4xl">
             Proven Neighborhood Case Studies
           </h2>
           <p className="text-ink-muted text-sm md:text-base">
@@ -471,10 +473,10 @@ export default function HomePage() {
               <div className="space-y-3">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="text-lg font-bold text-ink tracking-tight">{comp.address}</h4>
+                    <h4 className="text-lg font-semibold text-ink tracking-tight">{comp.address}</h4>
                     <p className="text-xs text-ink-muted font-semibold">{comp.status}</p>
                   </div>
-                  <span className="bg-success-subtle text-success border border-success-border text-xs font-extrabold px-2.5 py-1 rounded-lg">
+                  <span className="bg-success-subtle text-success border border-success-border text-xs font-semibold px-2.5 py-1 rounded-lg">
                     {comp.uplift} Uplift
                   </span>
                 </div>
@@ -486,7 +488,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="flex justify-between items-center text-xs font-bold pt-3 mt-3 border-t border-surface-border text-ink-subtle">
+              <div className="flex justify-between items-center text-xs font-medium pt-3 mt-3 border-t border-surface-border text-ink-subtle">
                 <span>Days on Market:</span>
                 <span className="text-ink flex items-center space-x-1">
                   <Clock className="w-3.5 h-3.5 text-accent-500" />
@@ -501,7 +503,7 @@ export default function HomePage() {
       {/* 4b. Testimonials / Social proof (sample data, honest placeholder avatars) */}
       <section className="space-y-6">
         <div className="text-center max-w-2xl mx-auto space-y-2">
-          <h2 className="text-3xl font-bold font-serif tracking-tight text-ink">
+          <h2 className="text-4xl">
             What Sellers Are Saying
           </h2>
           <p className="text-ink-muted text-sm md:text-base">
@@ -516,11 +518,11 @@ export default function HomePage() {
               <p className="text-sm text-ink leading-relaxed">&ldquo;{t.quote}&rdquo;</p>
               <div className="flex items-center justify-between pt-3 border-t border-surface-border">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-full bg-navy-100 text-navy-700 font-bold text-sm flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full bg-neutral-100 text-neutral-700 font-semibold text-sm flex items-center justify-center">
                     {t.initials}
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-ink">{t.name}</p>
+                    <p className="text-sm font-semibold text-ink">{t.name}</p>
                     <p className="text-xs text-ink-muted">{t.location}</p>
                   </div>
                 </div>
@@ -540,15 +542,15 @@ export default function HomePage() {
 
       {/* 5. Vetted Contractor Network Teaser */}
       <section className="card-surface p-8 md:p-12 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-8 text-navy-100 pointer-events-none hidden md:block">
+        <div className="absolute top-0 right-0 p-8 text-neutral-100 pointer-events-none hidden md:block">
           <Hammer className="w-48 h-48" />
         </div>
 
         <div className="max-w-2xl space-y-6 relative z-10">
-          <span className="bg-success-subtle text-success border border-success-border px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+          <span className="bg-success-subtle text-success border border-success-border px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wider">
             Licensed Contractor Network
           </span>
-          <h2 className="text-3xl md:text-4xl font-bold font-serif tracking-tight text-ink leading-tight">
+          <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-ink leading-tight">
             Connect Instantly with Local, Vetted Craftsmen
           </h2>
           <p className="text-ink-muted text-sm md:text-base leading-relaxed">
@@ -557,18 +559,18 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4 text-center">
             <div className="p-4 bg-surface-sunken border border-surface-border rounded-2xl space-y-1.5">
-              <Users className="w-6 h-6 text-navy-700 mx-auto" />
-              <h4 className="text-sm font-bold text-ink">Local Teams</h4>
+              <Users className="w-6 h-6 text-neutral-700 mx-auto" />
+              <h4 className="text-sm font-semibold text-ink">Local Teams</h4>
               <p className="text-xs text-ink-muted">Pre-vetted within 15 miles of your zip code.</p>
             </div>
             <div className="p-4 bg-surface-sunken border border-surface-border rounded-2xl space-y-1.5">
-              <DollarSign className="w-6 h-6 text-navy-700 mx-auto" />
-              <h4 className="text-sm font-bold text-ink">Clear Pricing</h4>
+              <DollarSign className="w-6 h-6 text-neutral-700 mx-auto" />
+              <h4 className="text-sm font-semibold text-ink">Clear Pricing</h4>
               <p className="text-xs text-ink-muted">Guaranteed cost-estimate bounds per project.</p>
             </div>
             <div className="p-4 bg-surface-sunken border border-surface-border rounded-2xl space-y-1.5">
-              <ShieldCheck className="w-6 h-6 text-navy-700 mx-auto" />
-              <h4 className="text-sm font-bold text-ink">Licensed & Bonded</h4>
+              <ShieldCheck className="w-6 h-6 text-neutral-700 mx-auto" />
+              <h4 className="text-sm font-semibold text-ink">Licensed & Bonded</h4>
               <p className="text-xs text-ink-muted">$2M general liability insurance requirement.</p>
             </div>
           </div>
@@ -576,7 +578,7 @@ export default function HomePage() {
           <div className="pt-6">
             <a
               href="/contractors"
-              className="bg-accent-500 hover:bg-accent-600 text-white font-extrabold px-8 py-4 rounded-xl inline-flex items-center space-x-2 shadow-card cursor-pointer transition-colors"
+              className="bg-accent-500 hover:bg-accent-600 text-white font-semibold px-8 py-4 rounded-xl inline-flex items-center space-x-2 cursor-pointer transition-colors"
             >
               <span>Explore Contractor Network</span>
               <ArrowRight className="w-4 h-4" />
@@ -586,24 +588,24 @@ export default function HomePage() {
       </section>
 
       {/* 6. Ultimate Call To Action (CTA) */}
-      <section className="text-center max-w-3xl mx-auto space-y-8 px-4 py-12 rounded-3xl bg-navy-800 relative">
-        <h2 className="text-3xl md:text-5xl font-bold font-serif text-white tracking-tight leading-tight">
+      <section className="text-center max-w-3xl mx-auto space-y-8 px-4 py-12 rounded-3xl bg-neutral-800 relative">
+        <h2 className="text-3xl md:text-5xl font-semibold text-white tracking-tight leading-tight">
           Ready to Maximize Your Home&apos;s Valuation?
         </h2>
-        <p className="text-navy-200 text-base md:text-lg max-w-xl mx-auto leading-relaxed">
+        <p className="text-neutral-400 text-base md:text-lg max-w-xl mx-auto leading-relaxed">
           Takes under 2 minutes. Enter your address, upload standard smartphone photos, and get your AI pre-listing upgrade roadmap.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <a
             href="/analyze"
-            className="w-full sm:w-auto bg-accent-500 hover:bg-accent-600 text-white font-extrabold px-10 py-5 rounded-xl shadow-card-hover flex items-center justify-center space-x-2 text-base cursor-pointer transition-colors"
+            className="w-full sm:w-auto bg-accent-500 hover:bg-accent-600 text-white font-semibold px-10 py-5 rounded-xl flex items-center justify-center space-x-2 text-base cursor-pointer transition-colors"
           >
             <Sparkles className="w-5 h-5 text-white" />
             <span>Analyze Property Now</span>
           </a>
           <a
             href="/contractors"
-            className="w-full sm:w-auto bg-navy-700 hover:bg-navy-600 border border-navy-600 text-white font-bold px-10 py-5 rounded-xl transition-colors text-base flex items-center justify-center"
+            className="w-full sm:w-auto bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 text-white font-semibold px-10 py-5 rounded-xl transition-colors text-base flex items-center justify-center"
           >
             <span>Browse Contractors</span>
           </a>

@@ -3,6 +3,7 @@ name = "homeready-backend"
 version = "0.1.0"
 description = "HomeReady AI - Real Estate Whole-House Upgrade Recommendation Engine API & Microservices"
 authors = ["HomeReady AI Engineering <engineering@homeready.ai>"]
+packages = [{include = "app"}]
 
 [tool.poetry.dependencies]
 python = "^3.12"

@@ -1,12 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import { Inter_Tight } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const fraunces = Fraunces({
+const interTight = Inter_Tight({
   subsets: ["latin"],
-  variable: "--font-fraunces",
-  weight: ["500", "600", "700"],
+  variable: "--font-inter-tight",
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -17,7 +16,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#101a2e",
+  themeColor: "#f8f8f8",
 };
 
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -28,8 +27,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} ${fraunces.variable} font-sans min-h-screen flex flex-col overflow-x-hidden`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${interTight.variable} font-sans min-h-screen flex flex-col overflow-x-hidden`} suppressHydrationWarning>
         <AppLayout>{children}</AppLayout>
       </body>
     </html>

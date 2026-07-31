@@ -43,7 +43,7 @@ export const Tabs: React.FC<TabsProps> = ({
     <div
       role="tablist"
       className={cn(
-        "flex items-center space-x-1 border-b border-surface-border pb-px overflow-x-auto",
+        "flex items-center gap-1 overflow-x-auto border-b border-surface-border pb-px",
         className
       )}
     >
@@ -64,13 +64,13 @@ export const Tabs: React.FC<TabsProps> = ({
             onClick={() => onChange(tab.id)}
             onKeyDown={(e) => handleKeyDown(e, index)}
             className={cn(
-              "px-5 py-3 font-semibold text-sm transition-colors flex items-center space-x-2 shrink-0 border-b-2 -mb-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface rounded-t-md",
+              "-mb-px flex shrink-0 items-center gap-2 rounded-t-md border-b-2 px-4 py-3 text-sm transition-colors duration-150",
               isActive
-                ? "border-accent-500 text-accent-600"
-                : "border-transparent text-ink-muted hover:text-ink hover:border-surface-border"
+                ? "border-accent-500 font-medium text-ink"
+                : "border-transparent text-ink-muted hover:border-surface-border-strong hover:text-ink"
             )}
           >
-            {tab.icon && <span className={cn(isActive ? "text-accent-600" : "text-ink-muted")}>{tab.icon}</span>}
+            {tab.icon && <span className={cn(isActive ? "text-accent-500" : "text-ink-subtle")}>{tab.icon}</span>}
             <span>{tab.label}</span>
           </button>
         );

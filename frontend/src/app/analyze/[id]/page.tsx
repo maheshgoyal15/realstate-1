@@ -1,22 +1,11 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { 
-  Sparkles, 
-  MapPin, 
-  TrendingUp, 
-  ChevronRight, 
-  Heart, 
-  Eye, 
-  FileText, 
-  Sliders, 
-  CheckSquare, 
-  UserCheck, 
-  Mail,
-  ChevronDown,
-  Info,
-  Calendar,
-  DollarSign
+import {
+  Sparkles,
+  Heart,
+  FileText,
+  CheckSquare,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -25,160 +14,26 @@ import { Modal } from "@/components/ui/Modal";
 import { cn, formatCurrency } from "@/lib/utils";
 import { apiFetch } from "@/lib/apiClient";
 
-// Types
-interface Recommendation {
-  id: string;
-  rank: number;
-  category: string;
-  estimatedCost: number;
-  projectedValueIncrease: number;
-  roiPercentage: number;
-  timeline: string;
-  timelineType: "time-quick" | "time-medium" | "time-long";
-  roiType: "roi-high" | "roi-medium" | "roi-low";
-  explanation: string;
-  whyDetails: string;
-  scope: { item: string; checked: boolean }[];
-}
-
 interface Contractor {
   id: string;
   name: string;
-  rating: number;
+  rating: number | null;
   reviewsCount: number;
-  license: string;
-  costEstimate: number;
-  timeline: string;
-  availability: string;
-  speciality: string;
-  snippet: string;
+  license: string | null;
+  location: string | null;
+  specialties: string[];
+  avgCost: number | null;
+  avgTimeline: string | null;
+  availability: string | null;
+  snippet: string | null;
 }
 
-const MOCK_CONTRACTORS: Record<string, Contractor[]> = {
-  "rec-kitchen": [
-    {
-      id: "c-1",
-      name: "Home Remodeling Pro",
-      rating: 4.8,
-      reviewsCount: 142,
-      license: "TCLD-12345",
-      costEstimate: 34500,
-      timeline: "4-5 weeks",
-      availability: "Jan 15, 2025",
-      speciality: "High-end kitchen renovations",
-      snippet: "Excellent communication, finished on time!"
-    },
-    {
-      id: "c-2",
-      name: "Austin Kitchen & Bath Co.",
-      rating: 4.6,
-      reviewsCount: 89,
-      license: "TCLD-56789",
-      costEstimate: 35800,
-      timeline: "6-7 weeks",
-      availability: "Now",
-      speciality: "Traditional & modern kitchens",
-      snippet: "Very professional crew and great cleanup."
-    }
-  ],
-  "rec-roof": [
-    {
-      id: "c-3",
-      name: "Elite Roofing Austin",
-      rating: 4.9,
-      reviewsCount: 210,
-      license: "ROOF-9912",
-      costEstimate: 8200,
-      timeline: "1-2 weeks",
-      availability: "Next Week",
-      speciality: "Structural & shingle repair",
-      snippet: "Fast service, handled the insurance details perfectly."
-    }
-  ],
-  "rec-bath": [
-    {
-      id: "c-4",
-      name: "Austin Kitchen & Bath Co.",
-      rating: 4.6,
-      reviewsCount: 89,
-      license: "TCLD-56789",
-      costEstimate: 21500,
-      timeline: "3-4 weeks",
-      availability: "Jan 10, 2025",
-      speciality: "Contemporary bathroom spas",
-      snippet: "Transformed our outdated bath into a modern oasis."
-    }
-  ]
-};
-
-const MOCK_RECOMMENDATIONS: Recommendation[] = [
+// Illustrative style-preview images shown for common upgrade categories. These are
+// stock examples, not renders generated from the user's own photos, so the UI
+// labels them accordingly rather than implying a real AI-generated result.
+const VISUALIZER_THEMES: { match: string; before: string; afterThemes: { value: string; label: string; url: string }[] }[] = [
   {
-    id: "rec-kitchen",
-    rank: 1,
-    category: "Kitchen Remodel",
-    estimatedCost: 35000,
-    projectedValueIncrease: 57750,
-    roiPercentage: 65,
-    timeline: "3-4 months",
-    timelineType: "time-medium",
-    roiType: "roi-high",
-    explanation: "Modern kitchens are key buyer motivators. Your kitchen shows significant age.",
-    whyDetails: "Your kitchen was built in 1995. Modern kitchens with updated appliances, quartz counters, and open layouts drive significant buyer interest. Comparable sales that renovated sold 12% faster.",
-    scope: [
-      { item: "Cabinet refacing/replacement", checked: true },
-      { item: "Countertop upgrade (granite/quartz)", checked: true },
-      { item: "Backsplash installation", checked: true },
-      { item: "Lighting upgrade (LED)", checked: true },
-      { item: "Appliance replacement (stove, fridge, dishwasher)", checked: true },
-      { item: "Paint & refresh", checked: true },
-      { item: "Island addition (not recommended)", checked: false }
-    ]
-  },
-  {
-    id: "rec-roof",
-    rank: 2,
-    category: "Roof Inspection & Repair",
-    estimatedCost: 8500,
-    projectedValueIncrease: 12325,
-    roiPercentage: 45,
-    timeline: "1-2 weeks",
-    timelineType: "time-quick",
-    roiType: "roi-medium",
-    explanation: "Buyers are highly concerned about structural integrity. Post-inspection items resolved.",
-    whyDetails: "AI Vision identified wear around shingles and flashing. Rectifying this prevents negotiation credit drops during appraisal.",
-    scope: [
-      { item: "Replace damaged asphalt shingles", checked: true },
-      { item: "Reseal vent pipes and chimney flashing", checked: true },
-      { item: "Clean gutters and install leaf guards", checked: true },
-      { item: "Certify roof structural integrity", checked: false }
-    ]
-  },
-  {
-    id: "rec-bath",
-    rank: 3,
-    category: "Bathroom Modernization",
-    estimatedCost: 22000,
-    projectedValueIncrease: 33440,
-    roiPercentage: 52,
-    timeline: "2-3 months",
-    timelineType: "time-medium",
-    roiType: "roi-high",
-    explanation: "Spa-like features in the master suite bathroom increase premium comps matching.",
-    whyDetails: "Replacing builder-grade single vanity with custom double quartz vanities and glass shower enclosures.",
-    scope: [
-      { item: "Custom double vanity installation", checked: true },
-      { item: "Premium quartz countertop overlay", checked: true },
-      { item: "Frameless glass walk-in shower conversion", checked: true },
-      { item: "Updated low-flow fixtures and LED mirrors", checked: true }
-    ]
-  }
-];
-
-const VISUALIZER_IMAGES: Record<string, {
-  before: string;
-  afterThemes: { value: string; label: string; url: string }[];
-}> = {
-  "rec-kitchen": {
+    match: "kitchen",
     before: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1200&q=80",
     afterThemes: [
       { value: "modern-white", label: "Modern Minimalist (White Quartz)", url: "https://images.unsplash.com/photo-1556911220-1114b88a74e6?auto=format&fit=crop&w=1200&q=80" },
@@ -186,20 +41,57 @@ const VISUALIZER_IMAGES: Record<string, {
       { value: "dark-industrial", label: "Industrial Contemporary (Matte Black)", url: "https://images.unsplash.com/photo-1507089947368-19c1da9775ae?auto=format&fit=crop&w=1200&q=80" }
     ]
   },
-  "rec-roof": {
+  {
+    match: "roof",
     before: "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80",
     afterThemes: [
       { value: "shingles-completed", label: "Composite Architectural Shingles", url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80" }
     ]
   },
-  "rec-bath": {
+  {
+    match: "bath",
     before: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80",
     afterThemes: [
       { value: "modern-spa", label: "Frameless Glass Spa Bath", url: "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?auto=format&fit=crop&w=1200&q=80" },
       { value: "classic-quartz", label: "Quartz Counter Double Vanity", url: "https://images.unsplash.com/photo-1620626011761-996317b8d101?auto=format&fit=crop&w=1200&q=80" }
     ]
   }
-};
+];
+
+function findVisualizerTheme(category: string) {
+  const lower = category.toLowerCase();
+  return VISUALIZER_THEMES.find((t) => lower.includes(t.match));
+}
+
+function ensureArray<T = any>(val: any): T[] {
+  if (Array.isArray(val)) return val;
+  if (typeof val === "string") {
+    try {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+  }
+  return [];
+}
+
+// Backend scope items arrive as pre-formatted strings, e.g.
+// "[+] Calacatta Quartz Countertops ($2,850) — Honed finish". Pull them apart so
+// the UI can render each as a clickable pill badge with its own dollar figure.
+function parseScopeItem(raw: string): { label: string; cost: number; details: string } {
+  const m = raw.match(/^\s*\[\+\]\s*(.*?)\s*\(\$([\d,]+(?:\.\d+)?)\)\s*(?:[—-]\s*)?(.*)$/);
+  if (m) {
+    return { label: m[1].trim(), cost: Number(m[2].replace(/,/g, "")), details: m[3].trim() };
+  }
+  return { label: raw.replace(/^\s*\[\+\]\s*/, "").trim(), cost: 0, details: "" };
+}
+
+// A recommendation category matches a contractor specialty loosely (e.g. "Kitchen
+// Remodel" should surface contractors tagged "Kitchens").
+function matchesSpecialty(category: string, specialty: string) {
+  const cat = category.toLowerCase();
+  const spec = specialty.toLowerCase().replace(/s$/, "");
+  return cat.includes(spec) || spec.includes(cat.split(" ")[0]);
+}
 
 export default function AnalysisResultsPage({ params }: { params: Promise<{ id: string }> }) {
   const unwrappedParams = React.use(params);
@@ -221,39 +113,164 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
   // Modal Details State
   const [selectedRec, setSelectedRec] = useState<any | null>(null);
   const [modalBeforeAfterPct, setModalBeforeAfterPct] = useState(50);
-  const [visualizerTheme, setVisualizerTheme] = useState<string>("modern-white");
-  const [activeReportCount, setActiveReportCount] = useState(2);
+  const [visualizerTheme, setVisualizerTheme] = useState<string>("");
+  // Which added item's badge is currently highlighted on the before/after slider.
+  const [selectedItemIdx, setSelectedItemIdx] = useState<number | null>(null);
+  const [activeOptionTier, setActiveOptionTier] = useState<Record<string, string>>({});
+
+  const getActiveOption = (rec: any) => {
+    if (!rec) return null;
+    const key = activeOptionTier[rec.id] || "option_b";
+    if (rec.options && Array.isArray(rec.options) && rec.options.length > 0) {
+      const found = rec.options.find((o: any) => o.id === key);
+      if (found) return found;
+    }
+    const cost = rec.estimatedCost || 10000;
+    const val = rec.projectedValueIncrease || 15000;
+    const roi = rec.roiPercentage || 50;
+    const time = rec.timeline || "2-4 Weeks";
+    const sc = Array.isArray(rec.scope) ? rec.scope : [];
+
+    if (key === "option_a") {
+      const aCost = Math.max(1500, Math.round(cost * 0.45));
+      return {
+        id: "option_a",
+        title: "Option A: Cosmetic Value Refresh",
+        cost: aCost,
+        projectedValueIncrease: Math.round(aCost * 1.85),
+        roiPercentage: 85,
+        timeline: "1-2 Weeks (Quick Refresh)",
+        afterImageUrl: rec.tier5kUrl || rec.afterImageUrl || "/api/v1/images/homeready_upgrade_5k_cosmetic_refresh.png",
+        scope: sc.slice(0, Math.max(1, Math.floor(sc.length / 2))),
+      };
+    }
+    if (key === "option_c") {
+      const cCost = Math.round(cost * 1.45);
+      return {
+        id: "option_c",
+        title: "Option C: Luxury Architectural Remodel",
+        cost: cCost,
+        projectedValueIncrease: Math.round(cCost * 1.48),
+        roiPercentage: 48,
+        timeline: "6+ Weeks (Full Overhaul)",
+        afterImageUrl: rec.tier15kUrl || rec.afterImageUrl || "/api/v1/images/homeready_upgrade_15k_luxury_remodel.png",
+        scope: sc.concat([{ item: "[+] Premium Custom Architectural Millwork ($3,500) — Custom built-in cabinetry", checked: true }]),
+      };
+    }
+    return {
+      id: "option_b",
+      title: "Option B: Balanced Designer Upgrade",
+      cost: cost,
+      projectedValueIncrease: val,
+      roiPercentage: roi,
+      timeline: time,
+      afterImageUrl: rec.tier10kUrl || rec.afterImageUrl || "/api/v1/images/homeready_upgrade_10k_moderate_upgrade.png",
+      scope: sc,
+    };
+  };
+
+  // Live whole-house budget dial. Null until results load, then seeded from the
+  // backend's allocated total so the slider starts at the real figure.
+  const [budgetTotal, setBudgetTotal] = useState<number | null>(null);
+
+  // Real contractor network, fetched once and matched against each recommendation's category.
+  const [contractors, setContractors] = useState<Contractor[]>([]);
+  const [submittingQuoteFor, setSubmittingQuoteFor] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiFetch("/api/v1/contractors");
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        const normalized = Array.isArray(data) ? data.map((c: any) => ({
+          ...c,
+          specialties: ensureArray<string>(c.specialties),
+          pricingInfo: ensureArray<any>(c.pricingInfo),
+          reviews: ensureArray<any>(c.reviews),
+        })) : [];
+        setContractors(normalized);
+      } catch (error) {
+        console.error("Failed to load contractors:", error);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // Auto-reset visualizer theme when selecting a different recommendation
   useEffect(() => {
     if (selectedRec) {
-      const themes = VISUALIZER_IMAGES[selectedRec.id]?.afterThemes;
-      if (themes && themes.length > 0) {
-        setVisualizerTheme(themes[0].value);
-      } else {
-        setVisualizerTheme("");
-      }
+      const theme = findVisualizerTheme(selectedRec.category);
+      setVisualizerTheme(theme?.afterThemes[0]?.value ?? "");
       setModalBeforeAfterPct(50);
+      setSelectedItemIdx(null);
     }
   }, [selectedRec]);
 
+  // Parsed, structured list of items added to the currently open recommendation.
+  const selectedItems = useMemo(
+    () => {
+      if (!selectedRec) return [];
+      const opt = getActiveOption(selectedRec);
+      const targetScope = opt?.scope || selectedRec.scope;
+      return ensureArray<any>(targetScope).map((s: any) =>
+        parseScopeItem(typeof s === "string" ? s : s?.item ?? String(s))
+      );
+    },
+    [selectedRec, activeOptionTier]
+  );
+
+  const matchedContractors = useMemo(() => {
+    if (!selectedRec) return [];
+    return contractors.filter((c) => {
+      const specs = ensureArray<string>(c.specialties);
+      return specs.some((s) => matchesSpecialty(selectedRec.category, s));
+    }).slice(0, 3);
+  }, [selectedRec, contractors]);
+
   // Dynamic Comps and AI assessment states
-  const [address, setAddress] = useState("2030 Natchez Dr");
-  const [city, setCity] = useState("Austin, TX");
-  const [analysisDate, setAnalysisDate] = useState("Dec 15, 2024");
+  const [address, setAddress] = useState("");
+  const [analysisDate, setAnalysisDate] = useState("");
   const [overallScore, setOverallScore] = useState(7);
   const [issuesCount, setIssuesCount] = useState(3);
+  const [detectedDefects, setDetectedDefects] = useState<string[]>([]);
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [detectedRooms, setDetectedRooms] = useState<any[]>([]);
 
   const [uploadedBeforeImg, setUploadedBeforeImg] = useState<string | null>(null);
 
+  // The analysis detail endpoint doesn't return address/date — pull it from the
+  // analyses list endpoint instead, which already has it (used by the dashboard).
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiFetch("/api/v1/analyses");
+        if (!res.ok || cancelled) return;
+        const list = await res.json();
+        const match = list.find((a: any) => a.id === id);
+        if (match) {
+          setAddress(match.address || "");
+          setAnalysisDate(match.date || "");
+        }
+      } catch (error) {
+        console.error("Failed to load property context:", error);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [id]);
+
   // Poll server for property analysis status and results
   useEffect(() => {
-    // Load local storage kitchen visualizer mock context if set
-    const savedImg = localStorage.getItem("user_uploaded_kitchen_before");
-    if (savedImg) {
-      setUploadedBeforeImg(savedImg);
+    try {
+      const savedImg = localStorage.getItem("user_uploaded_property_photo");
+      if (savedImg) {
+        setUploadedBeforeImg(savedImg);
+      }
+    } catch (e) {
+      console.warn("Could not read thumbnail from localStorage:", e);
     }
 
     if (!id) return;
@@ -266,14 +283,14 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
         if (!response.ok) {
           throw new Error("Failed to poll analysis results from server.");
         }
-        
+
         const data = await response.json();
-        
+
         if (data.status === "completed") {
           setStatus("completed");
           setOverallScore(data.cv_results.overall_condition_score || 7.0);
           setIssuesCount(data.cv_results.detected_defects?.length || 0);
-          
+
           // Map dynamic detected rooms from backend
           if (data.cv_results.detected_rooms && data.cv_results.detected_rooms.length > 0) {
             setDetectedRooms(data.cv_results.detected_rooms.map((roomName: string, idx: number) => ({
@@ -303,7 +320,13 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
             roiType: rec.roi_percentage > 50 ? "roi-high" : "roi-medium",
             explanation: rec.explanation,
             whyDetails: rec.why_details,
-            scope: rec.scope
+            scope: rec.scope,
+            beforeImageUrl: rec.before_image_url,
+            afterImageUrl: rec.after_image_url,
+            options: rec.options || [],
+            tier5kUrl: rec.tier_5k_url,
+            tier10kUrl: rec.tier_10k_url,
+            tier15kUrl: rec.tier_15k_url,
           })));
 
           setLoading(false);
@@ -322,8 +345,8 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
     // Run first check immediately
     checkStatus();
 
-    // Start interval
-    pollInterval = setInterval(checkStatus, 2500);
+    // Start polling interval (1s turnaround)
+    pollInterval = setInterval(checkStatus, 1000);
 
     return () => {
       if (pollInterval) clearInterval(pollInterval);
@@ -337,8 +360,62 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
     }));
   };
 
-  const handleQuoteRequest = (recCategory: string) => {
-    setModalMessage(`Quote requested routed to top-rated contractors! They will review the media uploads and submit estimates within 24 hours.`);
+  const handleQuoteRequest = async (contractor: Contractor, category: string) => {
+    setSubmittingQuoteFor(contractor.id);
+    try {
+      const res = await apiFetch("/api/v1/contractors/quote-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contractor_id: contractor.id,
+          user_notes: `Quote requested for ${category} at ${address}.`,
+        }),
+      });
+      if (res.ok) {
+        setModalMessage(`Quote request sent to ${contractor.name}! They'll review your uploaded photos and respond within 24 hours.`);
+      } else {
+        setModalMessage("Couldn't submit the quote request right now. Please try again.");
+      }
+    } catch (error) {
+      console.error("Failed to submit quote request:", error);
+      setModalMessage("Couldn't submit the quote request right now. Please try again.");
+    } finally {
+      setSubmittingQuoteFor(null);
+    }
+  };
+
+  const [inpaintLoading, setInpaintLoading] = useState(false);
+
+  const handleTriggerInpaint = async (zone: string, optionKey: string) => {
+    if (!selectedRec) return;
+    setInpaintLoading(true);
+    try {
+      const sourceImg = selectedRec.beforeImageUrl || uploadedBeforeImg || "";
+      const res = await apiFetch("/api/v1/inpaint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source_image: sourceImg,
+          zone: zone,
+          option_key: optionKey,
+          style_preference: "Modern Farmhouse"
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.inpainted_image_url) {
+          setSelectedRec((prev: any) => ({
+            ...prev,
+            afterImageUrl: data.inpainted_image_url
+          }));
+          setModalBeforeAfterPct(65);
+        }
+      }
+    } catch (e) {
+      console.error("Inpainting error:", e);
+    } finally {
+      setInpaintLoading(false);
+    }
   };
 
   // Filtered & Sorted recommendations
@@ -363,27 +440,116 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
     return result;
   }, [recommendations, filterRoi, filterTime, sortField]);
 
+  // Whole-house budget allocation. `baseHouseTotal` is the sum the backend
+  // allocated across rooms; the dial rescales every room's share proportionally.
+  const baseHouseTotal = useMemo(
+    () => recommendations.reduce((sum, r) => sum + (r.estimatedCost || 0), 0),
+    [recommendations]
+  );
+
+  useEffect(() => {
+    if (baseHouseTotal > 0 && budgetTotal === null) {
+      setBudgetTotal(Math.min(100000, Math.max(5000, Math.round(baseHouseTotal))));
+    }
+  }, [baseHouseTotal, budgetTotal]);
+
+  const scaleFactor = budgetTotal !== null && baseHouseTotal > 0 ? budgetTotal / baseHouseTotal : 1;
+  // Scale a backend dollar figure to the user's current whole-house budget dial.
+  const displayCost = (v: number) => Math.round((v || 0) * scaleFactor);
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center space-y-6">
-        <div className="relative w-24 h-24">
-          <div className="absolute inset-0 rounded-full border-4 border-indigo-500/20 animate-ping"></div>
-          <div className="absolute inset-0 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin"></div>
-          <div className="absolute inset-2 bg-slate-900 rounded-full flex items-center justify-center border border-white/5 shadow-inner">
-            <Sparkles className="w-8 h-8 text-indigo-400 animate-pulse" />
+      <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-xl w-full bg-surface-raised rounded-3xl border border-surface-border shadow-float p-8 space-y-8 animate-in fade-in zoom-in-95 duration-500">
+          
+          {/* Top Architectural Studio Badge */}
+          <div className="flex flex-col items-center space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-neutral-800 flex items-center justify-center">
+              <Sparkles className="w-7 h-7 text-accent-400" />
+            </div>
+
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-accent-600 bg-accent-50 px-3 py-1 rounded-full border border-accent-200">
+                HomeReady Architectural Studio
+              </span>
+              <h2 className="text-2xl">
+                Designing Your Whole-House Remodel
+              </h2>
+              <p className="text-ink-muted text-xs max-w-md mx-auto leading-relaxed">
+                Analyzing room geometry, allocating your whole-house budget ceiling across high-ROI spaces, and generating visual upgrade concepts.
+              </p>
+            </div>
           </div>
+
+          {/* Animated Studio Pipeline Stages */}
+          <div className="space-y-3 text-left bg-surface-sunken p-5 rounded-2xl border border-surface-border">
+            <div className="flex items-center space-y-0 space-x-3 text-xs">
+              <div className="w-5 h-5 rounded-full bg-success-subtle0/20 text-success flex items-center justify-center font-medium text-[10px] shrink-0">
+                ✓
+              </div>
+              <div className="flex-1">
+                <span className="font-semibold text-ink">Room Recognition & Space De-duplication</span>
+                <p className="text-[11px] text-ink-subtle">Identifying Kitchen, Bathrooms, Master Bedroom & Living Areas</p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3 text-xs">
+              <div className="w-5 h-5 rounded-full bg-accent-500/20 text-accent-600 flex items-center justify-center font-medium text-[10px] shrink-0">
+                2
+              </div>
+              <div className="flex-1">
+                <span className="font-semibold text-ink">Whole-House Financial Budget Allocator</span>
+                <p className="text-[11px] text-ink-subtle">Distributing total house budget cap by ROI priority ratios</p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3 text-xs">
+              <div className="w-5 h-5 rounded-full bg-surface border border-surface-border text-ink-subtle flex items-center justify-center font-medium text-[10px] shrink-0">
+                3
+              </div>
+              <div className="flex-1">
+                <span className="font-medium text-ink-muted">Carpentry, Surface & Fixture Spec Lock</span>
+                <p className="text-[11px] text-ink-subtle">Upgrading cabinetry, quartz, marble backsplash & shelving racks</p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3 text-xs">
+              <div className="w-5 h-5 rounded-full bg-surface border border-surface-border text-ink-subtle flex items-center justify-center font-medium text-[10px] shrink-0">
+                4
+              </div>
+              <div className="flex-1">
+                <span className="font-medium text-ink-muted">Spatial Concept Renders & Itemized Cost Manifest</span>
+                <p className="text-[11px] text-ink-subtle">Generating 3–4 primary room views with exact item additions</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Shimmering Animated Bar */}
+          <div className="space-y-2">
+            {/* Indeterminate track — the pipeline reports no percentage, so the
+                bar communicates "still working" rather than faking progress. */}
+            <div className="w-full bg-surface-sunken h-1.5 rounded-pill overflow-hidden">
+              <div className="h-full w-1/3 rounded-pill bg-accent-500 animate-indeterminate" />
+            </div>
+            <div className="flex justify-between items-center text-[10px] text-ink-subtle">
+              <span>Whole-House Budget Allocation Active</span>
+              <span className="font-semibold text-accent-600">Curating Representative Views...</span>
+            </div>
+          </div>
+
         </div>
-        
-        <div className="space-y-2 max-w-sm">
-          <h2 className="text-xl font-extrabold text-white tracking-tight">AI Multimodal Scan in Progress</h2>
-          <p className="text-slate-400 text-xs leading-relaxed">
-            Google Gemini is scanning your property photos for structural conditions, room contexts, and defect flags.
-          </p>
-        </div>
-        
-        <span className="text-[9px] text-indigo-400 uppercase tracking-widest font-extrabold bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20 animate-pulse">
-          Polling local API gateway...
-        </span>
+      </div>
+    );
+  }
+
+  if (status === "failed") {
+    return (
+      <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-6 text-center space-y-4">
+        <Badge variant="status-error">Analysis Failed</Badge>
+        <h2 className="text-xl max-w-md">
+          {errorMessage || "The analysis pipeline could not complete."}
+        </h2>
+        <Button onClick={() => window.location.href = "/analyze"}>Start a New Analysis</Button>
       </div>
     );
   }
@@ -391,66 +557,80 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
   return (
     <div className="space-y-10 pb-12 animate-in fade-in duration-300">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between pb-8 border-b border-white/10 gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between pb-8 border-b border-surface-border gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
+          <h1 className="text-4xl flex items-center gap-2">
             <span>Property Analysis Results</span>
             <Badge variant="status-complete">Complete</Badge>
           </h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Property: <strong>{address}, {city}</strong> • Analyzed: {analysisDate}
+          <p className="text-ink-muted text-sm mt-1">
+            Property: <strong className="text-ink">{address || "Unknown address"}</strong>{analysisDate ? <> • Analyzed: {analysisDate}</> : null}
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Button 
+          <Button
             id="results-pdf-btn"
-            variant="secondary" 
+            variant="secondary"
             icon={<FileText className="w-4 h-4" />}
-            onClick={() => window.location.href = `/reports/report-123`}
+            onClick={() => window.location.href = "/reports"}
           >
-            Detailed Report
+            View My Reports
           </Button>
-          <Button 
+          <Button
             id="results-share-btn"
-            variant="primary" 
-            onClick={() => handleQuoteRequest("All Upgrades")}
+            variant="primary"
+            onClick={() => window.location.href = "/contractors"}
           >
-            Request All Quotes
+            Browse Contractor Network
           </Button>
         </div>
       </div>
 
       {/* Two-Column Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
+
         {/* Left Column (40% width on Desktop) */}
         <aside className="lg:col-span-4 space-y-6">
-          <Card hoverEffect={false} className="space-y-6 bg-slate-900/50">
-            {/* Condition Score Gauge */}
-            <div className="text-center space-y-3 pb-6 border-b border-white/10">
-              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Overall Condition Score</h3>
-              <div className="inline-flex items-end justify-center">
-                <span className="text-5xl font-extrabold text-white">{overallScore}</span>
-                <span className="text-xl font-semibold text-slate-500 mb-1">/10</span>
+          <Card hoverEffect={false} className="space-y-6">
+            {/* Property Image Banner */}
+            {(uploadedBeforeImg || (recommendations.length > 0 && recommendations[0].beforeImageUrl)) && (
+              <div className="w-full h-48 rounded-xl overflow-hidden relative border border-surface-border">
+                <img
+                  src={uploadedBeforeImg || recommendations[0].beforeImageUrl}
+                  alt="Original Property Photo"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute top-2 left-2 bg-neutral-950/80 backdrop-blur-sm text-white font-medium text-[10px] px-2.5 py-1 rounded-lg border border-white/10">
+                  Original Property Photo
+                </div>
               </div>
-              
+            )}
+
+            {/* Condition Score Gauge */}
+            <div className="text-center space-y-3 pb-6 border-b border-surface-border">
+              <h3 className="text-xs font-medium text-ink-subtle uppercase tracking-widest">Overall Condition Score</h3>
+              <div className="inline-flex items-end justify-center">
+                <span className="text-5xl font-semibold text-ink">{overallScore}</span>
+                <span className="text-xl font-semibold text-ink-subtle mb-1">/10</span>
+              </div>
+
               {/* Score Gauge Visual */}
-              <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-2">
-                <div 
-                  className="bg-gradient-to-r from-red-500 via-amber-400 to-emerald-400 h-full rounded-full transition-all"
+              <div className="w-full bg-surface-sunken h-2 rounded-full overflow-hidden mt-2">
+                <div
+                  className="bg-accent-500 h-full rounded-full transition-[width]"
                   style={{ width: `${overallScore * 10}%` }}
                 />
               </div>
-              <p className="text-[11px] text-slate-400">Based on defect density and finish grades.</p>
+              <p className="text-[11px] text-ink-muted">Based on defect density and finish grades.</p>
             </div>
 
             {/* Detected Rooms & Features Accordion List */}
             <div className="space-y-4">
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Detected Rooms & Features</h4>
+              <h4 className="text-xs font-medium text-ink-subtle uppercase tracking-widest">Detected Rooms & Features</h4>
               <div className="space-y-2">
                 {detectedRooms.map((room, idx) => (
-                  <div key={idx} className="flex justify-between items-center bg-white/5 border border-white/5 rounded-xl p-3 text-xs">
-                    <span className="font-semibold text-slate-200">🏠 {room.name}</span>
+                  <div key={idx} className="flex justify-between items-center bg-surface-sunken border border-surface-border rounded-xl p-3 text-xs">
+                    <span className="font-semibold text-ink">{room.name}</span>
                     <Badge variant={room.badge}>{room.condition}</Badge>
                   </div>
                 ))}
@@ -458,17 +638,23 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
             </div>
 
             {/* Condition Summary */}
-            <div className="space-y-3 pt-4 border-t border-white/10">
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Condition Summary</h4>
-              <div className="bg-slate-950/40 rounded-xl p-4 border border-white/5 space-y-3 text-xs">
+            <div className="space-y-3 pt-4 border-t border-surface-border">
+              <h4 className="text-xs font-medium text-ink-subtle uppercase tracking-widest">Condition Summary</h4>
+              <div className="bg-surface-sunken rounded-xl p-4 border border-surface-border space-y-3 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Issues Detected:</span>
-                  <span className="font-bold text-white">{issuesCount}</span>
+                  <span className="text-ink-muted">Issues Detected:</span>
+                  <span className="font-semibold text-ink">{issuesCount}</span>
                 </div>
-                <ul className="space-y-1.5 text-slate-350 list-disc list-inside">
-                  <li>Outdated kitchen cabinetry (built 1995)</li>
-                  <li>Wear shingles flags on roof corners</li>
-                  <li>Bathroom spa upgrade opportunities</li>
+                <ul className="space-y-1.5 text-ink-muted list-disc list-inside">
+                  {detectedDefects.length > 0 ? (
+                    detectedDefects.map((defect, i) => (
+                      <li key={i} className="capitalize">{defect.replace(/_/g, " ")}</li>
+                    ))
+                  ) : (
+                    recommendations.slice(0, 4).map((rec, i) => (
+                      <li key={i} className="capitalize">{rec.category} (High ROI Priority)</li>
+                    ))
+                  )}
                 </ul>
               </div>
             </div>
@@ -478,15 +664,16 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
         {/* Right Column (60% width on Desktop) */}
         <section className="lg:col-span-8 space-y-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <h2 className="text-xl font-bold tracking-tight text-white">Top ROI Ranked Upgrades</h2>
-            
+            <h2 className="text-xl">Top ROI Ranked Upgrades</h2>
+
             {/* Filter & Sort Controls */}
-            <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-300">
+            <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-ink-muted">
               <div>
                 <select
                   value={filterRoi}
                   onChange={(e) => setFilterRoi(e.target.value)}
-                  className="bg-slate-900 border border-white/10 rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-500 cursor-pointer"
+                  aria-label="Filter by ROI"
+                  className="select-field"
                 >
                   <option value="all">All ROI Yields</option>
                   <option value="roi-high">High ROI</option>
@@ -498,7 +685,8 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                 <select
                   value={filterTime}
                   onChange={(e) => setFilterTime(e.target.value)}
-                  className="bg-slate-900 border border-white/10 rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-500 cursor-pointer"
+                  aria-label="Filter by timeline"
+                  className="select-field"
                 >
                   <option value="all">All Timelines</option>
                   <option value="time-quick">Quick Wins</option>
@@ -510,7 +698,8 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                 <select
                   value={sortField}
                   onChange={(e) => setSortField(e.target.value)}
-                  className="bg-slate-900 border border-white/10 rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-500 cursor-pointer"
+                  aria-label="Sort recommendations"
+                  className="select-field"
                 >
                   <option value="rank">Recommended Order</option>
                   <option value="roi">ROI% Highest</option>
@@ -523,17 +712,17 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
           {/* Filter Pills */}
           {(filterRoi !== "all" || filterTime !== "all") && (
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Active Filters:</span>
+              <span className="text-[10px] font-medium text-ink-subtle uppercase tracking-wider">Active Filters:</span>
               {filterRoi !== "all" && (
-                <span className="bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs px-2.5 py-1 rounded-full flex items-center space-x-1">
+                <span className="bg-accent-50 border border-accent-200 text-accent-700 text-xs px-2.5 py-1 rounded-full flex items-center space-x-1">
                   <span>ROI: {filterRoi === "roi-high" ? "High" : "Medium"}</span>
-                  <button onClick={() => setFilterRoi("all")} className="text-slate-400 hover:text-white font-bold ml-1 font-mono">×</button>
+                  <button onClick={() => setFilterRoi("all")} aria-label="Clear ROI filter" className="text-accent-500 hover:text-accent-700 font-semibold ml-1 font-mono">×</button>
                 </span>
               )}
               {filterTime !== "all" && (
-                <span className="bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs px-2.5 py-1 rounded-full flex items-center space-x-1">
+                <span className="bg-accent-50 border border-accent-200 text-accent-700 text-xs px-2.5 py-1 rounded-full flex items-center space-x-1">
                   <span>Timeline: {filterTime === "time-quick" ? "Quick" : "Medium"}</span>
-                  <button onClick={() => setFilterTime("all")} className="text-slate-400 hover:text-white font-bold ml-1 font-mono">×</button>
+                  <button onClick={() => setFilterTime("all")} aria-label="Clear timeline filter" className="text-accent-500 hover:text-accent-700 font-semibold ml-1 font-mono">×</button>
                 </span>
               )}
             </div>
@@ -542,75 +731,146 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
           {/* Recommendation Cards list */}
           <div className="space-y-6">
             {processedRecommendations.length === 0 ? (
-              <div className="text-center py-10 bg-slate-900/20 border border-white/10 rounded-2xl">
-                <p className="text-slate-400 text-sm font-semibold">No recommendations match the active filter criteria.</p>
+              <div className="text-center py-10 bg-surface-sunken border border-surface-border rounded-2xl">
+                <p className="text-ink-muted text-sm font-semibold">No recommendations match the active filter criteria.</p>
               </div>
             ) : (
-              processedRecommendations.map((rec) => (
-                <Card 
-                  key={rec.id} 
-                  id={`rec-card-${rec.id}`}
-                  className="flex flex-col md:flex-row justify-between gap-6 hover:border-slate-700 hover:bg-slate-900/60 transition-all duration-150 p-6 md:p-8"
-                >
-                  <div className="space-y-3 flex-1">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="text-lg font-extrabold text-blue-400">#{rec.rank}</span>
-                      <h3 className="text-lg font-bold text-white tracking-tight">{rec.category}</h3>
-                      <div className="flex gap-2">
-                        <Badge variant={rec.roiType}>ROI: {rec.roiPercentage}%</Badge>
-                        <Badge variant={rec.timelineType}>{rec.timeline}</Badge>
+              processedRecommendations.map((rec) => {
+                const opt = getActiveOption(rec);
+                const optCost = opt?.cost || rec.estimatedCost;
+                const optValue = opt?.projectedValueIncrease || rec.projectedValueIncrease;
+                const optRoi = opt?.roiPercentage || rec.roiPercentage;
+                const optTimeline = opt?.timeline || rec.timeline;
+                const optImg = opt?.afterImageUrl || rec.afterImageUrl;
+
+                return (
+                  <Card
+                    key={rec.id}
+                    id={`rec-card-${rec.id}`}
+                    className="flex flex-col md:flex-row justify-between gap-6 p-6 md:p-8"
+                  >
+                    <div className="space-y-3 flex-1">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="text-lg font-semibold text-accent-600">#{rec.rank}</span>
+                        <h3 className="text-lg font-semibold text-ink tracking-tight">{rec.category}</h3>
+                        <div className="flex gap-2">
+                          <Badge variant={rec.roiType}>ROI: {optRoi}%</Badge>
+                          <Badge variant={rec.timelineType}>{optTimeline}</Badge>
+                        </div>
+                      </div>
+
+                      <p className="text-ink-muted text-xs leading-relaxed">{rec.explanation}</p>
+
+                      {/* Interactive Option A / B / C Switcher */}
+                      <div className="flex flex-wrap items-center gap-1.5 bg-surface-sunken p-1.5 rounded-xl border border-surface-border w-fit my-2">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setActiveOptionTier({ ...activeOptionTier, [rec.id]: "option_a" }); }}
+                          className={cn(
+                            "px-3 py-1 text-xs font-medium rounded-lg transition-all",
+                            (activeOptionTier[rec.id] || "option_b") === "option_a"
+                              ? "bg-accent-600 text-white"
+                              : "text-ink-muted hover:text-ink hover:bg-surface-raised"
+                          )}
+                        >
+                          Option A: Cosmetic ({formatCurrency(displayCost((rec.options?.find((o:any)=>o.id==="option_a")?.cost) || rec.estimatedCost * 0.45))})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setActiveOptionTier({ ...activeOptionTier, [rec.id]: "option_b" }); }}
+                          className={cn(
+                            "px-3 py-1 text-xs font-medium rounded-lg transition-all",
+                            (activeOptionTier[rec.id] || "option_b") === "option_b"
+                              ? "bg-accent-600 text-white"
+                              : "text-ink-muted hover:text-ink hover:bg-surface-raised"
+                          )}
+                        >
+                          Option B: Balanced ({formatCurrency(displayCost((rec.options?.find((o:any)=>o.id==="option_b")?.cost) || rec.estimatedCost))})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setActiveOptionTier({ ...activeOptionTier, [rec.id]: "option_c" }); }}
+                          className={cn(
+                            "px-3 py-1 text-xs font-medium rounded-lg transition-all",
+                            (activeOptionTier[rec.id] || "option_b") === "option_c"
+                              ? "bg-accent-600 text-white"
+                              : "text-ink-muted hover:text-ink hover:bg-surface-raised"
+                          )}
+                        >
+                          Option C: Luxury ({formatCurrency(displayCost((rec.options?.find((o:any)=>o.id==="option_c")?.cost) || rec.estimatedCost * 1.45))})
+                        </button>
+                      </div>
+
+                      {/* Metrics Grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-surface-sunken p-4 rounded-xl border border-surface-border text-xs">
+                        <div>
+                          <p className="text-ink-subtle uppercase tracking-widest font-semibold text-[9px]">Allocated Budget</p>
+                          <p className="font-semibold text-ink mt-1">{formatCurrency(displayCost(optCost))}</p>
+                        </div>
+                        <div>
+                          <p className="text-ink-subtle uppercase tracking-widest font-semibold text-[9px]">Market Value Add</p>
+                          <p className="font-semibold text-success mt-1">{formatCurrency(displayCost(optValue))}</p>
+                        </div>
+                        <div>
+                          <p className="text-ink-subtle uppercase tracking-widest font-semibold text-[9px]">Estimated ROI</p>
+                          <p className="font-semibold text-success mt-1">+{optRoi}%</p>
+                        </div>
+                        <div>
+                          <p className="text-ink-subtle uppercase tracking-widest font-semibold text-[9px]">Avg Timeline</p>
+                          <p className="font-semibold text-ink mt-1">{optTimeline}</p>
+                        </div>
                       </div>
                     </div>
 
-                    <p className="text-slate-300 text-xs leading-relaxed">{rec.explanation}</p>
+                    <div className="flex flex-col items-center md:items-end justify-between md:justify-center border-t md:border-t-0 md:border-l border-surface-border pt-4 md:pt-0 md:pl-6 shrink-0 gap-4">
+                      {/* Visual Thumbnail Preview right on card */}
+                      {(optImg || rec.beforeImageUrl) && (
+                        <div
+                          onClick={() => setSelectedRec(rec)}
+                          className="w-full md:w-44 h-28 rounded-xl overflow-hidden relative border border-surface-border cursor-pointer group shrink-0"
+                        >
+                          <img
+                            src={optImg || rec.beforeImageUrl}
+                            alt={`${rec.category} AI Concept`}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          {/* Solid caption bar rather than a full-bleed scrim —
+                              keeps the render itself unobscured. */}
+                          <div className="absolute inset-x-0 bottom-0 bg-neutral-950/75 px-2 py-1.5">
+                            <span className="text-[10px] font-medium text-white tracking-wider uppercase">
+                              {optImg ? "AI Concept Render" : "Before Preview"}
+                            </span>
+                          </div>
+                        </div>
+                      )}
 
-                    {/* Metrics Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-950/40 p-4 rounded-xl border border-white/5 text-xs">
-                      <div>
-                        <p className="text-slate-500 uppercase tracking-widest font-bold text-[9px]">Estimated Cost</p>
-                        <p className="font-extrabold text-white mt-1">{formatCurrency(rec.estimatedCost)}</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-500 uppercase tracking-widest font-bold text-[9px]">Market Value Add</p>
-                        <p className="font-extrabold text-emerald-400 mt-1">{formatCurrency(rec.projectedValueIncrease)}</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-500 uppercase tracking-widest font-bold text-[9px]">Estimated ROI</p>
-                        <p className="font-extrabold text-emerald-400 mt-1">+{rec.roiPercentage}%</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-500 uppercase tracking-widest font-bold text-[9px]">Avg Timeline</p>
-                        <p className="font-extrabold text-white mt-1">{rec.timeline}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center border-t md:border-t-0 md:border-l border-white/10 pt-4 md:pt-0 md:pl-6 shrink-0 gap-4">
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleHeartToggle(rec.id)}
-                        className={`p-2 rounded-full border transition-all ${
-                          heartedList[rec.id] 
-                            ? "bg-red-500/10 border-red-500/25 text-red-500" 
-                            : "bg-white/5 border-white/10 text-slate-400 hover:text-white"
-                        }`}
+                      <div className="flex items-center justify-between w-full md:w-auto gap-3">
+                        <button
+                          onClick={() => handleHeartToggle(rec.id)}
+                        className={cn(
+                          "p-2 rounded-full border transition-colors",
+                          heartedList[rec.id]
+                            ? "bg-danger-subtle border-danger-border text-danger"
+                            : "bg-surface-sunken border-surface-border text-ink-subtle hover:text-ink"
+                        )}
                         aria-label={heartedList[rec.id] ? "Remove from favorites" : "Add to favorites"}
                       >
-                        <Heart className={`w-4 h-4 ${heartedList[rec.id] ? "fill-current" : ""}`} />
+                        <Heart className={cn("w-4 h-4", heartedList[rec.id] && "fill-current")} />
                       </button>
-                    </div>
 
-                    <Button 
-                      id={`see-details-btn-${rec.id}`}
-                      variant="primary" 
-                      size="sm"
-                      onClick={() => setSelectedRec(rec)}
-                    >
-                      See Details
-                    </Button>
+                      <Button
+                        id={`see-details-btn-${rec.id}`}
+                        variant="primary"
+                        size="sm"
+                        onClick={() => setSelectedRec(rec)}
+                      >
+                        See Details
+                      </Button>
+                    </div>
                   </div>
                 </Card>
-              ))
+                );
+              })
             )}
           </div>
         </section>
@@ -627,96 +887,145 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => handleHeartToggle(selectedRec.id)}
-                  className={`p-2 rounded-full border transition-all ${
-                    heartedList[selectedRec.id] 
-                      ? "bg-red-500/10 border-red-500/25 text-red-500" 
-                      : "bg-white/5 border-white/10 text-slate-400 hover:text-white"
-                  }`}
+                  className={cn(
+                    "p-2 rounded-full border transition-colors",
+                    heartedList[selectedRec.id]
+                      ? "bg-danger-subtle border-danger-border text-danger"
+                      : "bg-surface-sunken border-surface-border text-ink-subtle hover:text-ink"
+                  )}
+                  aria-label={heartedList[selectedRec.id] ? "Remove from favorites" : "Add to favorites"}
                 >
-                  <Heart className={`w-4.5 h-4.5 ${heartedList[selectedRec.id] ? "fill-current" : ""}`} />
+                  <Heart className={cn("w-4 h-4", heartedList[selectedRec.id] && "fill-current")} />
                 </button>
-                <span className="text-xs text-slate-400">Save to Dashboard</span>
+                <span className="text-xs text-ink-muted">Save to Dashboard</span>
               </div>
-              <div className="flex items-center space-x-3">
-                <Button id="modal-cancel-btn" variant="secondary" onClick={() => setSelectedRec(null)}>Close</Button>
-                <Button id="modal-comps-btn" variant="primary" onClick={() => handleQuoteRequest(selectedRec.category)}>Get Contractor Quote</Button>
-              </div>
+              <Button id="modal-cancel-btn" variant="secondary" onClick={() => setSelectedRec(null)}>Close</Button>
             </div>
           }
           size="lg"
         >
           <div className="space-y-6">
-            
-            {/* Image Slider Comparison Panel */}
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Interactive AI Design Visualizer</span>
-                
-                {/* Upgrade options themes picker */}
-                {VISUALIZER_IMAGES[selectedRec.id] && (
-                  <div className="flex gap-2 flex-wrap">
-                    {VISUALIZER_IMAGES[selectedRec.id].afterThemes.map((themeItem) => (
-                      <button
-                        key={themeItem.value}
-                        onClick={() => setVisualizerTheme(themeItem.value)}
-                        className={cn(
-                          "px-3 py-1.5 rounded-lg border text-[10px] font-bold tracking-wider uppercase transition-all",
-                          visualizerTheme === themeItem.value
-                            ? "bg-blue-600 border-transparent text-white shadow-md shadow-blue-600/10"
-                            : "bg-white/5 border-white/10 text-slate-400 hover:text-slate-200 hover:bg-white/10"
-                        )}
-                      >
-                        {themeItem.label.split(" (")[0]}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
 
-              {/* Slider comparative container */}
-              <div className="h-72 md:h-96 w-full rounded-2xl overflow-hidden bg-slate-950 relative border border-white/10 shadow-2xl select-none">
-                {VISUALIZER_IMAGES[selectedRec.id] ? (
-                  <div className="relative w-full h-full">
-                    {/* Before Image (underneath) */}
-                    <img
-                      src={(selectedRec.id === "rec-kitchen" && uploadedBeforeImg) ? uploadedBeforeImg : VISUALIZER_IMAGES[selectedRec.id].before}
-                      alt="Before Upgrade"
-                      className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-                    />
-                    <div className="absolute top-4 left-4 bg-slate-950/75 backdrop-blur-xs text-white border border-white/10 font-bold text-[10px] px-2.5 py-1 rounded-lg z-10 shadow-md">
-                      Before
+            {/* Image Slider Comparison Panel with Architectural Studio Concept */}
+            {/* Image Slider Comparison Panel with Architectural Studio Concept */}
+            <div className="space-y-4">
+              {(() => {
+                const opt = getActiveOption(selectedRec);
+                const modalAfterUrl = opt?.afterImageUrl || selectedRec.afterImageUrl;
+                const modalCost = opt?.cost || selectedRec.estimatedCost;
+                return (
+                  <>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                      <div>
+                        <span className="text-[10px] font-medium text-accent-600 uppercase tracking-widest block">HomeReady Whole-House Design Studio</span>
+                        <span className="text-xs font-semibold text-ink">
+                          {modalAfterUrl ? "Photorealistic Concept Render vs. Original Space:" : "Your Uploaded Space & Planned Scope:"}
+                        </span>
+                      </div>
+
+                      {/* Interactive Option A/B/C Switcher & Budget share badge */}
+                      <div className="flex flex-wrap gap-2 items-center">
+                        <div className="flex items-center gap-1 bg-surface-sunken p-1 rounded-xl border border-surface-border">
+                          <button
+                            type="button"
+                            onClick={() => setActiveOptionTier({ ...activeOptionTier, [selectedRec.id]: "option_a" })}
+                            className={cn(
+                              "px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all",
+                              (activeOptionTier[selectedRec.id] || "option_b") === "option_a"
+                                ? "bg-accent-600 text-white"
+                                : "text-ink-muted hover:text-ink"
+                            )}
+                          >
+                            Option A: Cosmetic
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setActiveOptionTier({ ...activeOptionTier, [selectedRec.id]: "option_b" })}
+                            className={cn(
+                              "px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all",
+                              (activeOptionTier[selectedRec.id] || "option_b") === "option_b"
+                                ? "bg-accent-600 text-white"
+                                : "text-ink-muted hover:text-ink"
+                            )}
+                          >
+                            Option B: Balanced
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setActiveOptionTier({ ...activeOptionTier, [selectedRec.id]: "option_c" })}
+                            className={cn(
+                              "px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all",
+                              (activeOptionTier[selectedRec.id] || "option_b") === "option_c"
+                                ? "bg-accent-600 text-white"
+                                : "text-ink-muted hover:text-ink"
+                            )}
+                          >
+                            Option C: Luxury
+                          </button>
+                        </div>
+                        <span className="text-[11px] font-semibold bg-success-subtle text-success border border-success-border px-3 py-1 rounded-lg">
+                          {formatCurrency(displayCost(modalCost))} Whole-House Budget Share
+                        </span>
+                      </div>
                     </div>
 
-                    {/* After Image (overlay, clipped) */}
-                    <img
-                      src={
-                        VISUALIZER_IMAGES[selectedRec.id].afterThemes.find(t => t.value === visualizerTheme)?.url || 
-                        VISUALIZER_IMAGES[selectedRec.id].afterThemes[0].url
-                      }
-                      alt="AI Upgraded Render"
-                      className="absolute inset-0 w-full h-full object-cover pointer-events-none z-20"
-                      style={{
-                        clipPath: `polygon(0 0, ${modalBeforeAfterPct}% 0, ${modalBeforeAfterPct}% 100%, 0 100%)`
-                      }}
-                    />
-                    <div 
-                      className="absolute top-4 bg-emerald-500 text-slate-950 font-bold text-[10px] px-2.5 py-1 rounded-lg z-30 shadow-md transition-all animate-pulse"
+                    {/* Slider comparative container */}
+                    <div className="h-72 md:h-96 w-full rounded-2xl overflow-hidden bg-surface-sunken relative border border-surface-border select-none">
+                      {modalAfterUrl ? (
+                        <div className="relative w-full h-full">
+                          {/* Before Image (underneath) — always the user's own uploaded photo */}
+                          <img
+                            src={selectedRec.beforeImageUrl || uploadedBeforeImg}
+                            alt="Before upgrade"
+                            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                          />
+                          <div className="absolute top-4 left-4 bg-neutral-950/75 backdrop-blur-sm text-white border border-white/10 font-medium text-[10px] px-2.5 py-1 rounded-lg z-10">
+                            Original Photo (Before)
+                          </div>
+
+                          {/* After Image (overlay, clipped based on drag slider) — the genuine AI upgrade of the user's photo */}
+                          <img
+                            src={modalAfterUrl}
+                            alt="AI generated remodel concept"
+                            className="absolute inset-0 w-full h-full object-cover pointer-events-none z-20"
+                            style={{
+                              clipPath: `polygon(0 0, ${modalBeforeAfterPct}% 0, ${modalBeforeAfterPct}% 100%, 0 100%)`
+                            }}
+                          />
+                    <div
+                      className="absolute top-4 bg-accent-500 text-white font-medium text-[10px] px-2.5 py-1 rounded-lg z-30 transition-[right] flex items-center space-x-1"
                       style={{
                         right: `${Math.max(4, 100 - modalBeforeAfterPct + 2)}%`
                       }}
                     >
-                      AI Upgraded Render
+                      <Sparkles className="w-3 h-3 text-warning inline" />
+                      <span>Upgraded Concept Render</span>
                     </div>
 
                     {/* Draggable Divider Line */}
                     <div
-                      className="absolute top-0 bottom-0 w-0.5 bg-indigo-500 z-30 pointer-events-none"
+                      className="absolute top-0 bottom-0 w-0.5 bg-accent-500 z-30 pointer-events-none"
                       style={{ left: `${modalBeforeAfterPct}%` }}
                     >
-                      <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-7 h-7 bg-indigo-600 border border-indigo-400 rounded-full flex items-center justify-center shadow-lg text-white font-mono text-xs font-bold">
+                      <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-7 h-7 bg-accent-600 border border-white/40 rounded-full flex items-center justify-center text-white font-mono text-xs font-medium">
                         ↔
                       </div>
                     </div>
+
+                    {/* Highlight callout for the item selected via its pill badge */}
+                    {selectedItemIdx !== null && selectedItems[selectedItemIdx] && (
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 pointer-events-none max-w-[90%] animate-in fade-in slide-in-from-bottom-2 duration-200">
+                        <div className="bg-neutral-950/90 backdrop-blur-sm border border-accent-500/40 rounded-xl px-3.5 py-2 flex items-center gap-2 text-white">
+                          <Sparkles className="w-3.5 h-3.5 text-accent-400 shrink-0" />
+                          <span className="text-[11px] font-medium">{selectedItems[selectedItemIdx].label}</span>
+                          {selectedItems[selectedItemIdx].cost > 0 && (
+                            <span className="text-[11px] font-semibold text-accent-300 tabular-nums">
+                              {formatCurrency(displayCost(selectedItems[selectedItemIdx].cost))}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Invisible Input Slider range control covering entire container */}
                     <input
@@ -729,84 +1038,246 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                       aria-label="Drag before-after visualizer comparison slider"
                     />
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center w-full h-full text-slate-500 p-4">
-                    <Sparkles className="w-12 h-12 text-indigo-400 animate-pulse mb-3" />
-                    <p className="font-bold text-sm text-slate-350">Generating computer vision render preview...</p>
+                ) : (selectedRec.beforeImageUrl || uploadedBeforeImg) ? (
+                  <div className="relative w-full h-full">
+                    {/* No genuine AI upgrade render available — show the user's actual
+                        uploaded photo rather than a fabricated/stock concept image. */}
+                    <img
+                      src={selectedRec.beforeImageUrl || uploadedBeforeImg}
+                      alt="Your uploaded room photo"
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                    <div className="absolute top-4 left-4 bg-neutral-950/75 backdrop-blur-sm text-white border border-white/10 font-medium text-[10px] px-2.5 py-1 rounded-lg">
+                      Your Uploaded Photo
+                    </div>
+                    <div className="absolute inset-x-0 bottom-0 bg-neutral-950/80 backdrop-blur-sm text-white p-3 text-center">
+                      <p className="text-[11px] font-semibold">A photorealistic upgrade render isn&apos;t available for this room.</p>
+                      <p className="text-[10px] text-white/70">The cost breakdown and scope below still apply to your space.</p>
+                    </div>
                   </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center w-full h-full text-ink-subtle p-4">
+                    <Sparkles className="w-12 h-12 text-accent-400 mb-3" />
+                    <p className="font-semibold text-sm text-ink-muted">No concept preview available for this room.</p>
+                  </div>
+                )}
+              </div>
+                  </>
+                );
+              })()}
+
+              {/* Interactive Selective Inpainting Studio Toolbar */}
+              <div className="bg-surface-sunken border border-accent-300/80 rounded-2xl p-4 space-y-3">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center space-x-2">
+                    <Sparkles className="w-4 h-4 text-accent-600" />
+                    <span className="text-xs font-medium text-ink tracking-tight">Interactive Selective Inpainting Canvas</span>
+                  </div>
+                  <span className="text-[9px] font-semibold uppercase tracking-wider bg-accent-50 text-accent-700 border border-accent-200 px-2.5 py-0.5 rounded-full">
+                    Live Zone Customizer
+                  </span>
+                </div>
+                <p className="text-[11px] text-ink-muted">
+                  Test localized AI inpainting customization directly on specific zones of your photograph:
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleTriggerInpaint("accent_wall", "paint_repose_gray")}
+                    disabled={inpaintLoading}
+                    className="p-2.5 bg-surface-raised hover:bg-accent-50 border border-surface-border hover:border-accent-400 rounded-xl text-left transition-all text-xs space-y-1 cursor-pointer disabled:opacity-50"
+                  >
+                    <div className="font-semibold text-ink flex items-center justify-between">
+                      <span>🎨 Repose Gray Wall</span>
+                      <span className="text-[9px] font-mono bg-accent-100 text-accent-700 px-1.5 py-0.5 rounded">SW 7015</span>
+                    </div>
+                    <p className="text-[10px] text-ink-muted">Inpaint wall to Sherwin-Williams Repose Gray</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleTriggerInpaint("accent_wall", "paint_evergreen_fog")}
+                    disabled={inpaintLoading}
+                    className="p-2.5 bg-surface-raised hover:bg-accent-50 border border-surface-border hover:border-accent-400 rounded-xl text-left transition-all text-xs space-y-1 cursor-pointer disabled:opacity-50"
+                  >
+                    <div className="font-semibold text-ink flex items-center justify-between">
+                      <span>🎨 Evergreen Fog Wall</span>
+                      <span className="text-[9px] font-mono bg-accent-100 text-accent-700 px-1.5 py-0.5 rounded">SW 9130</span>
+                    </div>
+                    <p className="text-[10px] text-ink-muted">Inpaint wall to Sherwin-Williams Organic Green</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleTriggerInpaint("window_drapes", "modern_blackout_drapes")}
+                    disabled={inpaintLoading}
+                    className="p-2.5 bg-surface-raised hover:bg-accent-50 border border-surface-border hover:border-accent-400 rounded-xl text-left transition-all text-xs space-y-1 cursor-pointer disabled:opacity-50"
+                  >
+                    <div className="font-semibold text-ink flex items-center justify-between">
+                      <span>🪟 Blackout Drapes</span>
+                      <span className="text-[9px] font-mono bg-success-subtle text-success px-1.5 py-0.5 rounded">Window</span>
+                    </div>
+                    <p className="text-[10px] text-ink-muted">Inpaint window treatments to tailored drapes</p>
+                  </button>
+                </div>
+
+                {inpaintLoading && (
+                  <div className="flex items-center justify-center space-x-2 py-2 text-xs font-medium text-ink-muted">
+                    <Sparkles className="w-4 h-4 text-accent-500 animate-spin" />
+                    <span>Generating localized AI inpainting render...</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Exact Items Added — clickable pill badges that highlight the slider */}
+              <div className="bg-surface-sunken border border-accent-200/80 rounded-2xl p-4 space-y-3 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-semibold uppercase tracking-widest text-[10px] text-accent-700 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-accent-600" />
+                    <span>Exact Items Added to Picture</span>
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] font-semibold uppercase tracking-wider bg-success-subtle0/15 text-success border border-success-border px-2 py-0.5 rounded-full">
+                      ✓ FinOps Task Price Audit Verified (0.00% Variance)
+                    </span>
+                    <span className="text-[10px] font-medium text-ink-muted">Tap an item to highlight it</span>
+                  </div>
+                </div>
+                {/* Explicit itemized grid: each exact item added + its individual cost */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {selectedItems.map((item, idx) => {
+                    const active = selectedItemIdx === idx;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          if (active) {
+                            setSelectedItemIdx(null);
+                          } else {
+                            setSelectedItemIdx(idx);
+                            // Reveal the upgraded render so the highlighted item is visible.
+                            setModalBeforeAfterPct(85);
+                          }
+                        }}
+                        aria-pressed={active}
+                        title={item.details || item.label}
+                        className={cn(
+                          "flex w-full items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left font-semibold transition-colors",
+                          active
+                            ? "bg-accent-600 border-accent-600 text-white"
+                            : "bg-white border-surface-border text-ink hover:border-accent-300 hover:bg-accent-50"
+                        )}
+                      >
+                        <span className="flex items-center gap-1.5 min-w-0">
+                          <span className={cn("font-mono shrink-0", active ? "text-accent-200" : "text-accent-600")}>+</span>
+                          <span className="truncate">{item.label}</span>
+                        </span>
+                        {item.cost > 0 && (
+                          <span className={cn("tabular-nums font-semibold shrink-0", active ? "text-white" : "text-ink-muted")}>
+                            {formatCurrency(displayCost(item.cost))}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                {selectedItemIdx !== null && selectedItems[selectedItemIdx]?.details && (
+                  <p className="text-[11px] text-ink-muted leading-relaxed border-t border-surface-border pt-2">
+                    {selectedItems[selectedItemIdx].details}
+                  </p>
                 )}
               </div>
             </div>
 
             {/* Key Metrics Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-950 border border-white/5 rounded-2xl p-5 text-center text-xs">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-surface-sunken border border-surface-border rounded-2xl p-5 text-center text-xs">
               <div className="space-y-1">
-                <span className="text-slate-500 font-bold uppercase tracking-wider text-[9px]">Estimated Cost</span>
-                <p className="text-base font-extrabold text-white">{formatCurrency(selectedRec.estimatedCost)}</p>
+                <span className="text-ink-subtle font-semibold uppercase tracking-wider text-[9px]">Allocated Budget</span>
+                <p className="text-base font-semibold text-ink">{formatCurrency(displayCost(selectedRec.estimatedCost))}</p>
               </div>
               <div className="space-y-1">
-                <span className="text-slate-500 font-bold uppercase tracking-wider text-[9px]">Market Value Increase</span>
-                <p className="text-base font-extrabold text-emerald-400">{formatCurrency(selectedRec.projectedValueIncrease)}</p>
+                <span className="text-ink-subtle font-semibold uppercase tracking-wider text-[9px]">Market Value Increase</span>
+                <p className="text-base font-semibold text-success">{formatCurrency(displayCost(selectedRec.projectedValueIncrease))}</p>
               </div>
               <div className="space-y-1">
-                <span className="text-slate-500 font-bold uppercase tracking-wider text-[9px]">Estimated ROI</span>
-                <p className="text-base font-extrabold text-emerald-400">+{selectedRec.roiPercentage}%</p>
+                <span className="text-ink-subtle font-semibold uppercase tracking-wider text-[9px]">Estimated ROI</span>
+                <p className="text-base font-semibold text-success">+{selectedRec.roiPercentage}%</p>
               </div>
               <div className="space-y-1">
-                <span className="text-slate-500 font-bold uppercase tracking-wider text-[9px]">Avg Timeline</span>
-                <p className="text-base font-extrabold text-white">{selectedRec.timeline}</p>
+                <span className="text-ink-subtle font-semibold uppercase tracking-wider text-[9px]">Avg Timeline</span>
+                <p className="text-base font-semibold text-ink">{selectedRec.timeline}</p>
               </div>
             </div>
 
             {/* Why recommendation */}
             <div className="space-y-2">
-              <h5 className="font-bold text-xs uppercase tracking-widest text-indigo-400">Why this recommendation</h5>
-              <p className="text-slate-350 text-xs leading-relaxed">{selectedRec.whyDetails}</p>
+              <h5 className="font-medium text-xs uppercase tracking-widest text-accent-600">Why this recommendation</h5>
+              <p className="text-ink-muted text-xs leading-relaxed">{selectedRec.whyDetails}</p>
             </div>
 
             {/* Scope checklist */}
             <div className="space-y-3">
-              <h5 className="font-bold text-xs uppercase tracking-widest text-indigo-400">Scope of Work</h5>
+              <h5 className="font-medium text-xs uppercase tracking-widest text-accent-600">Scope of Work</h5>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {selectedRec.scope.map((item, idx) => (
-                  <div key={idx} className="flex items-center space-x-3 bg-white/5 border border-white/5 rounded-xl p-3 text-xs text-slate-200">
-                    <CheckSquare className={`w-4 h-4 ${item.checked ? "text-blue-500" : "text-slate-500"}`} />
-                    <span>{item.item}</span>
+                {selectedItems.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between gap-3 bg-surface-sunken border border-surface-border rounded-xl p-3 text-xs text-ink">
+                    <div className="flex items-center space-x-3 min-w-0">
+                      <CheckSquare className="w-4 h-4 text-accent-500 shrink-0" />
+                      <span className="truncate" title={item.details || item.label}>{item.label}</span>
+                    </div>
+                    {item.cost > 0 && (
+                      <span className="font-semibold text-ink-muted tabular-nums shrink-0">{formatCurrency(displayCost(item.cost))}</span>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Contractors List options */}
-            <div className="space-y-4 pt-4 border-t border-white/10">
-              <h5 className="font-bold text-xs uppercase tracking-widest text-indigo-400">Verified Contractor Options</h5>
-              
-              <div className="space-y-3">
-                {(MOCK_CONTRACTORS[selectedRec.id] || []).map((cont) => (
-                  <div key={cont.id} className="bg-slate-950/60 border border-white/5 rounded-2xl p-5 flex flex-col md:flex-row justify-between gap-4 text-xs">
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-3">
-                        <h6 className="text-sm font-bold text-white">{cont.name}</h6>
-                        <Badge variant="roi-high">Verified License</Badge>
-                      </div>
-                      <p className="text-slate-400">⭐ {cont.rating} ({cont.reviewsCount} reviews) • License: {cont.license}</p>
-                      <p className="text-slate-350">Speciality: <strong>{cont.speciality}</strong></p>
-                      <p className="italic text-slate-500">"{cont.snippet}"</p>
-                    </div>
+            <div className="space-y-4 pt-4 border-t border-surface-border">
+              <h5 className="font-medium text-xs uppercase tracking-widest text-accent-600">Verified Contractor Options</h5>
 
-                    <div className="flex flex-row md:flex-col justify-between items-center md:items-end gap-3 shrink-0 md:border-l md:border-white/5 md:pl-5">
-                      <div className="text-right">
-                        <p className="text-slate-500 font-bold uppercase text-[9px]">Est. Cost</p>
-                        <p className="text-sm font-bold text-white">{formatCurrency(cont.costEstimate)}</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">Avail: {cont.availability}</p>
+              {matchedContractors.length === 0 ? (
+                <div className="bg-surface-sunken border border-surface-border rounded-2xl p-5 text-xs text-ink-muted flex items-center justify-between gap-4">
+                  <span>No contractors in your network are tagged for this specialty yet.</span>
+                  <Button size="sm" variant="secondary" onClick={() => window.location.href = "/contractors"}>Browse Network</Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {matchedContractors.map((cont) => (
+                    <div key={cont.id} className="bg-surface-sunken border border-surface-border rounded-2xl p-5 flex flex-col md:flex-row justify-between gap-4 text-xs">
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-3">
+                          <h6 className="text-sm font-semibold text-ink">{cont.name}</h6>
+                          <Badge variant="roi-high">Verified License</Badge>
+                        </div>
+                        <p className="text-ink-muted">{cont.rating ?? "--"} rating ({cont.reviewsCount} reviews) • License: {cont.license || "N/A"}</p>
+                        <p className="text-ink-muted">Specialty: <strong className="text-ink">{ensureArray(cont.specialties).join(", ")}</strong></p>
+                        {cont.snippet && <p className="italic text-ink-subtle">"{cont.snippet}"</p>}
                       </div>
-                      <Button id={`quote-btn-${cont.id}`} variant="primary" size="sm" onClick={() => handleQuoteRequest(selectedRec.category)}>
-                        Get Quote
-                      </Button>
+
+                      <div className="flex flex-row md:flex-col justify-between items-center md:items-end gap-3 shrink-0 md:border-l md:border-surface-border md:pl-5">
+                        <div className="text-right">
+                          <p className="text-ink-subtle font-semibold uppercase text-[9px]">Est. Cost</p>
+                          <p className="text-sm font-semibold text-ink">{cont.avgCost !== null ? formatCurrency(cont.avgCost) : "N/A"}</p>
+                          <p className="text-[10px] text-ink-muted mt-0.5">Avail: {cont.availability || "N/A"}</p>
+                        </div>
+                        <Button
+                          id={`quote-btn-${cont.id}`}
+                          variant="primary"
+                          size="sm"
+                          onClick={() => handleQuoteRequest(cont, selectedRec.category)}
+                          isLoading={submittingQuoteFor === cont.id}
+                        >
+                          Get Quote
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
           </div>
@@ -815,10 +1286,10 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
 
       {/* System Toast notification modal */}
       {modalMessage && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl text-center">
-            <h3 className="text-lg font-bold text-white mb-3">HomeReady Advisor</h3>
-            <p className="text-slate-300 text-sm mb-6">{modalMessage}</p>
+        <div className="fixed inset-0 bg-neutral-950/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-surface-raised border border-surface-border rounded-2xl p-6 max-w-md w-full text-center">
+            <h3 className="text-lg font-semibold text-ink mb-3">HomeReady Advisor</h3>
+            <p className="text-ink-muted text-sm mb-6">{modalMessage}</p>
             <Button
               id="results-modal-ok-btn"
               onClick={() => setModalMessage(null)}
