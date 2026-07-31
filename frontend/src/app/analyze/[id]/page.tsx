@@ -428,22 +428,19 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
   if (loading) {
     return (
       <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-6 text-center">
-        <div className="max-w-xl w-full bg-surface-raised rounded-3xl border border-surface-border shadow-xl p-8 space-y-8 animate-in fade-in zoom-in-95 duration-500">
+        <div className="max-w-xl w-full bg-surface-raised rounded-3xl border border-surface-border shadow-float p-8 space-y-8 animate-in fade-in zoom-in-95 duration-500">
           
           {/* Top Architectural Studio Badge */}
           <div className="flex flex-col items-center space-y-4">
-            <div className="relative w-20 h-20 flex items-center justify-center">
-              <div className="absolute inset-0 rounded-2xl bg-accent-500/10 animate-ping"></div>
-              <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-navy-900 to-navy-950 border border-accent-500/30 flex items-center justify-center shadow-lg">
-                <Sparkles className="w-8 h-8 text-accent-400 animate-pulse" />
-              </div>
+            <div className="w-16 h-16 rounded-2xl bg-neutral-800 flex items-center justify-center">
+              <Sparkles className="w-7 h-7 text-accent-400" />
             </div>
 
             <div className="space-y-1.5">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-accent-600 bg-accent-50 px-3 py-1 rounded-full border border-accent-200">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-accent-600 bg-accent-50 px-3 py-1 rounded-full border border-accent-200">
                 HomeReady Architectural Studio
               </span>
-              <h2 className="text-2xl font-bold text-ink tracking-tight font-serif">
+              <h2 className="text-2xl">
                 Designing Your Whole-House Remodel
               </h2>
               <p className="text-ink-muted text-xs max-w-md mx-auto leading-relaxed">
@@ -455,7 +452,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
           {/* Animated Studio Pipeline Stages */}
           <div className="space-y-3 text-left bg-surface-sunken p-5 rounded-2xl border border-surface-border">
             <div className="flex items-center space-y-0 space-x-3 text-xs">
-              <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-600 flex items-center justify-center font-bold text-[10px] shrink-0">
+              <div className="w-5 h-5 rounded-full bg-success-subtle0/20 text-success flex items-center justify-center font-medium text-[10px] shrink-0">
                 ✓
               </div>
               <div className="flex-1">
@@ -465,7 +462,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
             </div>
 
             <div className="flex items-center space-x-3 text-xs">
-              <div className="w-5 h-5 rounded-full bg-accent-500/20 text-accent-600 flex items-center justify-center font-bold text-[10px] shrink-0 animate-pulse">
+              <div className="w-5 h-5 rounded-full bg-accent-500/20 text-accent-600 flex items-center justify-center font-medium text-[10px] shrink-0">
                 2
               </div>
               <div className="flex-1">
@@ -475,7 +472,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
             </div>
 
             <div className="flex items-center space-x-3 text-xs">
-              <div className="w-5 h-5 rounded-full bg-surface border border-surface-border text-ink-subtle flex items-center justify-center font-bold text-[10px] shrink-0">
+              <div className="w-5 h-5 rounded-full bg-surface border border-surface-border text-ink-subtle flex items-center justify-center font-medium text-[10px] shrink-0">
                 3
               </div>
               <div className="flex-1">
@@ -485,7 +482,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
             </div>
 
             <div className="flex items-center space-x-3 text-xs">
-              <div className="w-5 h-5 rounded-full bg-surface border border-surface-border text-ink-subtle flex items-center justify-center font-bold text-[10px] shrink-0">
+              <div className="w-5 h-5 rounded-full bg-surface border border-surface-border text-ink-subtle flex items-center justify-center font-medium text-[10px] shrink-0">
                 4
               </div>
               <div className="flex-1">
@@ -497,8 +494,10 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
 
           {/* Shimmering Animated Bar */}
           <div className="space-y-2">
-            <div className="w-full bg-surface-sunken h-2 rounded-full overflow-hidden relative">
-              <div className="bg-gradient-to-r from-accent-500 via-accent-400 to-accent-600 h-full w-2/3 rounded-full animate-pulse"></div>
+            {/* Indeterminate track — the pipeline reports no percentage, so the
+                bar communicates "still working" rather than faking progress. */}
+            <div className="w-full bg-surface-sunken h-1.5 rounded-pill overflow-hidden">
+              <div className="h-full w-1/3 rounded-pill bg-accent-500 animate-indeterminate" />
             </div>
             <div className="flex justify-between items-center text-[10px] text-ink-subtle">
               <span>Whole-House Budget Allocation Active</span>
@@ -515,7 +514,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
     return (
       <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-6 text-center space-y-4">
         <Badge variant="status-error">Analysis Failed</Badge>
-        <h2 className="text-xl font-bold text-ink tracking-tight max-w-md">
+        <h2 className="text-xl max-w-md">
           {errorMessage || "The analysis pipeline could not complete."}
         </h2>
         <Button onClick={() => window.location.href = "/analyze"}>Start a New Analysis</Button>
@@ -528,7 +527,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between pb-8 border-b border-surface-border gap-4">
         <div>
-          <h1 className="text-3xl font-bold font-serif text-ink tracking-tight flex items-center gap-2">
+          <h1 className="text-4xl flex items-center gap-2">
             <span>Property Analysis Results</span>
             <Badge variant="status-complete">Complete</Badge>
           </h1>
@@ -563,13 +562,13 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
           <Card hoverEffect={false} className="space-y-6">
             {/* Property Image Banner */}
             {(uploadedBeforeImg || (recommendations.length > 0 && recommendations[0].beforeImageUrl)) && (
-              <div className="w-full h-48 rounded-xl overflow-hidden relative border border-surface-border shadow-sm">
+              <div className="w-full h-48 rounded-xl overflow-hidden relative border border-surface-border">
                 <img
                   src={uploadedBeforeImg || recommendations[0].beforeImageUrl}
                   alt="Original Property Photo"
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute top-2 left-2 bg-navy-950/80 backdrop-blur-sm text-white font-bold text-[10px] px-2.5 py-1 rounded-lg shadow-card border border-white/10">
+                <div className="absolute top-2 left-2 bg-neutral-950/80 backdrop-blur-sm text-white font-medium text-[10px] px-2.5 py-1 rounded-lg border border-white/10">
                   Original Property Photo
                 </div>
               </div>
@@ -577,9 +576,9 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
 
             {/* Condition Score Gauge */}
             <div className="text-center space-y-3 pb-6 border-b border-surface-border">
-              <h3 className="text-xs font-bold text-ink-subtle uppercase tracking-widest">Overall Condition Score</h3>
+              <h3 className="text-xs font-medium text-ink-subtle uppercase tracking-widest">Overall Condition Score</h3>
               <div className="inline-flex items-end justify-center">
-                <span className="text-5xl font-extrabold text-ink">{overallScore}</span>
+                <span className="text-5xl font-semibold text-ink">{overallScore}</span>
                 <span className="text-xl font-semibold text-ink-subtle mb-1">/10</span>
               </div>
 
@@ -595,7 +594,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
 
             {/* Detected Rooms & Features Accordion List */}
             <div className="space-y-4">
-              <h4 className="text-xs font-bold text-ink-subtle uppercase tracking-widest">Detected Rooms & Features</h4>
+              <h4 className="text-xs font-medium text-ink-subtle uppercase tracking-widest">Detected Rooms & Features</h4>
               <div className="space-y-2">
                 {detectedRooms.map((room, idx) => (
                   <div key={idx} className="flex justify-between items-center bg-surface-sunken border border-surface-border rounded-xl p-3 text-xs">
@@ -608,11 +607,11 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
 
             {/* Condition Summary */}
             <div className="space-y-3 pt-4 border-t border-surface-border">
-              <h4 className="text-xs font-bold text-ink-subtle uppercase tracking-widest">Condition Summary</h4>
+              <h4 className="text-xs font-medium text-ink-subtle uppercase tracking-widest">Condition Summary</h4>
               <div className="bg-surface-sunken rounded-xl p-4 border border-surface-border space-y-3 text-xs">
                 <div className="flex justify-between">
                   <span className="text-ink-muted">Issues Detected:</span>
-                  <span className="font-bold text-ink">{issuesCount}</span>
+                  <span className="font-semibold text-ink">{issuesCount}</span>
                 </div>
                 <ul className="space-y-1.5 text-ink-muted list-disc list-inside">
                   {detectedDefects.length > 0 ? (
@@ -633,7 +632,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
         {/* Right Column (60% width on Desktop) */}
         <section className="lg:col-span-8 space-y-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <h2 className="text-xl font-bold tracking-tight text-ink">Top ROI Ranked Upgrades</h2>
+            <h2 className="text-xl">Top ROI Ranked Upgrades</h2>
 
             {/* Filter & Sort Controls */}
             <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-ink-muted">
@@ -642,7 +641,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                   value={filterRoi}
                   onChange={(e) => setFilterRoi(e.target.value)}
                   aria-label="Filter by ROI"
-                  className="bg-surface-sunken border border-surface-border rounded-lg px-3 py-1.5 text-ink focus:outline-none focus:border-accent-500 cursor-pointer"
+                  className="select-field"
                 >
                   <option value="all">All ROI Yields</option>
                   <option value="roi-high">High ROI</option>
@@ -655,7 +654,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                   value={filterTime}
                   onChange={(e) => setFilterTime(e.target.value)}
                   aria-label="Filter by timeline"
-                  className="bg-surface-sunken border border-surface-border rounded-lg px-3 py-1.5 text-ink focus:outline-none focus:border-accent-500 cursor-pointer"
+                  className="select-field"
                 >
                   <option value="all">All Timelines</option>
                   <option value="time-quick">Quick Wins</option>
@@ -668,7 +667,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                   value={sortField}
                   onChange={(e) => setSortField(e.target.value)}
                   aria-label="Sort recommendations"
-                  className="bg-surface-sunken border border-surface-border rounded-lg px-3 py-1.5 text-ink focus:outline-none focus:border-accent-500 cursor-pointer"
+                  className="select-field"
                 >
                   <option value="rank">Recommended Order</option>
                   <option value="roi">ROI% Highest</option>
@@ -681,17 +680,17 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
           {/* Filter Pills */}
           {(filterRoi !== "all" || filterTime !== "all") && (
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-bold text-ink-subtle uppercase tracking-wider">Active Filters:</span>
+              <span className="text-[10px] font-medium text-ink-subtle uppercase tracking-wider">Active Filters:</span>
               {filterRoi !== "all" && (
                 <span className="bg-accent-50 border border-accent-200 text-accent-700 text-xs px-2.5 py-1 rounded-full flex items-center space-x-1">
                   <span>ROI: {filterRoi === "roi-high" ? "High" : "Medium"}</span>
-                  <button onClick={() => setFilterRoi("all")} aria-label="Clear ROI filter" className="text-accent-500 hover:text-accent-700 font-bold ml-1 font-mono">×</button>
+                  <button onClick={() => setFilterRoi("all")} aria-label="Clear ROI filter" className="text-accent-500 hover:text-accent-700 font-semibold ml-1 font-mono">×</button>
                 </span>
               )}
               {filterTime !== "all" && (
                 <span className="bg-accent-50 border border-accent-200 text-accent-700 text-xs px-2.5 py-1 rounded-full flex items-center space-x-1">
                   <span>Timeline: {filterTime === "time-quick" ? "Quick" : "Medium"}</span>
-                  <button onClick={() => setFilterTime("all")} aria-label="Clear timeline filter" className="text-accent-500 hover:text-accent-700 font-bold ml-1 font-mono">×</button>
+                  <button onClick={() => setFilterTime("all")} aria-label="Clear timeline filter" className="text-accent-500 hover:text-accent-700 font-semibold ml-1 font-mono">×</button>
                 </span>
               )}
             </div>
@@ -720,8 +719,8 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                   >
                     <div className="space-y-3 flex-1">
                       <div className="flex flex-wrap items-center gap-3">
-                        <span className="text-lg font-extrabold text-accent-600">#{rec.rank}</span>
-                        <h3 className="text-lg font-bold text-ink tracking-tight">{rec.category}</h3>
+                        <span className="text-lg font-semibold text-accent-600">#{rec.rank}</span>
+                        <h3 className="text-lg font-semibold text-ink tracking-tight">{rec.category}</h3>
                         <div className="flex gap-2">
                           <Badge variant={rec.roiType}>ROI: {optRoi}%</Badge>
                           <Badge variant={rec.timelineType}>{optTimeline}</Badge>
@@ -736,9 +735,9 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setActiveOptionTier({ ...activeOptionTier, [rec.id]: "option_a" }); }}
                           className={cn(
-                            "px-3 py-1 text-xs font-bold rounded-lg transition-all",
+                            "px-3 py-1 text-xs font-medium rounded-lg transition-all",
                             (activeOptionTier[rec.id] || "option_b") === "option_a"
-                              ? "bg-accent-600 text-white shadow-sm"
+                              ? "bg-accent-600 text-white"
                               : "text-ink-muted hover:text-ink hover:bg-surface-raised"
                           )}
                         >
@@ -748,9 +747,9 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setActiveOptionTier({ ...activeOptionTier, [rec.id]: "option_b" }); }}
                           className={cn(
-                            "px-3 py-1 text-xs font-bold rounded-lg transition-all",
+                            "px-3 py-1 text-xs font-medium rounded-lg transition-all",
                             (activeOptionTier[rec.id] || "option_b") === "option_b"
-                              ? "bg-accent-600 text-white shadow-sm"
+                              ? "bg-accent-600 text-white"
                               : "text-ink-muted hover:text-ink hover:bg-surface-raised"
                           )}
                         >
@@ -760,9 +759,9 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setActiveOptionTier({ ...activeOptionTier, [rec.id]: "option_c" }); }}
                           className={cn(
-                            "px-3 py-1 text-xs font-bold rounded-lg transition-all",
+                            "px-3 py-1 text-xs font-medium rounded-lg transition-all",
                             (activeOptionTier[rec.id] || "option_b") === "option_c"
-                              ? "bg-accent-600 text-white shadow-sm"
+                              ? "bg-accent-600 text-white"
                               : "text-ink-muted hover:text-ink hover:bg-surface-raised"
                           )}
                         >
@@ -773,20 +772,20 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                       {/* Metrics Grid */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-surface-sunken p-4 rounded-xl border border-surface-border text-xs">
                         <div>
-                          <p className="text-ink-subtle uppercase tracking-widest font-bold text-[9px]">Allocated Budget</p>
-                          <p className="font-extrabold text-ink mt-1">{formatCurrency(displayCost(optCost))}</p>
+                          <p className="text-ink-subtle uppercase tracking-widest font-semibold text-[9px]">Allocated Budget</p>
+                          <p className="font-semibold text-ink mt-1">{formatCurrency(displayCost(optCost))}</p>
                         </div>
                         <div>
-                          <p className="text-ink-subtle uppercase tracking-widest font-bold text-[9px]">Market Value Add</p>
-                          <p className="font-extrabold text-success mt-1">{formatCurrency(displayCost(optValue))}</p>
+                          <p className="text-ink-subtle uppercase tracking-widest font-semibold text-[9px]">Market Value Add</p>
+                          <p className="font-semibold text-success mt-1">{formatCurrency(displayCost(optValue))}</p>
                         </div>
                         <div>
-                          <p className="text-ink-subtle uppercase tracking-widest font-bold text-[9px]">Estimated ROI</p>
-                          <p className="font-extrabold text-success mt-1">+{optRoi}%</p>
+                          <p className="text-ink-subtle uppercase tracking-widest font-semibold text-[9px]">Estimated ROI</p>
+                          <p className="font-semibold text-success mt-1">+{optRoi}%</p>
                         </div>
                         <div>
-                          <p className="text-ink-subtle uppercase tracking-widest font-bold text-[9px]">Avg Timeline</p>
-                          <p className="font-extrabold text-ink mt-1">{optTimeline}</p>
+                          <p className="text-ink-subtle uppercase tracking-widest font-semibold text-[9px]">Avg Timeline</p>
+                          <p className="font-semibold text-ink mt-1">{optTimeline}</p>
                         </div>
                       </div>
                     </div>
@@ -796,15 +795,17 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                       {(optImg || rec.beforeImageUrl) && (
                         <div
                           onClick={() => setSelectedRec(rec)}
-                          className="w-full md:w-44 h-28 rounded-xl overflow-hidden relative border border-surface-border shadow-sm cursor-pointer group shrink-0"
+                          className="w-full md:w-44 h-28 rounded-xl overflow-hidden relative border border-surface-border cursor-pointer group shrink-0"
                         >
                           <img
                             src={optImg || rec.beforeImageUrl}
                             alt={`${rec.category} AI Concept`}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-navy-950/80 via-transparent to-transparent flex items-end p-2">
-                            <span className="text-[10px] font-bold text-white tracking-wider uppercase">
+                          {/* Solid caption bar rather than a full-bleed scrim —
+                              keeps the render itself unobscured. */}
+                          <div className="absolute inset-x-0 bottom-0 bg-neutral-950/75 px-2 py-1.5">
+                            <span className="text-[10px] font-medium text-white tracking-wider uppercase">
                               {optImg ? "AI Concept Render" : "Before Preview"}
                             </span>
                           </div>
@@ -884,8 +885,8 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                   <>
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                       <div>
-                        <span className="text-[10px] font-bold text-accent-600 uppercase tracking-widest block">HomeReady Whole-House Design Studio</span>
-                        <span className="text-xs font-extrabold text-ink">
+                        <span className="text-[10px] font-medium text-accent-600 uppercase tracking-widest block">HomeReady Whole-House Design Studio</span>
+                        <span className="text-xs font-semibold text-ink">
                           {modalAfterUrl ? "Photorealistic Concept Render vs. Original Space:" : "Your Uploaded Space & Planned Scope:"}
                         </span>
                       </div>
@@ -897,9 +898,9 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                             type="button"
                             onClick={() => setActiveOptionTier({ ...activeOptionTier, [selectedRec.id]: "option_a" })}
                             className={cn(
-                              "px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all",
+                              "px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all",
                               (activeOptionTier[selectedRec.id] || "option_b") === "option_a"
-                                ? "bg-accent-600 text-white shadow-sm"
+                                ? "bg-accent-600 text-white"
                                 : "text-ink-muted hover:text-ink"
                             )}
                           >
@@ -909,9 +910,9 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                             type="button"
                             onClick={() => setActiveOptionTier({ ...activeOptionTier, [selectedRec.id]: "option_b" })}
                             className={cn(
-                              "px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all",
+                              "px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all",
                               (activeOptionTier[selectedRec.id] || "option_b") === "option_b"
-                                ? "bg-accent-600 text-white shadow-sm"
+                                ? "bg-accent-600 text-white"
                                 : "text-ink-muted hover:text-ink"
                             )}
                           >
@@ -921,23 +922,23 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                             type="button"
                             onClick={() => setActiveOptionTier({ ...activeOptionTier, [selectedRec.id]: "option_c" })}
                             className={cn(
-                              "px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all",
+                              "px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all",
                               (activeOptionTier[selectedRec.id] || "option_b") === "option_c"
-                                ? "bg-accent-600 text-white shadow-sm"
+                                ? "bg-accent-600 text-white"
                                 : "text-ink-muted hover:text-ink"
                             )}
                           >
                             Option C: Luxury
                           </button>
                         </div>
-                        <span className="text-[11px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-lg">
+                        <span className="text-[11px] font-semibold bg-success-subtle text-success border border-success-border px-3 py-1 rounded-lg">
                           {formatCurrency(displayCost(modalCost))} Whole-House Budget Share
                         </span>
                       </div>
                     </div>
 
                     {/* Slider comparative container */}
-                    <div className="h-72 md:h-96 w-full rounded-2xl overflow-hidden bg-surface-sunken relative border border-surface-border shadow-card select-none">
+                    <div className="h-72 md:h-96 w-full rounded-2xl overflow-hidden bg-surface-sunken relative border border-surface-border select-none">
                       {modalAfterUrl ? (
                         <div className="relative w-full h-full">
                           {/* Before Image (underneath) — always the user's own uploaded photo */}
@@ -946,7 +947,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                             alt="Before upgrade"
                             className="absolute inset-0 w-full h-full object-cover pointer-events-none"
                           />
-                          <div className="absolute top-4 left-4 bg-navy-950/75 backdrop-blur-sm text-white border border-white/10 font-bold text-[10px] px-2.5 py-1 rounded-lg z-10 shadow-card">
+                          <div className="absolute top-4 left-4 bg-neutral-950/75 backdrop-blur-sm text-white border border-white/10 font-medium text-[10px] px-2.5 py-1 rounded-lg z-10">
                             Original Photo (Before)
                           </div>
 
@@ -960,12 +961,12 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                             }}
                           />
                     <div
-                      className="absolute top-4 bg-accent-500 text-white font-bold text-[10px] px-2.5 py-1 rounded-lg z-30 shadow-card transition-[right] flex items-center space-x-1"
+                      className="absolute top-4 bg-accent-500 text-white font-medium text-[10px] px-2.5 py-1 rounded-lg z-30 transition-[right] flex items-center space-x-1"
                       style={{
                         right: `${Math.max(4, 100 - modalBeforeAfterPct + 2)}%`
                       }}
                     >
-                      <Sparkles className="w-3 h-3 text-amber-300 inline" />
+                      <Sparkles className="w-3 h-3 text-warning inline" />
                       <span>Upgraded Concept Render</span>
                     </div>
 
@@ -974,7 +975,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                       className="absolute top-0 bottom-0 w-0.5 bg-accent-500 z-30 pointer-events-none"
                       style={{ left: `${modalBeforeAfterPct}%` }}
                     >
-                      <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-7 h-7 bg-accent-600 border border-white/40 rounded-full flex items-center justify-center shadow-card text-white font-mono text-xs font-bold">
+                      <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-7 h-7 bg-accent-600 border border-white/40 rounded-full flex items-center justify-center text-white font-mono text-xs font-medium">
                         ↔
                       </div>
                     </div>
@@ -982,11 +983,11 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                     {/* Highlight callout for the item selected via its pill badge */}
                     {selectedItemIdx !== null && selectedItems[selectedItemIdx] && (
                       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 pointer-events-none max-w-[90%] animate-in fade-in slide-in-from-bottom-2 duration-200">
-                        <div className="bg-navy-950/90 backdrop-blur-sm border border-accent-500/40 rounded-xl px-3.5 py-2 shadow-card flex items-center gap-2 text-white">
+                        <div className="bg-neutral-950/90 backdrop-blur-sm border border-accent-500/40 rounded-xl px-3.5 py-2 flex items-center gap-2 text-white">
                           <Sparkles className="w-3.5 h-3.5 text-accent-400 shrink-0" />
-                          <span className="text-[11px] font-bold">{selectedItems[selectedItemIdx].label}</span>
+                          <span className="text-[11px] font-medium">{selectedItems[selectedItemIdx].label}</span>
                           {selectedItems[selectedItemIdx].cost > 0 && (
-                            <span className="text-[11px] font-extrabold text-accent-300 tabular-nums">
+                            <span className="text-[11px] font-semibold text-accent-300 tabular-nums">
                               {formatCurrency(displayCost(selectedItems[selectedItemIdx].cost))}
                             </span>
                           )}
@@ -1014,10 +1015,10 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                       alt="Your uploaded room photo"
                       className="absolute inset-0 w-full h-full object-cover"
                     />
-                    <div className="absolute top-4 left-4 bg-navy-950/75 backdrop-blur-sm text-white border border-white/10 font-bold text-[10px] px-2.5 py-1 rounded-lg shadow-card">
+                    <div className="absolute top-4 left-4 bg-neutral-950/75 backdrop-blur-sm text-white border border-white/10 font-medium text-[10px] px-2.5 py-1 rounded-lg">
                       Your Uploaded Photo
                     </div>
-                    <div className="absolute inset-x-0 bottom-0 bg-navy-950/80 backdrop-blur-sm text-white p-3 text-center">
+                    <div className="absolute inset-x-0 bottom-0 bg-neutral-950/80 backdrop-blur-sm text-white p-3 text-center">
                       <p className="text-[11px] font-semibold">A photorealistic upgrade render isn&apos;t available for this room.</p>
                       <p className="text-[10px] text-white/70">The cost breakdown and scope below still apply to your space.</p>
                     </div>
@@ -1025,7 +1026,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                 ) : (
                   <div className="flex flex-col items-center justify-center w-full h-full text-ink-subtle p-4">
                     <Sparkles className="w-12 h-12 text-accent-400 mb-3" />
-                    <p className="font-bold text-sm text-ink-muted">No concept preview available for this room.</p>
+                    <p className="font-semibold text-sm text-ink-muted">No concept preview available for this room.</p>
                   </div>
                 )}
               </div>
@@ -1038,9 +1039,9 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                 <div className="flex justify-between items-center">
                   <div className="flex items-center space-x-2">
                     <Sparkles className="w-4 h-4 text-accent-600" />
-                    <span className="text-xs font-bold text-ink tracking-tight">Interactive Selective Inpainting Canvas</span>
+                    <span className="text-xs font-medium text-ink tracking-tight">Interactive Selective Inpainting Canvas</span>
                   </div>
-                  <span className="text-[9px] font-extrabold uppercase tracking-wider bg-accent-50 text-accent-700 border border-accent-200 px-2.5 py-0.5 rounded-full">
+                  <span className="text-[9px] font-semibold uppercase tracking-wider bg-accent-50 text-accent-700 border border-accent-200 px-2.5 py-0.5 rounded-full">
                     Live Zone Customizer
                   </span>
                 </div>
@@ -1055,7 +1056,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                     disabled={inpaintLoading}
                     className="p-2.5 bg-surface-raised hover:bg-accent-50 border border-surface-border hover:border-accent-400 rounded-xl text-left transition-all text-xs space-y-1 cursor-pointer disabled:opacity-50"
                   >
-                    <div className="font-bold text-ink flex items-center justify-between">
+                    <div className="font-semibold text-ink flex items-center justify-between">
                       <span>🎨 Repose Gray Wall</span>
                       <span className="text-[9px] font-mono bg-accent-100 text-accent-700 px-1.5 py-0.5 rounded">SW 7015</span>
                     </div>
@@ -1068,7 +1069,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                     disabled={inpaintLoading}
                     className="p-2.5 bg-surface-raised hover:bg-accent-50 border border-surface-border hover:border-accent-400 rounded-xl text-left transition-all text-xs space-y-1 cursor-pointer disabled:opacity-50"
                   >
-                    <div className="font-bold text-ink flex items-center justify-between">
+                    <div className="font-semibold text-ink flex items-center justify-between">
                       <span>🎨 Evergreen Fog Wall</span>
                       <span className="text-[9px] font-mono bg-accent-100 text-accent-700 px-1.5 py-0.5 rounded">SW 9130</span>
                     </div>
@@ -1081,16 +1082,16 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                     disabled={inpaintLoading}
                     className="p-2.5 bg-surface-raised hover:bg-accent-50 border border-surface-border hover:border-accent-400 rounded-xl text-left transition-all text-xs space-y-1 cursor-pointer disabled:opacity-50"
                   >
-                    <div className="font-bold text-ink flex items-center justify-between">
+                    <div className="font-semibold text-ink flex items-center justify-between">
                       <span>🪟 Blackout Drapes</span>
-                      <span className="text-[9px] font-mono bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">Window</span>
+                      <span className="text-[9px] font-mono bg-success-subtle text-success px-1.5 py-0.5 rounded">Window</span>
                     </div>
                     <p className="text-[10px] text-ink-muted">Inpaint window treatments to tailored drapes</p>
                   </button>
                 </div>
 
                 {inpaintLoading && (
-                  <div className="flex items-center justify-center space-x-2 py-2 text-xs font-bold text-accent-600 animate-pulse">
+                  <div className="flex items-center justify-center space-x-2 py-2 text-xs font-medium text-ink-muted">
                     <Sparkles className="w-4 h-4 text-accent-500 animate-spin" />
                     <span>Generating localized AI inpainting render...</span>
                   </div>
@@ -1100,15 +1101,15 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
               {/* Exact Items Added — clickable pill badges that highlight the slider */}
               <div className="bg-surface-sunken border border-accent-200/80 rounded-2xl p-4 space-y-3 text-xs">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-extrabold uppercase tracking-widest text-[10px] text-accent-700 flex items-center gap-1.5">
+                  <span className="font-semibold uppercase tracking-widest text-[10px] text-accent-700 flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-accent-600" />
                     <span>Exact Items Added to Picture</span>
                   </span>
                   <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-extrabold uppercase tracking-wider bg-emerald-500/15 text-emerald-700 border border-emerald-300/60 px-2 py-0.5 rounded-full">
+                    <span className="text-[9px] font-semibold uppercase tracking-wider bg-success-subtle0/15 text-success border border-success-border px-2 py-0.5 rounded-full">
                       ✓ FinOps Task Price Audit Verified (0.00% Variance)
                     </span>
-                    <span className="text-[10px] font-bold text-ink-muted">Tap an item to highlight it</span>
+                    <span className="text-[10px] font-medium text-ink-muted">Tap an item to highlight it</span>
                   </div>
                 </div>
                 {/* Explicit itemized grid: each exact item added + its individual cost */}
@@ -1133,7 +1134,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                         className={cn(
                           "flex w-full items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left font-semibold transition-colors",
                           active
-                            ? "bg-accent-600 border-accent-600 text-white shadow-card"
+                            ? "bg-accent-600 border-accent-600 text-white"
                             : "bg-white border-surface-border text-ink hover:border-accent-300 hover:bg-accent-50"
                         )}
                       >
@@ -1142,7 +1143,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                           <span className="truncate">{item.label}</span>
                         </span>
                         {item.cost > 0 && (
-                          <span className={cn("tabular-nums font-extrabold shrink-0", active ? "text-white" : "text-ink-muted")}>
+                          <span className={cn("tabular-nums font-semibold shrink-0", active ? "text-white" : "text-ink-muted")}>
                             {formatCurrency(displayCost(item.cost))}
                           </span>
                         )}
@@ -1161,32 +1162,32 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
             {/* Key Metrics Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-surface-sunken border border-surface-border rounded-2xl p-5 text-center text-xs">
               <div className="space-y-1">
-                <span className="text-ink-subtle font-bold uppercase tracking-wider text-[9px]">Allocated Budget</span>
-                <p className="text-base font-extrabold text-ink">{formatCurrency(displayCost(selectedRec.estimatedCost))}</p>
+                <span className="text-ink-subtle font-semibold uppercase tracking-wider text-[9px]">Allocated Budget</span>
+                <p className="text-base font-semibold text-ink">{formatCurrency(displayCost(selectedRec.estimatedCost))}</p>
               </div>
               <div className="space-y-1">
-                <span className="text-ink-subtle font-bold uppercase tracking-wider text-[9px]">Market Value Increase</span>
-                <p className="text-base font-extrabold text-success">{formatCurrency(displayCost(selectedRec.projectedValueIncrease))}</p>
+                <span className="text-ink-subtle font-semibold uppercase tracking-wider text-[9px]">Market Value Increase</span>
+                <p className="text-base font-semibold text-success">{formatCurrency(displayCost(selectedRec.projectedValueIncrease))}</p>
               </div>
               <div className="space-y-1">
-                <span className="text-ink-subtle font-bold uppercase tracking-wider text-[9px]">Estimated ROI</span>
-                <p className="text-base font-extrabold text-success">+{selectedRec.roiPercentage}%</p>
+                <span className="text-ink-subtle font-semibold uppercase tracking-wider text-[9px]">Estimated ROI</span>
+                <p className="text-base font-semibold text-success">+{selectedRec.roiPercentage}%</p>
               </div>
               <div className="space-y-1">
-                <span className="text-ink-subtle font-bold uppercase tracking-wider text-[9px]">Avg Timeline</span>
-                <p className="text-base font-extrabold text-ink">{selectedRec.timeline}</p>
+                <span className="text-ink-subtle font-semibold uppercase tracking-wider text-[9px]">Avg Timeline</span>
+                <p className="text-base font-semibold text-ink">{selectedRec.timeline}</p>
               </div>
             </div>
 
             {/* Why recommendation */}
             <div className="space-y-2">
-              <h5 className="font-bold text-xs uppercase tracking-widest text-accent-600">Why this recommendation</h5>
+              <h5 className="font-medium text-xs uppercase tracking-widest text-accent-600">Why this recommendation</h5>
               <p className="text-ink-muted text-xs leading-relaxed">{selectedRec.whyDetails}</p>
             </div>
 
             {/* Scope checklist */}
             <div className="space-y-3">
-              <h5 className="font-bold text-xs uppercase tracking-widest text-accent-600">Scope of Work</h5>
+              <h5 className="font-medium text-xs uppercase tracking-widest text-accent-600">Scope of Work</h5>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {selectedItems.map((item, idx) => (
                   <div key={idx} className="flex items-center justify-between gap-3 bg-surface-sunken border border-surface-border rounded-xl p-3 text-xs text-ink">
@@ -1195,7 +1196,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                       <span className="truncate" title={item.details || item.label}>{item.label}</span>
                     </div>
                     {item.cost > 0 && (
-                      <span className="font-extrabold text-ink-muted tabular-nums shrink-0">{formatCurrency(displayCost(item.cost))}</span>
+                      <span className="font-semibold text-ink-muted tabular-nums shrink-0">{formatCurrency(displayCost(item.cost))}</span>
                     )}
                   </div>
                 ))}
@@ -1204,7 +1205,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
 
             {/* Contractors List options */}
             <div className="space-y-4 pt-4 border-t border-surface-border">
-              <h5 className="font-bold text-xs uppercase tracking-widest text-accent-600">Verified Contractor Options</h5>
+              <h5 className="font-medium text-xs uppercase tracking-widest text-accent-600">Verified Contractor Options</h5>
 
               {matchedContractors.length === 0 ? (
                 <div className="bg-surface-sunken border border-surface-border rounded-2xl p-5 text-xs text-ink-muted flex items-center justify-between gap-4">
@@ -1217,7 +1218,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                     <div key={cont.id} className="bg-surface-sunken border border-surface-border rounded-2xl p-5 flex flex-col md:flex-row justify-between gap-4 text-xs">
                       <div className="space-y-2">
                         <div className="flex items-center space-x-3">
-                          <h6 className="text-sm font-bold text-ink">{cont.name}</h6>
+                          <h6 className="text-sm font-semibold text-ink">{cont.name}</h6>
                           <Badge variant="roi-high">Verified License</Badge>
                         </div>
                         <p className="text-ink-muted">{cont.rating ?? "--"} rating ({cont.reviewsCount} reviews) • License: {cont.license || "N/A"}</p>
@@ -1227,8 +1228,8 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
 
                       <div className="flex flex-row md:flex-col justify-between items-center md:items-end gap-3 shrink-0 md:border-l md:border-surface-border md:pl-5">
                         <div className="text-right">
-                          <p className="text-ink-subtle font-bold uppercase text-[9px]">Est. Cost</p>
-                          <p className="text-sm font-bold text-ink">{cont.avgCost !== null ? formatCurrency(cont.avgCost) : "N/A"}</p>
+                          <p className="text-ink-subtle font-semibold uppercase text-[9px]">Est. Cost</p>
+                          <p className="text-sm font-semibold text-ink">{cont.avgCost !== null ? formatCurrency(cont.avgCost) : "N/A"}</p>
                           <p className="text-[10px] text-ink-muted mt-0.5">Avail: {cont.availability || "N/A"}</p>
                         </div>
                         <Button
@@ -1253,9 +1254,9 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
 
       {/* System Toast notification modal */}
       {modalMessage && (
-        <div className="fixed inset-0 bg-navy-950/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-surface-raised border border-surface-border rounded-2xl p-6 max-w-md w-full shadow-card-hover text-center">
-            <h3 className="text-lg font-bold text-ink mb-3">HomeReady Advisor</h3>
+        <div className="fixed inset-0 bg-neutral-950/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-surface-raised border border-surface-border rounded-2xl p-6 max-w-md w-full text-center">
+            <h3 className="text-lg font-semibold text-ink mb-3">HomeReady Advisor</h3>
             <p className="text-ink-muted text-sm mb-6">{modalMessage}</p>
             <Button
               id="results-modal-ok-btn"

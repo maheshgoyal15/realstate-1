@@ -110,10 +110,11 @@ export default function ReportsPage() {
   return (
     <div className="space-y-8 pb-12 animate-in fade-in duration-300">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold font-serif text-ink tracking-tight">My Reports</h1>
-          <p className="text-ink-muted text-sm mt-1">
+      <div className="flex flex-col gap-6 border-b border-surface-border pb-8 md:flex-row md:items-end md:justify-between">
+        <div className="space-y-3">
+          <span className="eyebrow">Library</span>
+          <h1 className="text-4xl">My Reports</h1>
+          <p className="text-ink-muted text-sm">
             Access and manage your generated co-branded pre-listing upgrade recommendations.
           </p>
         </div>
@@ -136,7 +137,7 @@ export default function ReportsPage() {
             placeholder="Search reports..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-surface-sunken border border-surface-border-strong rounded-xl pl-9 pr-4 py-2 text-xs text-ink focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/20"
+            className="field-inline pl-10 pr-4"
           />
         </div>
 
@@ -145,7 +146,7 @@ export default function ReportsPage() {
             value={sortField}
             onChange={(e) => setSortField(e.target.value)}
             aria-label="Sort reports"
-            className="bg-surface-sunken border border-surface-border-strong rounded-xl px-4 py-2 text-xs text-ink-muted focus:outline-none focus:border-accent-500 cursor-pointer"
+            className="select-field"
           >
             <option value="date">Newest Generated</option>
             <option value="address">Property Address</option>
@@ -163,19 +164,19 @@ export default function ReportsPage() {
           {processedReports.map((report) => (
             <article
               key={report.id}
-              className="bg-surface-raised border border-surface-border rounded-2xl overflow-hidden flex flex-col justify-between shadow-card hover:shadow-card-hover hover:border-accent-200 transition-[box-shadow,border-color] duration-200"
+              className="bg-surface-raised border border-surface-border rounded-2xl overflow-hidden flex flex-col justify-between hover:border-accent-200 transition-[box-shadow,border-color] duration-200"
             >
               {/* Cover - no real property photos are stored yet, so this is an
                   icon placeholder rather than a fabricated stock photo */}
               <div
                 onClick={() => window.location.href = `/reports/${report.id}`}
-                className="h-44 w-full relative overflow-hidden bg-navy-800 flex items-center justify-center cursor-pointer group"
+                className="h-44 w-full relative overflow-hidden bg-neutral-800 flex items-center justify-center cursor-pointer group"
               >
-                <FileText className="w-10 h-10 text-navy-500 group-hover:scale-110 transition-transform" />
+                <FileText className="w-10 h-10 text-neutral-500 group-hover:scale-110 transition-transform" />
                 <Badge variant="status-complete" className="absolute top-3 left-3">Ready</Badge>
                 <div className="absolute bottom-3 left-3 right-3 text-white">
-                  <h4 className="text-sm font-extrabold truncate">{report.address}</h4>
-                  <p className="text-[10px] text-navy-200 truncate">{report.title}</p>
+                  <h4 className="text-sm font-semibold truncate">{report.address}</h4>
+                  <p className="text-[10px] text-neutral-400 truncate">{report.title}</p>
                 </div>
               </div>
 
@@ -184,15 +185,15 @@ export default function ReportsPage() {
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between">
                     <span className="text-ink-muted">Upgrade Investment:</span>
-                    <span className="font-bold text-ink">{formatCurrency(report.cost)}</span>
+                    <span className="font-semibold text-ink">{formatCurrency(report.cost)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-ink-muted">Value Increase:</span>
-                    <span className="font-bold text-success">+{formatCurrency(report.valueAdd)}</span>
+                    <span className="font-semibold text-success">+{formatCurrency(report.valueAdd)}</span>
                   </div>
                   <div className="flex justify-between border-t border-surface-border pt-2 mt-2">
                     <span className="text-ink-muted">Recommendations:</span>
-                    <span className="font-bold text-ink">{report.recsCount} items</span>
+                    <span className="font-semibold text-ink">{report.recsCount} items</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-ink-muted">Generated:</span>
@@ -289,8 +290,8 @@ export default function ReportsPage() {
 
       {/* Notification Toast */}
       {notification && (
-        <div className="fixed top-4 right-4 z-50 flex items-center space-x-3 bg-surface-raised border border-success-border text-success rounded-xl p-4 shadow-card-hover animate-in slide-in-from-top-4 duration-300">
-          <div className="text-xs font-bold">{notification}</div>
+        <div className="fixed top-4 right-4 z-50 flex items-center space-x-3 bg-surface-raised border border-success-border text-success rounded-xl p-4 animate-in slide-in-from-top-4 duration-300">
+          <div className="text-xs font-medium">{notification}</div>
           <button onClick={() => setNotification(null)} aria-label="Dismiss notification" className="text-ink-subtle hover:text-ink font-mono">×</button>
         </div>
       )}

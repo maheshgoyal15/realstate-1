@@ -20,7 +20,7 @@ export default function TeamAdminDashboard() {
     <div className="max-w-6xl mx-auto py-8 space-y-8">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between pb-8 border-b border-surface-border gap-4">
         <div>
-          <h1 className="text-3xl font-bold font-serif text-ink tracking-tight">Enterprise Team Lead Administration</h1>
+          <h1 className="text-4xl">Enterprise Team Lead Administration</h1>
           <p className="text-ink-muted text-sm mt-1">Example tenant: Austin Premier Realty</p>
         </div>
         <div className="flex items-center space-x-3">
@@ -31,7 +31,7 @@ export default function TeamAdminDashboard() {
               className={cn(
                 "px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors",
                 activeTab === tab
-                  ? "bg-navy-800 text-white shadow-card"
+                  ? "bg-neutral-800 text-white"
                   : "bg-surface-raised border border-surface-border text-ink-muted hover:border-surface-border-strong"
               )}
             >
@@ -48,28 +48,28 @@ export default function TeamAdminDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="card-surface p-6">
               <h3 className="text-sm font-medium text-ink-muted mb-1">Reports Generated (YTD)</h3>
-              <p className="text-4xl font-extrabold text-ink">412</p>
+              <p className="text-4xl font-semibold text-ink">412</p>
               <p className="text-xs text-success font-semibold mt-2">▲ 28% Month-over-Month</p>
             </div>
             <div className="card-surface p-6">
               <h3 className="text-sm font-medium text-ink-muted mb-1">Total Value Added</h3>
-              <p className="text-4xl font-extrabold text-accent-600">$14.2M</p>
+              <p className="text-4xl font-semibold text-accent-600">$14.2M</p>
               <p className="text-xs text-ink-subtle mt-2">Aggregated After Repair Value impact</p>
             </div>
             <div className="card-surface p-6">
               <h3 className="text-sm font-medium text-ink-muted mb-1">Contractor Dispatches</h3>
-              <p className="text-4xl font-extrabold text-ink">94</p>
+              <p className="text-4xl font-semibold text-ink">94</p>
               <p className="text-xs text-success font-semibold mt-2">22.8% Conversion Rate</p>
             </div>
             <div className="card-surface p-6">
               <h3 className="text-sm font-medium text-ink-muted mb-1">Listing Premium Securing</h3>
-              <p className="text-4xl font-extrabold text-success">+7.8%</p>
+              <p className="text-4xl font-semibold text-success">+7.8%</p>
               <p className="text-xs text-ink-subtle mt-2">Above neighborhood baseline comps</p>
             </div>
           </div>
 
           <div className="card-surface p-8">
-            <h2 className="text-xl font-bold text-ink mb-4">Seat Utilization Audit Log</h2>
+            <h2 className="text-xl font-semibold text-ink mb-4">Seat Utilization Audit Log</h2>
             <div className="divide-y divide-surface-border text-sm text-ink-muted">
               <div className="py-4 flex justify-between">
                 <div><span className="font-semibold text-ink">Alice Vance</span> • alice@austinpremier.com</div>
@@ -91,7 +91,7 @@ export default function TeamAdminDashboard() {
       {activeTab === "Seat Allocation" && (
         <div className="max-w-2xl mx-auto card-surface p-8 space-y-6">
           <div>
-            <h2 className="text-2xl font-bold text-ink mb-2">Allocate New Agent Seat</h2>
+            <h2 className="text-2xl font-semibold text-ink mb-2">Allocate New Agent Seat</h2>
             <p className="text-ink-muted text-sm">Securely dispatch an invitation token to provision an enterprise seat under your brokerage tenant.</p>
           </div>
           <div className="space-y-6">
@@ -104,7 +104,7 @@ export default function TeamAdminDashboard() {
                 className="w-full bg-surface-sunken border border-surface-border rounded-xl px-4 py-3 text-ink-muted opacity-60 cursor-not-allowed"
               />
             </div>
-            <button disabled className="w-full bg-navy-800 opacity-50 cursor-not-allowed text-white font-semibold py-4 rounded-xl">
+            <button disabled className="w-full bg-neutral-800 opacity-50 cursor-not-allowed text-white font-semibold py-4 rounded-xl">
               Dispatch Invitation Token
             </button>
           </div>
@@ -114,7 +114,7 @@ export default function TeamAdminDashboard() {
       {activeTab === "White-Label Branding" && (
         <div className="max-w-2xl mx-auto card-surface p-8 space-y-6">
           <div>
-            <h2 className="text-2xl font-bold text-ink mb-2">Brokerage White-Label Customization</h2>
+            <h2 className="text-2xl font-semibold text-ink mb-2">Brokerage White-Label Customization</h2>
             <p className="text-ink-muted text-sm">Configure custom PDF report co-branding, custom terminology, and corporate color palettes.</p>
           </div>
           <div className="space-y-6">

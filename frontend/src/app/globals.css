@@ -3,28 +3,108 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply antialiased bg-surface text-ink;
+    @apply antialiased bg-surface text-ink text-sm;
+    /* Light body weight is the defining trait of this type system; UI chrome
+       (labels, buttons, table headers) opts back up to 500/600 locally. */
+    font-weight: 300;
     margin: 0;
+    text-rendering: optimizeLegibility;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Headings are set tight and heavy against the light body — hierarchy comes
+     from weight and color contrast before it comes from size. */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply text-ink;
+    font-weight: 600;
+    text-wrap: balance;
+  }
+
+  /* Figures that stack in columns must not shift width digit to digit. */
+  th,
+  td,
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
   }
 
   ::selection {
-    @apply bg-accent-100 text-accent-700;
+    @apply bg-accent-500 text-white;
+  }
+
+  /* One focus treatment for the entire app. Never removed, only restyled. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent-500 ring-offset-2 ring-offset-surface;
+  }
+
+  ::placeholder {
+    @apply text-ink-subtle;
+    font-weight: 300;
   }
 }
 
 @layer utilities {
+  /* Hairline-bordered surface — the app's single structural elevation idiom. */
   .card-surface {
-    @apply bg-surface-raised border border-surface-border rounded-2xl shadow-card;
+    @apply bg-surface-raised border border-surface-border rounded-2xl;
+  }
+
+  /* Page gutter + measure, matching the layout shell. */
+  .page-shell {
+    @apply mx-auto w-full max-w-content px-5 md:px-8;
+  }
+
+  /* Small uppercase label used for section eyebrows and table headers. */
+  .eyebrow {
+    @apply text-2xs font-semibold uppercase tracking-[0.14em] text-ink-subtle;
+  }
+
+  /* Native selects can't be styled consistently across browsers, so the arrow
+     is replaced with an inlined chevron (a data URI — no network request) and
+     the control is matched to the Input field's geometry. */
+  .select-field {
+    @apply h-10 cursor-pointer appearance-none rounded-lg border border-surface-border-strong bg-surface-raised bg-no-repeat pl-4 pr-10 text-sm text-ink transition-colors duration-150 hover:border-ink-subtle focus:border-ink focus:outline-none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%236b6b6b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+    background-position: right 0.875rem center;
+  }
+
+  /* Text input that sits inline in a toolbar rather than in a labelled form.
+     Deliberately sets no horizontal padding: custom utilities are emitted after
+     Tailwind's own, so a `px-*` here would beat the `pl-9` a call site needs to
+     clear a leading icon. Call sites own their padding. */
+  .field-inline {
+    @apply h-10 w-full rounded-lg border border-surface-border-strong bg-surface-raised text-sm text-ink transition-colors duration-150 hover:border-ink-subtle focus:border-ink focus:outline-none;
   }
 
   .skeleton-shimmer {
     background-image: linear-gradient(
       90deg,
-      theme("colors.surface.sunken") 25%,
-      theme("colors.surface.border") 37%,
-      theme("colors.surface.sunken") 63%
+      theme("colors.neutral.100") 25%,
+      theme("colors.neutral.200") 37%,
+      theme("colors.neutral.100") 63%
     );
     background-size: 400% 100%;
+  }
+}
+
+/* Reduced motion gets a still interface, not a broken one: transitions collapse
+   to near-zero and looping animations stop, but everything stays visible. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

@@ -82,43 +82,45 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="space-y-8 pb-12 animate-in fade-in duration-300">
-      {/* Welcome Banner */}
-      <div className="bg-navy-800 rounded-2xl shadow-card p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold font-serif tracking-tight text-white">
-            Welcome back, Mahesh
-          </h1>
-          <p className="text-navy-200 text-sm max-w-xl">
+    <div className="pb-12">
+      {/* Page masthead — the one deliberately large element on the screen, so
+          hierarchy is obvious at squint distance without a colored banner. */}
+      <header className="flex flex-col gap-6 border-b border-surface-border pb-10 md:flex-row md:items-end md:justify-between">
+        <div className="max-w-xl space-y-3">
+          <span className="eyebrow">Workspace</span>
+          <h1 className="text-4xl">Welcome back, Mahesh</h1>
+          <p className="text-sm text-ink-muted">
             Our computer vision model finished scanning your new uploads. Ready to inspect recommended improvements?
           </p>
         </div>
         <Button
           id="hero-analyze-btn"
-          variant="primary"
+          variant="accent"
+          size="lg"
           icon={<Sparkles className="w-4 h-4" />}
           onClick={() => window.location.href = "/analyze"}
         >
           Analyze New Property
         </Button>
-      </div>
+      </header>
 
-      {/* Quick Stats Grid */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {stats.map((stat, idx) => (
-          <Card key={idx} hoverEffect={false} className="p-6">
-            <div className="space-y-1">
-              <span className="text-xs font-bold text-ink-subtle uppercase tracking-widest">{stat.title}</span>
-              <h3 className="text-3xl font-extrabold text-ink tracking-tight">{stat.value}</h3>
-              <p className="text-[11px] text-ink-muted">{stat.desc}</p>
-            </div>
-          </Card>
+      {/* Stat strip — bare figures divided by hairlines rather than three
+          identical boxes, so the numbers read as data and not as cards. */}
+      <section className="grid grid-cols-1 divide-y divide-surface-border border-b border-surface-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        {stats.map((stat) => (
+          <div key={stat.title} className="py-8 sm:px-8 sm:first:pl-0 sm:last:pr-0">
+            <span className="eyebrow">{stat.title}</span>
+            <p className="mt-3 text-3xl font-semibold" data-numeric>
+              {stat.value}
+            </p>
+            <p className="mt-1 text-xs text-ink-subtle">{stat.desc}</p>
+          </div>
         ))}
       </section>
 
       {/* Recent Analyses Table */}
-      <section className="space-y-4">
-        <h2 className="text-xl font-bold tracking-tight text-ink">Recent Property Analyses</h2>
+      <section className="space-y-4 pt-10">
+        <h2 className="text-xl">Recent Property Analyses</h2>
         {analyses.length === 0 ? (
           <Card className="p-8 text-center">
             <p className="text-sm text-ink-muted">
@@ -129,12 +131,12 @@ export default function DashboardPage() {
         <Table headers={["Property Address", "Date Created", "Analysis Status", "Calculated ROI", "Actions"]}>
           {analyses.map((prop) => (
             <TableRow key={prop.id} id={`row-${prop.id}`}>
-              <TableCell className="font-bold text-ink">{prop.address}</TableCell>
+              <TableCell className="font-semibold text-ink">{prop.address}</TableCell>
               <TableCell>{prop.date}</TableCell>
               <TableCell>
                 <Badge variant={prop.status}>{prop.statusLabel}</Badge>
               </TableCell>
-              <TableCell className="font-extrabold text-success">
+              <TableCell className="font-semibold text-success">
                 {typeof prop.roi === "number" ? `${prop.roi.toFixed(1)}%` : "--"}
               </TableCell>
               <TableCell>
@@ -183,40 +185,43 @@ export default function DashboardPage() {
         )}
       </section>
 
-      {/* Trending Upgrades & Insights Section */}
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card hoverEffect={false} className="p-6 space-y-4">
-          <div className="flex items-center space-x-2 text-accent-600 font-bold">
-            <TrendingUp className="w-5 h-5" />
-            <h4 className="text-sm uppercase tracking-wider text-ink-muted">Trending Upgrades (Agents Only)</h4>
+      {/* Insights — deliberately asymmetric (2fr / 1fr) so the row doesn't read
+          as another pair of identical boxes stacked under the table. */}
+      <section className="grid grid-cols-1 gap-6 pt-12 lg:grid-cols-3">
+        <Card hoverEffect={false} className="lg:col-span-2 space-y-5">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-accent-500" />
+            <h3 className="eyebrow">Trending Upgrades (Agents Only)</h3>
           </div>
-          <p className="text-xs text-ink-muted leading-normal">
+          <p className="max-w-prose text-sm text-ink-muted">
             Among local properties in the Austin MLS region, computer vision audits suggest prioritizing the following elements to secure higher buyer bidding premiums:
           </p>
-          <ul className="space-y-3 text-xs">
-            <li className="flex justify-between items-center bg-surface-sunken border border-surface-border rounded-xl p-3">
-              <span className="text-ink font-semibold">Modern Kitchen Remodel</span>
-              <span className="text-ink-muted font-bold">62% of scanned homes</span>
-            </li>
-            <li className="flex justify-between items-center bg-surface-sunken border border-surface-border rounded-xl p-3">
-              <span className="text-ink font-semibold">HVAC Unit Replacement</span>
-              <span className="text-ink-muted font-bold">48% of scanned homes</span>
-            </li>
-            <li className="flex justify-between items-center bg-surface-sunken border border-surface-border rounded-xl p-3">
-              <span className="text-ink font-semibold">Exterior Painting & Siding Audit</span>
-              <span className="text-ink-muted font-bold">35% of scanned homes</span>
-            </li>
+          <ul className="divide-y divide-surface-border border-t border-surface-border">
+            {[
+              { name: "Modern Kitchen Remodel", share: "62%" },
+              { name: "HVAC Unit Replacement", share: "48%" },
+              { name: "Exterior Painting & Siding Audit", share: "35%" },
+            ].map((item) => (
+              <li key={item.name} className="flex items-baseline justify-between gap-4 py-3.5">
+                <span className="text-sm text-ink">{item.name}</span>
+                <span className="shrink-0 text-sm font-medium text-ink-muted" data-numeric>
+                  {item.share}
+                  <span className="ml-1.5 text-2xs text-ink-subtle">of scanned homes</span>
+                </span>
+              </li>
+            ))}
           </ul>
         </Card>
 
-        <Card hoverEffect={false} className="p-6 space-y-4 justify-between flex flex-col">
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2 text-success font-bold">
-              <CheckCircle className="w-5 h-5" />
-              <h4 className="text-sm uppercase tracking-wider text-ink-muted">Workspace Health Indicator</h4>
+        <Card hoverEffect={false} className="flex flex-col justify-between gap-6 self-start">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-success" />
+              <h3 className="eyebrow">Workspace Health</h3>
             </div>
-            <p className="text-xs text-ink-muted leading-normal">
-              Your real estate team has generated <strong className="text-ink">8 comprehensive guides</strong> this month with a cumulative estimated valuation lift of <strong className="text-ink">+$185,500</strong>. Keep scanning listings to maximize contract conversions.
+            <p className="text-sm text-ink-muted">
+              Your team generated <span className="font-medium text-ink">8 guides</span> this month, with a cumulative estimated valuation lift of{" "}
+              <span className="font-medium text-ink" data-numeric>+$185,500</span>.
             </p>
           </div>
           <Button
@@ -224,9 +229,9 @@ export default function DashboardPage() {
             variant="secondary"
             size="sm"
             onClick={() => window.location.href = "/contractors"}
-            className="w-full mt-4"
+            className="w-full"
           >
-            Manage Referrals & Contractor Network
+            Contractor Network
           </Button>
         </Card>
       </section>

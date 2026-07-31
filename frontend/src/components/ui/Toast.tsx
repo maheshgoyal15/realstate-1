@@ -46,11 +46,11 @@ export const Toast: React.FC<ToastProps> = ({
       onFocus={pause}
       onBlur={start}
       className={cn(
-        "fixed top-4 right-4 z-50 flex items-center space-x-3 bg-surface-raised border rounded-xl p-4 shadow-card-hover animate-toast-in max-w-sm w-full",
+        "fixed top-4 right-4 z-toast flex items-center space-x-3 bg-surface-raised border rounded-xl p-4 shadow-float animate-toast-in max-w-sm w-full",
         {
           "border-success-border text-success": type === "success",
           "border-danger-border text-danger": type === "error",
-          "border-navy-200 text-navy-700": type === "info",
+          "border-surface-border-strong text-neutral-700": type === "info",
           "border-warning-border text-warning": type === "warning",
         }
       )}

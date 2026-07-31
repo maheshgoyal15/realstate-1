@@ -139,8 +139,9 @@ export default function ContractorsPage() {
   return (
     <div className="space-y-8 pb-12 animate-in fade-in duration-300">
       {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold font-serif text-ink tracking-tight">Contractor Network</h1>
+      <div className="space-y-3 border-b border-surface-border pb-8">
+        <span className="eyebrow">Network</span>
+        <h1 className="text-4xl">Contractor Network</h1>
         <p className="text-ink-muted text-sm">
           Hire licensed and verified local contractors pre-matched to carry out your AI upgrade recommendations.
         </p>
@@ -155,7 +156,7 @@ export default function ContractorsPage() {
             placeholder="Search by name, category, specialty..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-surface-sunken border border-surface-border-strong rounded-xl pl-9 pr-4 py-2 text-xs text-ink focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/20"
+            className="field-inline pl-10 pr-4"
           />
         </div>
 
@@ -164,7 +165,7 @@ export default function ContractorsPage() {
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
             aria-label="Filter by specialty"
-            className="bg-surface-sunken border border-surface-border-strong rounded-xl px-4 py-2 text-xs text-ink-muted focus:outline-none focus:border-accent-500 cursor-pointer"
+            className="select-field"
           >
             <option value="all">All Specialties</option>
             <option value="Kitchens">Kitchen Specialists</option>
@@ -194,11 +195,11 @@ export default function ContractorsPage() {
                 <div className="flex items-center space-x-3 flex-wrap gap-y-2">
                   <button
                     onClick={() => setSelectedContractor(cont)}
-                    className="text-lg font-bold text-ink tracking-tight hover:text-accent-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 rounded-sm"
+                    className="text-lg font-semibold text-ink tracking-tight hover:text-accent-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 rounded-sm"
                   >
                     {cont.name}
                   </button>
-                  <div className="flex items-center space-x-1 text-warning text-xs font-bold">
+                  <div className="flex items-center space-x-1 text-warning text-xs font-medium">
                     <Star className="w-3.5 h-3.5 fill-current" />
                     <span>{cont.rating ?? "--"}</span>
                     <span className="text-ink-subtle font-semibold">({cont.reviewsCount} reviews)</span>
@@ -222,7 +223,7 @@ export default function ContractorsPage() {
 
                 <div className="flex flex-wrap gap-2 pt-1">
                   {cont.specialties.map((spec, sIdx) => (
-                    <span key={sIdx} className="bg-accent-50 border border-accent-200 rounded-lg px-2.5 py-1 text-[10px] font-bold text-accent-700">
+                    <span key={sIdx} className="bg-accent-50 border border-accent-200 rounded-lg px-2.5 py-1 text-[10px] font-medium text-accent-700">
                       {spec}
                     </span>
                   ))}
@@ -238,8 +239,8 @@ export default function ContractorsPage() {
               {/* Action columns */}
               <div className="flex flex-row md:flex-col justify-between items-center md:items-end gap-3 shrink-0 md:border-l md:border-surface-border md:pl-8">
                 <div className="text-right">
-                  <p className="text-ink-subtle font-bold uppercase tracking-wider text-[9px]">Est. upgrade cost</p>
-                  <p className="text-base font-extrabold text-ink mt-0.5">{cont.avgCost !== null ? formatCurrency(cont.avgCost) : "N/A"}</p>
+                  <p className="text-ink-subtle font-semibold uppercase tracking-wider text-[9px]">Est. upgrade cost</p>
+                  <p className="text-base font-semibold text-ink mt-0.5">{cont.avgCost !== null ? formatCurrency(cont.avgCost) : "N/A"}</p>
                   <p className="text-[10px] text-ink-muted">Average duration: {cont.avgTimeline || "N/A"}</p>
                 </div>
 
@@ -292,12 +293,12 @@ export default function ContractorsPage() {
         >
           <div className="space-y-6">
             <div className="space-y-2">
-              <h4 className="text-sm font-bold uppercase tracking-widest text-accent-600">Biography</h4>
+              <h4 className="text-sm font-semibold uppercase tracking-widest text-accent-600">Biography</h4>
               <p className="text-ink-muted text-xs leading-relaxed">{selectedContractor.bio || "No biography provided."}</p>
             </div>
 
             <div className="space-y-3 pt-3 border-t border-surface-border">
-              <h4 className="text-sm font-bold uppercase tracking-widest text-accent-600">Standard Pricing Tiers</h4>
+              <h4 className="text-sm font-semibold uppercase tracking-widest text-accent-600">Standard Pricing Tiers</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {selectedContractor.pricingInfo.map((p, idx) => (
                   <div key={idx} className="flex justify-between items-center bg-surface-sunken border border-surface-border rounded-xl p-4 text-xs font-semibold">
@@ -309,11 +310,11 @@ export default function ContractorsPage() {
             </div>
 
             <div className="space-y-3 pt-3 border-t border-surface-border">
-              <h4 className="text-sm font-bold uppercase tracking-widest text-accent-600">Recent Customer Reviews</h4>
+              <h4 className="text-sm font-semibold uppercase tracking-widest text-accent-600">Recent Customer Reviews</h4>
               <div className="space-y-3">
                 {selectedContractor.reviews.map((rev, idx) => (
                   <div key={idx} className="bg-surface-sunken border border-surface-border rounded-xl p-4 space-y-2 text-xs">
-                    <div className="flex justify-between font-bold text-ink">
+                    <div className="flex justify-between font-semibold text-ink">
                       <span>{rev.author}</span>
                       <span className="text-warning">{"★".repeat(rev.rating)}</span>
                     </div>
@@ -346,7 +347,7 @@ export default function ContractorsPage() {
               Submit your active property context media, structural flags, and MLS details to <strong className="text-ink">{quoteContractor.name}</strong>.
             </p>
             <div className="space-y-1">
-              <label htmlFor="quote-notes" className="block text-xs font-bold text-ink-muted uppercase tracking-widest">
+              <label htmlFor="quote-notes" className="block text-xs font-medium text-ink-muted uppercase tracking-widest">
                 Notes for Contractor (Special requests, timing restrictions)
               </label>
               <textarea
@@ -363,8 +364,8 @@ export default function ContractorsPage() {
 
       {/* System Toast notification element */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 flex items-center space-x-3 bg-surface-raised border border-success-border text-success rounded-xl p-4 shadow-card-hover animate-in slide-in-from-top-4 duration-300">
-          <div className="text-xs font-bold">{toastMessage}</div>
+        <div className="fixed top-4 right-4 z-50 flex items-center space-x-3 bg-surface-raised border border-success-border text-success rounded-xl p-4 animate-in slide-in-from-top-4 duration-300">
+          <div className="text-xs font-medium">{toastMessage}</div>
           <button onClick={() => setToastMessage(null)} aria-label="Dismiss notification" className="text-ink-subtle hover:text-ink font-mono">×</button>
         </div>
       )}

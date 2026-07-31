@@ -219,7 +219,7 @@ export default function AnalyzePropertyPage() {
     <div className="max-w-4xl mx-auto py-6 space-y-8 animate-in fade-in duration-300">
       {/* Title */}
       <div className="space-y-2 text-center">
-        <h1 className="text-3xl font-bold font-serif tracking-tight text-ink">Analyze a Property</h1>
+        <h1 className="text-4xl">Analyze a Property</h1>
         <p className="text-ink-muted text-sm max-w-xl mx-auto">
           Provide basic details and photos to compute optimal pre-listing remodel recommendations.
         </p>
@@ -227,7 +227,7 @@ export default function AnalyzePropertyPage() {
 
       {/* Progress Stepper */}
       <Card hoverEffect={false} className="p-4">
-        <div className="flex justify-between items-center text-xs font-bold text-ink-subtle uppercase tracking-widest mb-3">
+        <div className="flex justify-between items-center text-xs font-medium text-ink-subtle uppercase tracking-widest mb-3">
           <span>Step {step} of 3</span>
           <span className="text-accent-600">{stepPercentage}% Complete</span>
         </div>
@@ -239,20 +239,20 @@ export default function AnalyzePropertyPage() {
 
         {step === 1 && (
           <div className="space-y-8">
-            <h2 className="text-xl font-bold text-ink border-b border-surface-border pb-4">Step 1: Property Details</h2>
+            <h2 className="text-xl font-semibold text-ink border-b border-surface-border pb-4">Step 1: Property Details</h2>
 
             {/* SimplyRETS Live MLS Auto-Ingestion Card (Hidden/Commented)
-            <div className="bg-gradient-to-r from-navy-900 to-navy-800 border border-accent-500/30 rounded-2xl p-5 text-white space-y-4 shadow-card">
+            <div className="bg-gradient-to-r from-neutral-900 to-neutral-800 border border-accent-500/30 rounded-2xl p-5 text-white space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Building className="w-5 h-5 text-accent-400" />
-                  <h4 className="text-sm font-bold tracking-tight">Direct SimplyRETS MLS Import</h4>
+                  <h4 className="text-sm font-semibold tracking-tight">Direct SimplyRETS MLS Import</h4>
                 </div>
-                <span className="text-[10px] uppercase font-mono bg-accent-500/20 text-accent-300 border border-accent-500/30 px-2 py-0.5 rounded-full font-bold">
+                <span className="text-[10px] uppercase font-mono bg-accent-500/20 text-accent-300 border border-accent-500/30 px-2 py-0.5 rounded-full font-semibold">
                   Live Feed Connected
                 </span>
               </div>
-              <p className="text-xs text-slate-300">
+              <p className="text-xs text-neutral-300">
                 Enter an MLS listing ID to pull live property details and photos directly from SimplyRETS, initialize analysis, and run AI ROI calculations without uploading photos manually.
               </p>
 
@@ -263,22 +263,22 @@ export default function AnalyzePropertyPage() {
                     placeholder="Enter MLS ID (e.g. 1005192)"
                     value={importMlsId}
                     onChange={(e) => setImportMlsId(e.target.value)}
-                    className="w-full bg-navy-950/80 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-xs focus:border-accent-400 focus:outline-none placeholder-slate-500 font-mono"
+                    className="w-full bg-neutral-950/80 border border-neutral-700 text-white rounded-xl px-4 py-2.5 text-xs focus:border-accent-400 focus:outline-none placeholder-slate-500 font-mono"
                   />
                 </div>
                 <button
                   type="button"
                   onClick={() => handleDirectMlsImport(importMlsId)}
                   disabled={mlsImportLoading}
-                  className="bg-accent-500 hover:bg-accent-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-card flex items-center justify-center space-x-2 shrink-0 disabled:opacity-50"
+                  className="bg-accent-500 hover:bg-accent-600 text-white px-5 py-2.5 rounded-xl text-xs font-medium transition-all flex items-center justify-center space-x-2 shrink-0 disabled:opacity-50"
                 >
                   <Download className="w-4 h-4" />
                   <span>{mlsImportLoading ? "Importing MLS..." : "Import & Analyze Listing"}</span>
                 </button>
               </div>
 
-              <div className="pt-2 border-t border-slate-700/60 flex flex-wrap items-center gap-2">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Try Sandbox MLS IDs:</span>
+              <div className="pt-2 border-t border-neutral-700 flex flex-wrap items-center gap-2">
+                <span className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Try Sandbox MLS IDs:</span>
                 {[
                   { id: "1005192", name: "74434 East Sweet Bottom" },
                   { id: "1005221", name: "8369 West MAJESTY Path" },
@@ -292,10 +292,10 @@ export default function AnalyzePropertyPage() {
                       handleDirectMlsImport(item.id);
                     }}
                     disabled={mlsImportLoading}
-                    className="bg-navy-950/60 hover:bg-slate-800 border border-slate-700 text-[11px] text-slate-200 px-2.5 py-1 rounded-lg transition-colors flex items-center space-x-1 font-mono"
+                    className="bg-neutral-950/60 hover:bg-neutral-800 border border-neutral-700 text-[11px] text-neutral-200 px-2.5 py-1 rounded-lg transition-colors flex items-center space-x-1 font-mono"
                   >
                     <span>#{item.id}</span>
-                    <span className="text-slate-400 font-sans text-[10px]">({item.name})</span>
+                    <span className="text-neutral-400 font-sans text-[10px]">({item.name})</span>
                   </button>
                 ))}
               </div>
@@ -321,7 +321,7 @@ export default function AnalyzePropertyPage() {
               />
 
               <div className="space-y-2">
-                <label id="budget-ceiling-label" className="block text-xs font-bold text-ink-muted uppercase tracking-wider">
+                <label id="budget-ceiling-label" className="block text-xs font-medium text-ink-muted uppercase tracking-wider">
                   Estimated Upgrade Budget Ceiling ($) *
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3" role="group" aria-labelledby="budget-ceiling-label">
@@ -332,9 +332,9 @@ export default function AnalyzePropertyPage() {
                       onClick={() => setUserBudget(b)}
                       aria-pressed={Number(userBudget) === b}
                       className={cn(
-                        "px-4 py-3 rounded-xl border text-xs font-bold transition-colors",
+                        "px-4 py-3 rounded-xl border text-xs font-medium transition-colors",
                         Number(userBudget) === b
-                          ? "bg-accent-500 border-transparent text-white shadow-card"
+                          ? "bg-accent-500 border-transparent text-white"
                           : "bg-surface-sunken border-surface-border text-ink-muted hover:bg-surface-border"
                       )}
                     >
@@ -346,7 +346,7 @@ export default function AnalyzePropertyPage() {
                     value={userBudget}
                     onChange={(e) => setUserBudget(e.target.value === "" ? "" : Number(e.target.value))}
                     aria-label="Custom budget amount"
-                    className="bg-surface-sunken border border-surface-border rounded-xl px-3 text-xs font-bold text-ink text-center focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30"
+                    className="bg-surface-sunken border border-surface-border rounded-xl px-3 text-xs font-medium text-ink text-center focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30"
                     placeholder="Custom"
                   />
                 </div>
@@ -361,7 +361,7 @@ export default function AnalyzePropertyPage() {
               />
 
               <fieldset className="col-span-1 md:col-span-2 space-y-2">
-                <legend className="block text-xs font-bold text-ink-muted uppercase tracking-wider mb-2">
+                <legend className="block text-xs font-medium text-ink-muted uppercase tracking-wider mb-2">
                   Timeline Preference *
                 </legend>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -375,7 +375,7 @@ export default function AnalyzePropertyPage() {
                       className="accent-accent-500"
                     />
                     <div>
-                      <p className="text-xs font-bold text-ink">Quick Wins First</p>
+                      <p className="text-xs font-medium text-ink">Quick Wins First</p>
                       <p className="text-[10px] text-ink-muted mt-0.5">Focus on 1-2 week cosmetic fixes</p>
                     </div>
                   </label>
@@ -390,7 +390,7 @@ export default function AnalyzePropertyPage() {
                       className="accent-accent-500"
                     />
                     <div>
-                      <p className="text-xs font-bold text-ink">Mixed Approach</p>
+                      <p className="text-xs font-medium text-ink">Mixed Approach</p>
                       <p className="text-[10px] text-ink-muted mt-0.5">Combine minor & medium repairs</p>
                     </div>
                   </label>
@@ -405,7 +405,7 @@ export default function AnalyzePropertyPage() {
                       className="accent-accent-500"
                     />
                     <div>
-                      <p className="text-xs font-bold text-ink">Long Term Max Value</p>
+                      <p className="text-xs font-medium text-ink">Long Term Max Value</p>
                       <p className="text-[10px] text-ink-muted mt-0.5">High ROI full remodels (3-6 mo)</p>
                     </div>
                   </label>
@@ -423,7 +423,7 @@ export default function AnalyzePropertyPage() {
 
         {step === 2 && (
           <div className="space-y-8">
-            <h2 className="text-xl font-bold text-ink border-b border-surface-border pb-4">Step 2: Property Media Upload</h2>
+            <h2 className="text-xl font-semibold text-ink border-b border-surface-border pb-4">Step 2: Property Media Upload</h2>
 
             {/* Drag Zone */}
             <div
@@ -450,7 +450,7 @@ export default function AnalyzePropertyPage() {
               <div className="mb-4 p-4 bg-accent-50 rounded-2xl border border-accent-200">
                 <UploadCloud className="w-12 h-12 text-accent-500" />
               </div>
-              <h4 className="text-lg font-bold text-ink mb-1">Drag interior & exterior photos here</h4>
+              <h4 className="text-lg font-semibold text-ink mb-1">Drag interior & exterior photos here</h4>
               <p className="text-xs text-ink-muted max-w-sm mx-auto mb-4">
                 Supports JPG, PNG, HEIC (Auto-Convert). Max 10MB per file. (Recommended: 3 to 50 photos)
               </p>
@@ -458,17 +458,17 @@ export default function AnalyzePropertyPage() {
             </div>
 
             {/* SimplyRETS Live MLS Auto-Ingestion Card (Hidden/Commented)
-            <div className="bg-gradient-to-r from-navy-900 to-navy-800 border border-accent-500/30 rounded-2xl p-5 text-white space-y-4 shadow-card">
+            <div className="bg-gradient-to-r from-neutral-900 to-neutral-800 border border-accent-500/30 rounded-2xl p-5 text-white space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Building className="w-5 h-5 text-accent-400" />
-                  <h4 className="text-sm font-bold tracking-tight">Direct SimplyRETS MLS Import</h4>
+                  <h4 className="text-sm font-semibold tracking-tight">Direct SimplyRETS MLS Import</h4>
                 </div>
-                <span className="text-[10px] uppercase font-mono bg-accent-500/20 text-accent-300 border border-accent-500/30 px-2 py-0.5 rounded-full font-bold">
+                <span className="text-[10px] uppercase font-mono bg-accent-500/20 text-accent-300 border border-accent-500/30 px-2 py-0.5 rounded-full font-semibold">
                   Live Feed Connected
                 </span>
               </div>
-              <p className="text-xs text-slate-300">
+              <p className="text-xs text-neutral-300">
                 Enter an MLS listing ID to pull live property details and photos directly from SimplyRETS, initialize analysis, and run AI ROI calculations.
               </p>
 
@@ -479,22 +479,22 @@ export default function AnalyzePropertyPage() {
                     placeholder="Enter MLS ID (e.g. 1005192)"
                     value={importMlsId}
                     onChange={(e) => setImportMlsId(e.target.value)}
-                    className="w-full bg-navy-950/80 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-xs focus:border-accent-400 focus:outline-none placeholder-slate-500 font-mono"
+                    className="w-full bg-neutral-950/80 border border-neutral-700 text-white rounded-xl px-4 py-2.5 text-xs focus:border-accent-400 focus:outline-none placeholder-slate-500 font-mono"
                   />
                 </div>
                 <button
                   type="button"
                   onClick={() => handleDirectMlsImport(importMlsId)}
                   disabled={mlsImportLoading}
-                  className="bg-accent-500 hover:bg-accent-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-card flex items-center justify-center space-x-2 shrink-0 disabled:opacity-50"
+                  className="bg-accent-500 hover:bg-accent-600 text-white px-5 py-2.5 rounded-xl text-xs font-medium transition-all flex items-center justify-center space-x-2 shrink-0 disabled:opacity-50"
                 >
                   <Download className="w-4 h-4" />
                   <span>{mlsImportLoading ? "Importing MLS..." : "Import & Analyze Listing"}</span>
                 </button>
               </div>
 
-              <div className="pt-2 border-t border-slate-700/60 flex flex-wrap items-center gap-2">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Try Sandbox MLS IDs:</span>
+              <div className="pt-2 border-t border-neutral-700 flex flex-wrap items-center gap-2">
+                <span className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Try Sandbox MLS IDs:</span>
                 {[
                   { id: "1005192", name: "74434 East Sweet Bottom" },
                   { id: "1005221", name: "8369 West MAJESTY Path" },
@@ -508,10 +508,10 @@ export default function AnalyzePropertyPage() {
                       handleDirectMlsImport(item.id);
                     }}
                     disabled={mlsImportLoading}
-                    className="bg-navy-950/60 hover:bg-slate-800 border border-slate-700 text-[11px] text-slate-200 px-2.5 py-1 rounded-lg transition-colors flex items-center space-x-1 font-mono"
+                    className="bg-neutral-950/60 hover:bg-neutral-800 border border-neutral-700 text-[11px] text-neutral-200 px-2.5 py-1 rounded-lg transition-colors flex items-center space-x-1 font-mono"
                   >
                     <span>#{item.id}</span>
-                    <span className="text-slate-400 font-sans text-[10px]">({item.name})</span>
+                    <span className="text-neutral-400 font-sans text-[10px]">({item.name})</span>
                   </button>
                 ))}
               </div>
@@ -521,7 +521,7 @@ export default function AnalyzePropertyPage() {
             {/* Quick Test with Sample Photos (Eval Set) */}
             <div className="bg-surface-sunken border border-surface-border rounded-2xl p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-accent-600 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="text-[11px] font-medium text-accent-600 uppercase tracking-wider flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5" />
                   Quick Test with Gemini Eval Set Sample Images
                 </span>
@@ -551,7 +551,7 @@ export default function AnalyzePropertyPage() {
                 >
                   <span className="text-xl">🍳</span>
                   <div className="truncate">
-                    <p className="text-xs font-bold text-ink truncate">Kitchen Primary</p>
+                    <p className="text-xs font-medium text-ink truncate">Kitchen Primary</p>
                     <p className="text-[10px] text-ink-muted truncate">Austin, TX • Modern</p>
                   </div>
                 </button>
@@ -579,7 +579,7 @@ export default function AnalyzePropertyPage() {
                 >
                   <span className="text-xl">🍽️</span>
                   <div className="truncate">
-                    <p className="text-xs font-bold text-ink truncate">Kitchen & Dining</p>
+                    <p className="text-xs font-medium text-ink truncate">Kitchen & Dining</p>
                     <p className="text-[10px] text-ink-muted truncate">Austin, TX • Transitional</p>
                   </div>
                 </button>
@@ -607,7 +607,7 @@ export default function AnalyzePropertyPage() {
                 >
                   <span className="text-xl">🛏️</span>
                   <div className="truncate">
-                    <p className="text-xs font-bold text-ink truncate">Bedroom Suite</p>
+                    <p className="text-xs font-medium text-ink truncate">Bedroom Suite</p>
                     <p className="text-[10px] text-ink-muted truncate">Austin, TX • Traditional</p>
                   </div>
                 </button>
@@ -616,13 +616,13 @@ export default function AnalyzePropertyPage() {
 
             {/* Upload counts */}
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-ink-subtle uppercase tracking-widest">
+              <span className="text-xs font-medium text-ink-subtle uppercase tracking-widest">
                 Attached Media: {attachedFiles.length} / 50 photos
               </span>
               {attachedFiles.length > 0 && (
                 <button
                   onClick={() => setAttachedFiles([])}
-                  className="text-xs text-danger font-bold hover:underline"
+                  className="text-xs text-danger font-semibold hover:underline"
                 >
                   Clear all
                 </button>
@@ -633,24 +633,24 @@ export default function AnalyzePropertyPage() {
             {attachedFiles.length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
                 {attachedFiles.map((file, idx) => (
-                  <div key={idx} className="bg-surface-raised border border-surface-border rounded-2xl p-2.5 flex flex-col space-y-2 relative group shadow-card">
+                  <div key={idx} className="bg-surface-raised border border-surface-border rounded-2xl p-2.5 flex flex-col space-y-2 relative group">
                     <div className="h-28 w-full rounded-lg overflow-hidden bg-surface-sunken border border-surface-border relative">
                       <img src={file.dataUrl} alt={file.name} className="w-full h-full object-cover" />
                       {file.isLowQuality && (
-                        <div className="absolute top-1.5 left-1.5 bg-warning-subtle border border-warning-border p-1 rounded shadow-card flex items-center space-x-1">
+                        <div className="absolute top-1.5 left-1.5 bg-warning-subtle border border-warning-border p-1 rounded flex items-center space-x-1">
                           <AlertTriangle className="w-3.5 h-3.5 text-warning" />
                         </div>
                       )}
                       <button
                         onClick={() => setAttachedFiles(prev => prev.filter((_, i) => i !== idx))}
-                        className="absolute top-1.5 right-1.5 p-1 bg-danger hover:opacity-90 rounded-full text-white shadow-card transition-opacity"
+                        className="absolute top-1.5 right-1.5 p-1 bg-danger hover:opacity-90 rounded-full text-white transition-opacity"
                         aria-label={`Remove ${file.name}`}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                     <div className="px-1 truncate">
-                      <p className="text-[11px] font-bold text-ink truncate">{file.name}</p>
+                      <p className="text-[11px] font-medium text-ink truncate">{file.name}</p>
                       <p className="text-[10px] text-ink-subtle mt-0.5">{file.size}</p>
                     </div>
                   </div>
@@ -677,11 +677,11 @@ export default function AnalyzePropertyPage() {
 
         {step === 3 && (
           <div className="space-y-8">
-            <h2 className="text-xl font-bold text-ink border-b border-surface-border pb-4">Step 3: Review & Initialize</h2>
+            <h2 className="text-xl font-semibold text-ink border-b border-surface-border pb-4">Step 3: Review & Initialize</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-surface-sunken rounded-2xl p-6 border border-surface-border text-sm">
               <div className="space-y-4">
-                <h4 className="font-bold text-xs uppercase tracking-widest text-accent-600">Property Details</h4>
+                <h4 className="font-medium text-xs uppercase tracking-widest text-accent-600">Property Details</h4>
                 <div className="space-y-2 text-xs">
                   <p><span className="text-ink-muted">Address:</span> <strong className="text-ink">{address}</strong></p>
                   <p><span className="text-ink-muted">MLS Listing ID:</span> <strong className="text-ink">{mlsId || "N/A"}</strong></p>
@@ -692,7 +692,7 @@ export default function AnalyzePropertyPage() {
               </div>
 
               <div className="space-y-4">
-                <h4 className="font-bold text-xs uppercase tracking-widest text-accent-600">Media Summary</h4>
+                <h4 className="font-medium text-xs uppercase tracking-widest text-accent-600">Media Summary</h4>
                 <div className="space-y-2 text-xs">
                   <p><span className="text-ink-muted">Total photos attached:</span> <strong className="text-ink">{attachedFiles.length} files</strong></p>
                   <p>
@@ -702,9 +702,9 @@ export default function AnalyzePropertyPage() {
                   <p>
                     <span className="text-ink-muted">Warning validations:</span>
                     {attachedFiles.some(f => f.isLowQuality) ? (
-                      <span className="text-warning font-bold ml-1">1 low-quality photo alert</span>
+                      <span className="text-warning font-semibold ml-1">1 low-quality photo alert</span>
                     ) : (
-                      <span className="text-success font-bold ml-1">None</span>
+                      <span className="text-success font-semibold ml-1">None</span>
                     )}
                   </p>
                 </div>
@@ -713,7 +713,7 @@ export default function AnalyzePropertyPage() {
 
             {uploading && (
               <div className="space-y-2 bg-surface-sunken p-4 rounded-xl border border-surface-border">
-                <div className="flex justify-between text-xs text-ink-muted font-bold uppercase tracking-widest">
+                <div className="flex justify-between text-xs text-ink-muted font-semibold uppercase tracking-widest">
                   <span>Running Neural Defect Scan & Comps Match...</span>
                   <span>{uploadProgress}%</span>
                 </div>
@@ -741,9 +741,9 @@ export default function AnalyzePropertyPage() {
 
       {/* Verification Notification Modal */}
       {modalMessage && (
-        <div className="fixed inset-0 bg-navy-950/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-surface-raised border border-surface-border rounded-2xl p-6 max-w-md w-full shadow-card-hover text-center">
-            <h3 className="text-lg font-bold text-ink mb-3">AI Vision Pipeline</h3>
+        <div className="fixed inset-0 bg-neutral-950/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-surface-raised border border-surface-border rounded-2xl p-6 max-w-md w-full text-center">
+            <h3 className="text-lg font-semibold text-ink mb-3">AI Vision Pipeline</h3>
             <p className="text-ink-muted text-sm mb-6">{modalMessage}</p>
             <Button
               id="confirm-modal-ok-btn"

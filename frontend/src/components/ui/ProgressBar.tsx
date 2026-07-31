@@ -22,9 +22,9 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   return (
     <div className={cn("w-full space-y-1.5", className)}>
       {(label || subLabel) && (
-        <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider">
-          {label && <span className="text-ink-muted">{label}</span>}
-          {subLabel && <span className="text-accent-600">{subLabel}</span>}
+        <div className="flex items-center justify-between text-2xs font-medium uppercase tracking-[0.1em]">
+          {label && <span className="text-ink-subtle">{label}</span>}
+          {subLabel && <span className="text-ink" data-numeric>{subLabel}</span>}
         </div>
       )}
       <div
@@ -34,16 +34,16 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
         aria-valuemax={100}
         aria-label={ariaLabel ?? label}
         className={cn(
-          "w-full bg-surface-sunken rounded-full overflow-hidden shadow-inner",
+          "w-full overflow-hidden rounded-pill bg-surface-sunken",
           {
             "h-1": size === "sm",
-            "h-2.5": size === "md",
-            "h-4": size === "lg",
+            "h-2": size === "md",
+            "h-3": size === "lg",
           }
         )}
       >
         <div
-          className="bg-accent-500 h-full rounded-full transition-[width] duration-300"
+          className="h-full rounded-pill bg-accent-500 transition-[width] duration-300 ease-out"
           style={{ width: `${clamped}%` }}
         />
       </div>

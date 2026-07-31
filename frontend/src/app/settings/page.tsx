@@ -271,8 +271,9 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-8 pb-12 animate-in fade-in duration-300">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold font-serif text-ink tracking-tight">Settings</h1>
+      <div className="space-y-3 border-b border-surface-border pb-8">
+        <span className="eyebrow">Workspace</span>
+        <h1 className="text-4xl">Settings</h1>
         <p className="text-ink-muted text-sm">Manage user accounts, agency branding, billing credentials, and workspace preferences.</p>
       </div>
 
@@ -281,7 +282,7 @@ export default function SettingsPage() {
           className={cn(
             "p-4 rounded-xl flex items-center gap-3 text-xs font-semibold animate-in fade-in slide-in-from-top-2 duration-200",
             statusMsg.type === "success"
-              ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-600"
+              ? "bg-success-subtle0/10 border border-success-border text-success"
               : "bg-danger-subtle border border-danger-border text-danger"
           )}
         >
@@ -302,9 +303,9 @@ export default function SettingsPage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider text-left transition-colors",
+                  "w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-medium uppercase tracking-wider text-left transition-colors",
                   isActive
-                    ? "bg-navy-800 text-white shadow-card"
+                    ? "bg-neutral-800 text-white"
                     : "text-ink-muted hover:text-ink hover:bg-surface-sunken"
                 )}
               >
@@ -320,7 +321,7 @@ export default function SettingsPage() {
 
           {activeTab === "account" && (
             <Card hoverEffect={false} className="p-8 space-y-6">
-              <h3 className="text-lg font-bold text-ink border-b border-surface-border pb-3 flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-ink border-b border-surface-border pb-3 flex items-center gap-2">
                 <User className="w-5 h-5 text-accent-600" />
                 <span>My Account</span>
               </h3>
@@ -332,7 +333,7 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="pt-4 border-t border-surface-border space-y-4">
-                  <h4 className="text-xs font-bold text-ink uppercase tracking-wider">Change Password</h4>
+                  <h4 className="text-xs font-medium text-ink uppercase tracking-wider">Change Password</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Input
                       label="Current Password"
@@ -364,14 +365,14 @@ export default function SettingsPage() {
 
           {activeTab === "properties" && (
             <Card hoverEffect={false} className="p-8 space-y-6">
-              <h3 className="text-lg font-bold text-ink border-b border-surface-border pb-3 flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-ink border-b border-surface-border pb-3 flex items-center gap-2">
                 <Home className="w-5 h-5 text-accent-600" />
                 <span>Saved Properties</span>
               </h3>
 
               {/* Add Property Form */}
               <div className="bg-surface-sunken border border-surface-border rounded-2xl p-4 space-y-4">
-                <h4 className="text-xs font-bold text-ink uppercase tracking-wider">Add New Property</h4>
+                <h4 className="text-xs font-medium text-ink uppercase tracking-wider">Add New Property</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Input
                     placeholder="Address: 1042 Grandview Blvd"
@@ -382,7 +383,7 @@ export default function SettingsPage() {
                   <select
                     value={newPropStyle}
                     onChange={(e) => setNewPropStyle(e.target.value)}
-                    className="w-full bg-surface-raised border border-surface-border rounded-xl px-3 py-3 text-xs text-ink font-semibold"
+                    className="select-field w-full"
                   >
                     <option value="Modern">Modern</option>
                     <option value="Contemporary">Contemporary</option>
@@ -410,7 +411,7 @@ export default function SettingsPage() {
                   savedProperties.map((p, idx) => (
                     <div key={p.id || idx} className="flex justify-between items-center bg-surface-sunken border border-surface-border rounded-2xl p-4 text-xs font-semibold">
                       <div className="space-y-1">
-                        <p className="text-ink font-bold">{p.address}</p>
+                        <p className="text-ink font-semibold">{p.address}</p>
                         <p className="text-ink-muted">Style: <strong className="text-ink capitalize">{p.style}</strong> • Budget: {formatCurrency(p.budget)}</p>
                       </div>
                       <button
@@ -429,7 +430,7 @@ export default function SettingsPage() {
 
           {activeTab === "billing" && (
             <Card hoverEffect={false} className="p-8 space-y-6">
-              <h3 className="text-lg font-bold text-ink border-b border-surface-border pb-3 flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-ink border-b border-surface-border pb-3 flex items-center gap-2">
                 <CreditCard className="w-5 h-5 text-accent-600" />
                 <span>Billing & Subscription</span>
               </h3>
@@ -437,14 +438,14 @@ export default function SettingsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-surface-sunken border border-surface-border rounded-2xl p-6 space-y-4">
                   <Badge variant="roi-high">Active Development Tier</Badge>
-                  <h4 className="text-xl font-extrabold text-ink">Pro SaaS Advisory Portal</h4>
-                  <p className="text-2xl font-extrabold text-accent-600">$0.00<span className="text-xs font-semibold text-ink-subtle"> / month (Dev Sandbox)</span></p>
+                  <h4 className="text-xl font-semibold text-ink">Pro SaaS Advisory Portal</h4>
+                  <p className="text-2xl font-semibold text-accent-600">$0.00<span className="text-xs font-semibold text-ink-subtle"> / month (Dev Sandbox)</span></p>
                   <p className="text-xs text-ink-muted">Unlimited Computer Vision & PDF Report Generation</p>
                 </div>
 
                 <div className="bg-surface-sunken border border-surface-border rounded-2xl p-6 space-y-4 flex flex-col justify-between">
                   <div className="space-y-1.5 text-xs text-ink-muted">
-                    <p className="font-bold text-ink uppercase tracking-wider text-[10px]">Payment Method</p>
+                    <p className="font-semibold text-ink uppercase tracking-wider text-[10px]">Payment Method</p>
                     <p className="text-ink mt-1">Local Sandbox Environment</p>
                     <p>Status: Active</p>
                   </div>
@@ -458,7 +459,7 @@ export default function SettingsPage() {
 
           {activeTab === "branding" && (
             <Card hoverEffect={false} className="p-8 space-y-6">
-              <h3 className="text-lg font-bold text-ink border-b border-surface-border pb-3 flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-ink border-b border-surface-border pb-3 flex items-center gap-2">
                 <Award className="w-5 h-5 text-accent-600" />
                 <span>Agency Branding (White-Label PDF Reports)</span>
               </h3>
@@ -471,7 +472,7 @@ export default function SettingsPage() {
                     id="brand-agency"
                   />
                   <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-ink-muted uppercase tracking-widest">Primary Brand Color</label>
+                    <label className="block text-xs font-medium text-ink-muted uppercase tracking-widest">Primary Brand Color</label>
                     <div className="flex items-center space-x-3">
                       <input
                         type="color"
@@ -503,14 +504,14 @@ export default function SettingsPage() {
 
           {activeTab === "notifications" && (
             <Card hoverEffect={false} className="p-8 space-y-6">
-              <h3 className="text-lg font-bold text-ink border-b border-surface-border pb-3 flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-ink border-b border-surface-border pb-3 flex items-center gap-2">
                 <Bell className="w-5 h-5 text-accent-600" />
                 <span>Notifications</span>
               </h3>
               <div className="space-y-4">
                 <label className="flex items-center justify-between p-4 bg-surface-sunken border border-surface-border rounded-2xl cursor-pointer">
                   <div>
-                    <h5 className="text-xs font-bold text-ink uppercase tracking-wider">Analysis complete alerts</h5>
+                    <h5 className="text-xs font-medium text-ink uppercase tracking-wider">Analysis complete alerts</h5>
                     <p className="text-[10px] text-ink-subtle mt-0.5">Send instant alert when computer vision scans complete</p>
                   </div>
                   <input
@@ -523,7 +524,7 @@ export default function SettingsPage() {
 
                 <label className="flex items-center justify-between p-4 bg-surface-sunken border border-surface-border rounded-2xl cursor-pointer">
                   <div>
-                    <h5 className="text-xs font-bold text-ink uppercase tracking-wider">New report requests</h5>
+                    <h5 className="text-xs font-medium text-ink uppercase tracking-wider">New report requests</h5>
                     <p className="text-[10px] text-ink-subtle mt-0.5">Notify when broker shares new layout contexts</p>
                   </div>
                   <input
@@ -539,7 +540,7 @@ export default function SettingsPage() {
 
           {activeTab === "security" && (
             <Card hoverEffect={false} className="p-8 space-y-6">
-              <h3 className="text-lg font-bold text-ink border-b border-surface-border pb-3 flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-ink border-b border-surface-border pb-3 flex items-center gap-2">
                 <Lock className="w-5 h-5 text-accent-600" />
                 <span>Security Settings</span>
               </h3>
@@ -547,7 +548,7 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center bg-surface-sunken border border-surface-border rounded-2xl p-4">
                   <div>
-                    <h5 className="text-xs font-bold text-ink uppercase tracking-wider">Two-Factor Authentication</h5>
+                    <h5 className="text-xs font-medium text-ink uppercase tracking-wider">Two-Factor Authentication</h5>
                     <p className="text-[10px] text-ink-subtle mt-0.5">Add an extra layer of access verification security</p>
                   </div>
                   <Button id="sec-2fa-btn" variant="secondary" size="sm" disabled>
@@ -557,7 +558,7 @@ export default function SettingsPage() {
 
                 <div className="flex justify-between items-center bg-surface-sunken border border-surface-border rounded-2xl p-4">
                   <div>
-                    <h5 className="text-xs font-bold text-ink uppercase tracking-wider">API Authentication Keys</h5>
+                    <h5 className="text-xs font-medium text-ink uppercase tracking-wider">API Authentication Keys</h5>
                     <p className="text-[10px] text-ink-subtle mt-0.5">Integration keys for co-brokerage CRM matching</p>
                   </div>
                   <Button id="sec-api-btn" variant="secondary" size="sm" disabled>
@@ -570,7 +571,7 @@ export default function SettingsPage() {
 
           {activeTab === "team" && (
             <Card hoverEffect={false} className="p-8 space-y-6">
-              <h3 className="text-lg font-bold text-ink border-b border-surface-border pb-3 flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-ink border-b border-surface-border pb-3 flex items-center gap-2">
                 <Users className="w-5 h-5 text-accent-600" />
                 <span>Team Workspace</span>
               </h3>
@@ -587,12 +588,12 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div className="w-32">
-                  <label className="block text-xs font-bold text-ink-muted uppercase tracking-widest mb-1.5">Role</label>
+                  <label className="block text-xs font-medium text-ink-muted uppercase tracking-widest mb-1.5">Role</label>
                   <select
                     value={inviteRole}
                     onChange={(e) => setInviteRole(e.target.value)}
                     aria-label="Role"
-                    className="w-full bg-surface-sunken border border-surface-border rounded-xl px-3 py-3 text-xs font-semibold text-ink"
+                    className="select-field w-full"
                   >
                     <option value="Editor">Editor</option>
                     <option value="Viewer">Viewer</option>
@@ -607,7 +608,7 @@ export default function SettingsPage() {
 
               {/* Members List */}
               <div className="space-y-3 pt-4 border-t border-surface-border">
-                <h5 className="text-xs font-bold text-ink-subtle uppercase tracking-widest">Active Workspace Members</h5>
+                <h5 className="text-xs font-medium text-ink-subtle uppercase tracking-widest">Active Workspace Members</h5>
                 {teamMembers.length === 0 ? (
                   <p className="text-xs text-ink-subtle italic">No team members invited yet.</p>
                 ) : (

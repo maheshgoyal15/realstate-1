@@ -116,7 +116,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
   return (
     <div ref={containerRef} className="w-full space-y-1.5 relative">
       {label && (
-        <span className="block text-xs font-bold text-ink-muted uppercase tracking-wider">
+        <span className="block text-2xs font-medium text-ink-muted uppercase tracking-[0.1em]">
           {label}
         </span>
       )}
@@ -130,7 +130,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
         aria-activedescendant={isOpen && highlightedIndex >= 0 ? `${dropdownId}-option-${highlightedIndex}` : undefined}
         onClick={() => (isOpen ? setIsOpen(false) : openAt(Math.max(selectedIndex, 0)))}
         onKeyDown={handleTriggerKeyDown}
-        className="w-full bg-surface-raised border border-surface-border-strong rounded-xl px-4 py-3 text-left text-ink font-medium text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface transition-colors flex items-center justify-between"
+        className="flex h-12 w-full items-center justify-between rounded-lg border border-surface-border-strong bg-surface-raised px-4 text-left text-sm text-ink transition-colors duration-150 hover:border-ink-subtle"
       >
         <span className={cn({ "text-ink-subtle": !selectedOption })}>
           {selectedOption ? selectedOption.label : placeholder}
@@ -155,7 +155,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
           aria-labelledby={label ? dropdownId : undefined}
           tabIndex={-1}
           onKeyDown={handleTriggerKeyDown}
-          className="absolute z-30 left-0 right-0 mt-2 bg-surface-raised border border-surface-border rounded-xl shadow-card-hover max-h-60 overflow-y-auto divide-y divide-surface-border py-1"
+          className="absolute z-dropdown left-0 right-0 mt-2 bg-surface-raised border border-surface-border rounded-xl shadow-float max-h-60 overflow-y-auto divide-y divide-surface-border py-1"
         >
           {options.map((opt, index) => (
             <li key={opt.value}>

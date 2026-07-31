@@ -73,7 +73,7 @@ export default function SecureReportDetailPage({ params }: { params: Promise<{ i
     return (
       <div className="max-w-md mx-auto py-20 text-center space-y-4 animate-in fade-in duration-300">
         <AlertCircle className="w-10 h-10 text-ink-subtle mx-auto" />
-        <h1 className="text-xl font-bold text-ink">Report not found</h1>
+        <h1 className="text-xl font-semibold text-ink">Report not found</h1>
         <p className="text-ink-muted text-sm">
           This report doesn't exist, or you don't have access to it.
         </p>
@@ -89,11 +89,11 @@ export default function SecureReportDetailPage({ params }: { params: Promise<{ i
       {/* Report Header */}
       <div className="p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 card-surface">
         <div className="space-y-2">
-          <div className="flex items-center space-x-2 text-xs text-accent-600 font-bold uppercase tracking-wider">
+          <div className="flex items-center space-x-2 text-xs text-accent-600 font-semibold uppercase tracking-wider">
             <ShieldCheck className="w-4 h-4 text-success" />
             <span>Pre-Listing Upgrade Guide</span>
           </div>
-          <h1 className="text-3xl font-bold font-serif text-ink tracking-tight">{report.title}</h1>
+          <h1 className="text-4xl">{report.title}</h1>
           <p className="text-ink-muted text-xs">Generated {report.date}</p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -124,7 +124,7 @@ export default function SecureReportDetailPage({ params }: { params: Promise<{ i
         {/* Left Side: Summary */}
         <div className="lg:col-span-8 space-y-6">
           <Card hoverEffect={false} className="p-6 md:p-8 space-y-6">
-            <h2 className="text-xl font-bold text-ink tracking-tight">Executive Upgrade Summary</h2>
+            <h2 className="text-xl">Executive Upgrade Summary</h2>
             <p className="text-ink-muted text-sm leading-relaxed">
               Based on our computer vision analysis of <strong className="text-ink">{report.address}</strong>, this
               report identifies <strong className="text-ink">{report.recsCount} upgrade{report.recsCount === 1 ? "" : "s"}</strong> projected
@@ -142,20 +142,20 @@ export default function SecureReportDetailPage({ params }: { params: Promise<{ i
         {/* Right Side: Ledger summary widgets */}
         <aside className="lg:col-span-4 space-y-6">
           <Card hoverEffect={false} className="p-6 space-y-4">
-            <h3 className="text-xs font-bold text-ink-subtle uppercase tracking-widest text-center">Calculated ROI Summary</h3>
+            <h3 className="text-xs font-medium text-ink-subtle uppercase tracking-widest text-center">Calculated ROI Summary</h3>
 
             <div className="space-y-3 pt-2 text-xs">
               <div className="flex justify-between items-center">
                 <span className="text-ink-muted">Total Upgrades Investment:</span>
-                <span className="font-extrabold text-ink">{formatCurrency(report.cost)}</span>
+                <span className="font-semibold text-ink">{formatCurrency(report.cost)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-ink-muted">Est. Valuation Lift:</span>
-                <span className="font-extrabold text-success">+{formatCurrency(report.valueAdd)}</span>
+                <span className="font-semibold text-success">+{formatCurrency(report.valueAdd)}</span>
               </div>
               <div className="flex justify-between items-center border-t border-surface-border pt-3 mt-3">
                 <span className="text-ink-muted">Overall ROI Premium:</span>
-                <span className="font-extrabold text-success">+{roiPercent}%</span>
+                <span className="font-semibold text-success">+{roiPercent}%</span>
               </div>
             </div>
 
@@ -175,8 +175,8 @@ export default function SecureReportDetailPage({ params }: { params: Promise<{ i
       </div>
 
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 flex items-center space-x-3 bg-surface-raised border border-success-border text-success rounded-xl p-4 shadow-card-hover animate-in slide-in-from-top-4 duration-300">
-          <div className="text-xs font-bold">{toastMessage}</div>
+        <div className="fixed top-4 right-4 z-50 flex items-center space-x-3 bg-surface-raised border border-success-border text-success rounded-xl p-4 animate-in slide-in-from-top-4 duration-300">
+          <div className="text-xs font-medium">{toastMessage}</div>
           <button onClick={() => setToastMessage(null)} aria-label="Dismiss notification" className="text-ink-subtle hover:text-ink font-mono">×</button>
         </div>
       )}
