@@ -320,7 +320,8 @@ def run_analysis_pipeline_bg(analysis_id: str, s3_keys: List[str], base64_images
             with conn:
                 with conn.cursor() as cur:
                     cur.execute(
-                        "UPDATE analyses SET status = 'completed', cv_summary = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s::uuid;",
+                        "UPDATE analyses SET status = 'completed', progress = 100, stage = 'done', "
+                        "cv_summary = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s::uuid;",
                         (psycopg2.extras.Json(cv_summary), analysis_id)
                     )
         finally:
@@ -334,9 +335,13 @@ def run_analysis_pipeline_bg(analysis_id: str, s3_keys: List[str], base64_images
             try:
                 with conn:
                     with conn.cursor() as cur:
+                        # Keep the exception text for diagnostics. It is not
+                        # surfaced to the client verbatim — get_analysis_results
+                        # returns a generic message so internals don't leak.
                         cur.execute(
-                            "UPDATE analyses SET status = 'failed', updated_at = CURRENT_TIMESTAMP WHERE id = %s::uuid;",
-                            (analysis_id,)
+                            "UPDATE analyses SET status = 'failed', stage = 'failed', "
+                            "error = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s::uuid;",
+                            (str(e)[:2000], analysis_id)
                         )
             finally:
                 conn.close()
@@ -665,7 +670,7 @@ async def get_analysis_results(
         with conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT a.status, a.cv_summary FROM analyses a "
+                    "SELECT a.status, a.cv_summary, a.progress, a.stage, a.stage_detail, a.created_at FROM analyses a "
                     "JOIN properties p ON a.property_id = p.id "
                     "WHERE a.id = %s::uuid AND p.user_id = %s::uuid;",
                     (analysis_id, user_id)
@@ -674,21 +679,47 @@ async def get_analysis_results(
                 if not analysis_row:
                     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Analysis not found.")
 
-                analysis_status, cv_summary = analysis_row
+                (analysis_status, cv_summary, analysis_progress, analysis_stage,
+                 analysis_stage_detail, analysis_created_at) = analysis_row
+
+                # Postgres hands back a datetime, the SQLite path a string.
+                started_at_iso = (
+                    analysis_created_at.isoformat()
+                    if hasattr(analysis_created_at, "isoformat")
+                    else (str(analysis_created_at) if analysis_created_at else None)
+                )
 
                 if analysis_status == "failed":
-                    raise HTTPException(
-                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail="Analysis pipeline execution failed."
+                    # Reported as a 200 with status="failed" rather than a 500:
+                    # a failed pipeline run is a valid, expected outcome of
+                    # polling, and an error status code made the client's fetch
+                    # throw and retry forever instead of showing the failure.
+                    # The stored error text stays server-side; the client gets a
+                    # generic message so internals aren't exposed.
+                    #
+                    # Note: no conn.close() here. Returning from inside the
+                    # `with conn`/`with cur` blocks still runs their __exit__,
+                    # and the outer `finally` closes the connection — closing it
+                    # early made those exits operate on a dead handle.
+                    return AnalysisResultResponse(
+                        status="failed",
+                        cv_results=_ensure_dict(cv_summary),
+                        recommendations=[],
+                        report_url=None,
+                        progress=analysis_progress or 0,
+                        stage=analysis_stage,
+                        error="The analysis pipeline could not complete. Please try again.",
                     )
                 elif analysis_status == "processing":
-                    if 'conn' in locals() and conn:
-                        conn.close()
                     return AnalysisResultResponse(
                         status="processing",
                         cv_results=_ensure_dict(cv_summary),
                         recommendations=[],
                         report_url=None,
+                        progress=analysis_progress or 0,
+                        stage=analysis_stage or "ingest",
+                        stage_detail=analysis_stage_detail,
+                        started_at=started_at_iso,
                     )
 
                 cur.execute(
@@ -808,6 +839,8 @@ async def get_analysis_results(
         cv_results=_ensure_dict(cv_summary),
         recommendations=recommendations,
         report_url=report_url,
+        progress=100,
+        stage="done",
     )
 
 @router.get("/recommendations/{analysis_id}")

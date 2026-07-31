@@ -66,6 +66,10 @@ def init_sqlite_db():
             property_id TEXT,
             user_id TEXT,
             status TEXT DEFAULT 'processing',
+            progress INTEGER NOT NULL DEFAULT 0,
+            stage TEXT,
+            stage_detail TEXT,
+            error TEXT,
             cv_summary TEXT DEFAULT '{}',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -194,6 +198,10 @@ def init_sqlite_db():
             ("contractors", "reviews", "TEXT DEFAULT '[]'"),
             ("contractors", "reviews_count", "INTEGER DEFAULT 0"),
             ("contractors", "is_verified", "INTEGER DEFAULT 1"),
+            ("analyses", "progress", "INTEGER NOT NULL DEFAULT 0"),
+            ("analyses", "stage", "TEXT"),
+            ("analyses", "stage_detail", "TEXT"),
+            ("analyses", "error", "TEXT"),
             ("reports", "s3_pdf_key", "TEXT"),
             ("reports", "shareable_token", "TEXT"),
             ("reports", "pdf_data", "BLOB"),
@@ -322,6 +330,10 @@ class SQLiteCursorWrapper:
         q = re.sub(r'::[a-zA-Z0-9_]+', '', q) # remove type casts like ::uuid, ::jsonb
         q = q.replace('%s', '?')
         q = re.sub(r'CURRENT_TIMESTAMP\(\)', 'CURRENT_TIMESTAMP', q, flags=re.I)
+        # SQLite spells the two-argument GREATEST/LEAST as MAX/MIN; with more
+        # than one argument these parse as scalar functions, not aggregates.
+        q = re.sub(r'\bGREATEST\s*\(', 'MAX(', q, flags=re.I)
+        q = re.sub(r'\bLEAST\s*\(', 'MIN(', q, flags=re.I)
         
         # Transform params if any parameter is a wrapper (e.g. psycopg2.extras.Json or psycopg2.Binary)
         new_params = []

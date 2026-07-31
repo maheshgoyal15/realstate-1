@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { AnalysisProgress } from "@/components/analysis/AnalysisProgress";
 import { cn, formatCurrency } from "@/lib/utils";
 import { apiFetch } from "@/lib/apiClient";
 
@@ -98,6 +99,23 @@ function parseScopeItem(raw: any): { label: string; cost: number; details: strin
   return { label: str.replace(/^\s*\[\+\]\s*/, "").trim(), cost: 0, details: "" };
 }
 
+// Parse the analysis start time reported by the status endpoint into epoch ms.
+// Postgres sends an offset-aware ISO string; the SQLite dev path sends a naive
+// "YYYY-MM-DD HH:MM:SS" that is UTC, and would otherwise be read as local time
+// and skew the elapsed counter by the viewer's offset. Returns null for
+// anything unparseable or implausible so the caller keeps its own clock.
+function parseServerTimestamp(raw: unknown): number | null {
+  if (typeof raw !== "string" || !raw) return null;
+  const hasZone = /(?:Z|[+-]\d{2}:?\d{2})$/.test(raw);
+  const ms = Date.parse(hasZone ? raw : `${raw.replace(" ", "T")}Z`);
+  if (Number.isNaN(ms)) return null;
+  // A start time in the future, or implausibly distant, means clock skew or a
+  // bad record — trusting it would render a nonsense timer.
+  const age = Date.now() - ms;
+  if (age < -60_000 || age > 24 * 60 * 60 * 1000) return null;
+  return ms;
+}
+
 // A recommendation category matches a contractor specialty loosely (e.g. "Kitchen
 // Remodel" should surface contractors tagged "Kitchens").
 function matchesSpecialty(category: string, specialty: string) {
@@ -113,6 +131,16 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<string>("processing");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Real pipeline progress reported by the backend, plus the local clock the
+  // loading screen counts elapsed time against.
+  const [progress, setProgress] = useState(0);
+  const [stage, setStage] = useState<string | null>(null);
+  const [stageDetail, setStageDetail] = useState<string | null>(null);
+  // Seeded from page load, then corrected to the server's record of when the
+  // run actually began — the two differ whenever the user reopens the tab
+  // mid-analysis, which this screen invites them to do.
+  const [startedAt, setStartedAt] = useState(() => Date.now());
   const [modalMessage, setModalMessage] = useState<string | null>(null);
 
   // Filter/Sort States
@@ -299,6 +327,14 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
 
         const data = await response.json();
 
+        // Track pipeline position on every poll, whatever the status.
+        if (typeof data.progress === "number") setProgress(data.progress);
+        if (data.stage) setStage(data.stage);
+        setStageDetail(data.stage_detail ?? null);
+
+        const serverStart = parseServerTimestamp(data.started_at);
+        if (serverStart !== null) setStartedAt(serverStart);
+
         if (data.status === "completed") {
           setStatus("completed");
           setOverallScore(data.cv_results.overall_condition_score || 7.0);
@@ -470,100 +506,40 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
   // Scale a backend dollar figure to the user's current whole-house budget dial.
   const displayCost = (v: number) => Math.round((v || 0) * scaleFactor);
 
-  if (loading) {
+  if (status === "failed") {
     return (
-      <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-6 text-center">
-        <div className="max-w-xl w-full bg-surface-raised rounded-3xl border border-surface-border shadow-float p-8 space-y-8 animate-in fade-in zoom-in-95 duration-500">
-          
-          {/* Top Architectural Studio Badge */}
-          <div className="flex flex-col items-center space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-neutral-800 flex items-center justify-center">
-              <Sparkles className="w-7 h-7 text-accent-400" />
-            </div>
-
-            <div className="space-y-1.5">
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-accent-600 bg-accent-50 px-3 py-1 rounded-full border border-accent-200">
-                HomeReady Architectural Studio
-              </span>
-              <h2 className="text-2xl">
-                Designing Your Whole-House Remodel
-              </h2>
-              <p className="text-ink-muted text-xs max-w-md mx-auto leading-relaxed">
-                Analyzing room geometry, allocating your whole-house budget ceiling across high-ROI spaces, and generating visual upgrade concepts.
-              </p>
-            </div>
+      <div className="min-h-screen bg-surface flex items-center justify-center px-6 py-16">
+        <div className="w-full max-w-xl animate-fade-in">
+          <p className="text-2xs font-semibold uppercase tracking-[0.14em] text-danger">
+            Analysis failed
+          </p>
+          <h1 className="mt-3 text-3xl text-ink">We couldn&apos;t finish this remodel plan</h1>
+          <p className="mt-3 max-w-[58ch] text-sm text-ink-muted">
+            {errorMessage || "The analysis pipeline could not complete."}
+          </p>
+          <p className="mt-2 max-w-[58ch] text-sm text-ink-muted">
+            Your photos were not lost. Starting a new analysis re-runs the pipeline from the
+            beginning.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Button onClick={() => window.location.href = "/analyze"}>Start a new analysis</Button>
+            <Button variant="secondary" onClick={() => window.location.href = "/dashboard"}>
+              Back to dashboard
+            </Button>
           </div>
-
-          {/* Animated Studio Pipeline Stages */}
-          <div className="space-y-3 text-left bg-surface-sunken p-5 rounded-2xl border border-surface-border">
-            <div className="flex items-center space-y-0 space-x-3 text-xs">
-              <div className="w-5 h-5 rounded-full bg-success-subtle0/20 text-success flex items-center justify-center font-medium text-[10px] shrink-0">
-                ✓
-              </div>
-              <div className="flex-1">
-                <span className="font-semibold text-ink">Room Recognition & Space De-duplication</span>
-                <p className="text-[11px] text-ink-subtle">Identifying Kitchen, Bathrooms, Master Bedroom & Living Areas</p>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-3 text-xs">
-              <div className="w-5 h-5 rounded-full bg-accent-500/20 text-accent-600 flex items-center justify-center font-medium text-[10px] shrink-0">
-                2
-              </div>
-              <div className="flex-1">
-                <span className="font-semibold text-ink">Whole-House Financial Budget Allocator</span>
-                <p className="text-[11px] text-ink-subtle">Distributing total house budget cap by ROI priority ratios</p>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-3 text-xs">
-              <div className="w-5 h-5 rounded-full bg-surface border border-surface-border text-ink-subtle flex items-center justify-center font-medium text-[10px] shrink-0">
-                3
-              </div>
-              <div className="flex-1">
-                <span className="font-medium text-ink-muted">Carpentry, Surface & Fixture Spec Lock</span>
-                <p className="text-[11px] text-ink-subtle">Upgrading cabinetry, quartz, marble backsplash & shelving racks</p>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-3 text-xs">
-              <div className="w-5 h-5 rounded-full bg-surface border border-surface-border text-ink-subtle flex items-center justify-center font-medium text-[10px] shrink-0">
-                4
-              </div>
-              <div className="flex-1">
-                <span className="font-medium text-ink-muted">Spatial Concept Renders & Itemized Cost Manifest</span>
-                <p className="text-[11px] text-ink-subtle">Generating 3–4 primary room views with exact item additions</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Shimmering Animated Bar */}
-          <div className="space-y-2">
-            {/* Indeterminate track — the pipeline reports no percentage, so the
-                bar communicates "still working" rather than faking progress. */}
-            <div className="w-full bg-surface-sunken h-1.5 rounded-pill overflow-hidden">
-              <div className="h-full w-1/3 rounded-pill bg-accent-500 animate-indeterminate" />
-            </div>
-            <div className="flex justify-between items-center text-[10px] text-ink-subtle">
-              <span>Whole-House Budget Allocation Active</span>
-              <span className="font-semibold text-accent-600">Curating Representative Views...</span>
-            </div>
-          </div>
-
         </div>
       </div>
     );
   }
 
-  if (status === "failed") {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-6 text-center space-y-4">
-        <Badge variant="status-error">Analysis Failed</Badge>
-        <h2 className="text-xl max-w-md">
-          {errorMessage || "The analysis pipeline could not complete."}
-        </h2>
-        <Button onClick={() => window.location.href = "/analyze"}>Start a New Analysis</Button>
-      </div>
+      <AnalysisProgress
+        progress={progress}
+        stage={stage}
+        stageDetail={stageDetail}
+        startedAt={startedAt}
+      />
     );
   }
 

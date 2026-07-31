@@ -282,7 +282,7 @@ export default function SettingsPage() {
           className={cn(
             "p-4 rounded-xl flex items-center gap-3 text-xs font-semibold animate-in fade-in slide-in-from-top-2 duration-200",
             statusMsg.type === "success"
-              ? "bg-success-subtle0/10 border border-success-border text-success"
+              ? "bg-success-subtle border border-success-border text-success"
               : "bg-danger-subtle border border-danger-border text-danger"
           )}
         >
