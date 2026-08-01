@@ -55,6 +55,8 @@ class RecommendationItem(BaseModel):
     tier_10k_url: Optional[str] = None
     tier_15k_url: Optional[str] = None
     options: Optional[List[Dict[str, Any]]] = None
+    detected_features: Optional[List[str]] = None
+    selective_options: Optional[List[Dict[str, Any]]] = None
 
 class AnalysisResultResponse(BaseModel):
     status: str
@@ -125,6 +127,8 @@ class InpaintRequest(BaseModel):
     zone: str = Field(..., min_length=2, max_length=50, description="Target room zone (accent_wall | window_drapes | lighting | cabinetry)")
     option_key: str = Field(..., min_length=2, max_length=100, description="Selective upgrade option key")
     style_preference: str = Field("Modern Farmhouse", max_length=100, description="Style preference")
+    custom_prompt: Optional[str] = None
+    custom_title: Optional[str] = None
 
 
 class InpaintResponse(BaseModel):

@@ -650,10 +650,13 @@ async def delete_analysis(
 @router.get("/images/{image_name}", status_code=status.HTTP_200_OK)
 async def get_generated_image(image_name: str):
     images_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "generated")
-    image_path = os.path.join(images_dir, os.path.basename(image_name))
+    safe_name = os.path.basename(image_name)
+    image_path = os.path.join(images_dir, safe_name)
     if not os.path.exists(image_path):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
-    return FileResponse(image_path, media_type="image/png")
+    ext = safe_name.lower().split(".")[-1] if "." in safe_name else "png"
+    media_type = "image/jpeg" if ext in ["jpg", "jpeg"] else ("image/webp" if ext == "webp" else "image/png")
+    return FileResponse(image_path, media_type=media_type)
 
 def _generate_smart_selective_options_for_rec(category: str, why_text: str, scope: List[Any]) -> Tuple[List[str], List[Dict[str, Any]]]:
     cat_lower = (category or "").lower()
@@ -1333,17 +1336,6 @@ async def download_report(request: Request, shareable_token: str) -> Any:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found.")
 
     return Response(content=bytes(row[0]), media_type="application/pdf")
-
-@router.get("/images/{filename}")
-async def get_generated_image(filename: str) -> Any:
-    """
-    Serve generated before/after concept visualization images (.png) created by the CV analysis pipeline.
-    """
-    safe_name = os.path.basename(filename)
-    filepath = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "generated", safe_name)
-    if not os.path.exists(filepath):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found.")
-    return FileResponse(filepath, media_type="image/png")
 
 @router.get("/contractors")
 async def list_contractors(request: Request) -> Any:

@@ -984,13 +984,13 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
 
                     <div className="flex flex-col items-center md:items-end justify-between md:justify-center border-t md:border-t-0 md:border-l border-surface-border pt-4 md:pt-0 md:pl-6 shrink-0 gap-4">
                       {/* Visual Thumbnail Preview right on card */}
-                      {(optImg || rec.beforeImageUrl) && (
+                      {(optImg || uploadedBeforeImg || rec.beforeImageUrl) && (
                         <div
                           onClick={() => setSelectedRec(rec)}
                           className="w-full md:w-44 h-28 rounded-xl overflow-hidden relative border border-surface-border cursor-pointer group shrink-0"
                         >
                           <img
-                            src={optImg || rec.beforeImageUrl}
+                            src={optImg || uploadedBeforeImg || rec.beforeImageUrl}
                             alt={`${rec.category} AI Concept`}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
@@ -1097,7 +1097,7 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                         <div className="relative w-full h-full">
                           {/* Before Image (underneath) — always the user's own uploaded photo */}
                           <img
-                            src={selectedRec.beforeImageUrl || uploadedBeforeImg}
+                            src={uploadedBeforeImg || selectedRec.beforeImageUrl}
                             alt="Before upgrade"
                             className="absolute inset-0 w-full h-full object-cover pointer-events-none"
                           />
@@ -1160,12 +1160,12 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
                       aria-label="Drag before-after visualizer comparison slider"
                     />
                   </div>
-                ) : (selectedRec.beforeImageUrl || uploadedBeforeImg) ? (
+                ) : (uploadedBeforeImg || selectedRec.beforeImageUrl) ? (
                   <div className="relative w-full h-full">
                     {/* No genuine AI upgrade render available — show the user's actual
                         uploaded photo rather than a fabricated/stock concept image. */}
                     <img
-                      src={selectedRec.beforeImageUrl || uploadedBeforeImg}
+                      src={uploadedBeforeImg || selectedRec.beforeImageUrl}
                       alt="Your uploaded room photo"
                       className="absolute inset-0 w-full h-full object-cover"
                     />

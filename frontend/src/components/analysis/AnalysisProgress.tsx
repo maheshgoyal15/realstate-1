@@ -97,11 +97,15 @@ export const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
   return (
     <div className="min-h-screen bg-surface flex items-center justify-center px-6 py-16">
       <div className="w-full max-w-xl animate-fade-in">
+        <div className="mb-4 flex items-center gap-2.5 bg-success-subtle border border-success-border text-success px-4 py-2.5 rounded-xl font-semibold text-xs shadow-sm">
+          <span>✓ Successfully Uploaded Your Property Photo</span>
+        </div>
+
         <p className="text-2xs font-semibold uppercase tracking-[0.14em] text-accent-600">
           HomeReady Architectural Studio
         </p>
 
-        <h1 className="mt-3 text-3xl text-ink">Designing your whole-house remodel</h1>
+        <h1 className="mt-3 text-3xl text-ink">Uploaded your photo — Designing your remodel</h1>
 
         {/* No agent count here on purpose: the pipeline runs five sub-agents but
             this list shows six phases (ingest is I/O, not an agent), so any
@@ -111,6 +115,20 @@ export const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
           We&apos;re working through your photos — recognising each room, dividing your budget
           across them, then rendering what the upgrades look like.
         </p>
+
+        {typeof window !== "undefined" && localStorage.getItem("user_uploaded_property_photo") && (
+          <div className="mt-6 flex items-center gap-4 bg-surface-raised border border-surface-border p-3.5 rounded-2xl">
+            <img
+              src={localStorage.getItem("user_uploaded_property_photo")!}
+              alt="Uploaded property photo preview"
+              className="w-16 h-16 rounded-xl object-cover shrink-0 border border-surface-border"
+            />
+            <div className="text-left">
+              <span className="text-xs font-semibold text-ink block">Uploaded Photo Confirmed</span>
+              <span className="text-[11px] text-ink-muted leading-tight">Our AI agents are analyzing your room surfaces & generating photorealistic remodel options.</span>
+            </div>
+          </div>
+        )}
 
         {/* The one element allowed to be big. At squint distance the completion
             figure is the only thing competing for attention. */}

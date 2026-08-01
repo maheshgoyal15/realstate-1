@@ -169,8 +169,8 @@ export default function AnalyzePropertyPage() {
 
       if (attachedFiles.length > 0) {
         try {
-          // Only attempt localStorage if thumbnail is under 500KB to prevent QuotaExceededError
-          if (attachedFiles[0].dataUrl.length < 500000) {
+          // Allow up to 4.8MB so real user uploaded photos are always stored for instant display
+          if (attachedFiles[0].dataUrl.length < 4800000) {
             localStorage.setItem("user_uploaded_property_photo", attachedFiles[0].dataUrl);
           }
         } catch (e) {
