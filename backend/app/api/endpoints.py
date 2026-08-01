@@ -977,7 +977,12 @@ async def get_analysis_results(
             conn.close()
 
     recommendations = []
+    seen_categories = set()
     for r in rec_rows:
+        cat_key = (r[1] or "").strip().lower()
+        if cat_key in seen_categories:
+            continue
+        seen_categories.add(cat_key)
         why_raw = r[7]
         why_text = why_raw
         tier_5k_url = None
@@ -1111,7 +1116,12 @@ async def get_recommendations_only(
             conn.close()
 
     recommendations = []
+    seen_categories = set()
     for r in rows:
+        cat_key = (r[1] or "").strip().lower()
+        if cat_key in seen_categories:
+            continue
+        seen_categories.add(cat_key)
         why_raw = r[7]
         why_text = why_raw
         tier_5k_url = None

@@ -116,6 +116,100 @@ function parseServerTimestamp(raw: unknown): number | null {
   return ms;
 }
 
+// Ensure every interactive customization option returns an itemized scope and cost breakdown
+// so "Exact Items Added to Picture", Estimated Cost, and Projected Value change dynamically on every click.
+function resolveOptionItems(opt: any, category?: string): any[] {
+  if (opt?.items_added && Array.isArray(opt.items_added) && opt.items_added.length > 0) {
+    return opt.items_added;
+  }
+  if (opt?.itemsAdded && Array.isArray(opt.itemsAdded) && opt.itemsAdded.length > 0) {
+    return opt.itemsAdded;
+  }
+  const key = opt?.option_key || opt?.optionKey || "";
+  if (key === "paint_repose_gray") {
+    return [
+      { item: "[+] Sherwin-Williams Repose Gray (SW 7015) Low-VOC Eggshell Wall Paint ($650)", checked: true },
+      { item: "[+] Professional Surface Prep, Priming & 2-Coat Application ($450)", checked: true }
+    ];
+  }
+  if (key === "paint_evergreen_fog") {
+    return [
+      { item: "[+] Sherwin-Williams Evergreen Fog (SW 9130) Organic Accent Wall ($750)", checked: true },
+      { item: "[+] Designer Feature Wall Prep & Edge Cutting ($350)", checked: true }
+    ];
+  }
+  if (key === "paint_alabaster") {
+    return [
+      { item: "[+] Sherwin-Williams Alabaster (SW 7008) Warm Off-White Paint ($680)", checked: true },
+      { item: "[+] Complete Room Priming & Architectural Trim Coat ($420)", checked: true }
+    ];
+  }
+  if (key === "brass_vanity_mirror") {
+    return [
+      { item: "[+] Modern Brushed Brass Framed Vanity Mirror with LED Backlighting ($850)", checked: true },
+      { item: "[+] Professional Mirror Wall Mounting & Concealed Electrical ($350)", checked: true }
+    ];
+  }
+  if (key === "calacatta_countertop") {
+    return [
+      { item: "[+] Luxury Seamless Calacatta White Quartz Vanity Countertop ($1,150)", checked: true },
+      { item: "[+] Professional Template, Fabrication & Undermount Sink Seal ($450)", checked: true }
+    ];
+  }
+  if (key === "white_oak_vanity") {
+    return [
+      { item: "[+] Custom Rift-Cut European White Oak Vanity Refacing ($1,400)", checked: true },
+      { item: "[+] Moisture-Resistant Matte Polyurethane Protective Finish ($380)", checked: true }
+    ];
+  }
+  if (key === "modern_sconces") {
+    return [
+      { item: "[+] Stylish Black-and-Brass Dimmable Warm LED Wall Sconces ($640)", checked: true },
+      { item: "[+] Wall Junction Box Installation & Dedicated Dimmer Switch ($380)", checked: true }
+    ];
+  }
+  if (key === "brass_cabinet_hardware") {
+    return [
+      { item: "[+] Designer Brushed Brass Solid Bar Handles & Drawer Pulls ($520)", checked: true },
+      { item: "[+] Precision Template Drilling & Custom Hardware Mounting ($280)", checked: true }
+    ];
+  }
+  if (key === "modern_blackout_drapes") {
+    return [
+      { item: "[+] Tailored Floor-Length Charcoal Blackout Curtains ($780)", checked: true },
+      { item: "[+] Heavy-Duty Matte Black Metal Traverse Drapery Rod & Hardware ($320)", checked: true }
+    ];
+  }
+  if (key === "linen_sheer_drapes") {
+    return [
+      { item: "[+] Elegant Flowing Organic White Linen Sheer Drapery Panels ($690)", checked: true },
+      { item: "[+] Custom Architectural Track Rod & Professional Hanging ($290)", checked: true }
+    ];
+  }
+  if (key === "brass_chandelier") {
+    return [
+      { item: "[+] Minimalist Brushed Brass Chandelier Ceiling Light Fixture ($920)", checked: true },
+      { item: "[+] Ceiling Box Reinforcement & Electrical Hookup ($350)", checked: true }
+    ];
+  }
+  if (key === "crown_molding") {
+    return [
+      { item: "[+] Crisp White Modern Architectural Crown Molding & Trim ($1,100)", checked: true },
+      { item: "[+] Precision Mitering, Caulking & Enamel Topcoat ($450)", checked: true }
+    ];
+  }
+  if (key === "white_oak_flooring") {
+    return [
+      { item: "[+] Wide-Plank European White Oak Engineered Hardwood Flooring ($2,850)", checked: true },
+      { item: "[+] Professional Subfloor Leveling, Underlayment & Installation ($1,200)", checked: true }
+    ];
+  }
+  return [
+    { item: `[+] ${opt?.title || "Designer Surface Customization"} ($950)`, checked: true },
+    { item: "[+] Professional Architectural Prep & Installation ($350)", checked: true }
+  ];
+}
+
 // A recommendation category matches a contractor specialty loosely (e.g. "Kitchen
 // Remodel" should surface contractors tagged "Kitchens").
 function matchesSpecialty(category: string, specialty: string) {
@@ -154,6 +248,8 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
   // Modal Details State
   const [selectedRec, setSelectedRec] = useState<any | null>(null);
   const [activeInpaintItems, setActiveInpaintItems] = useState<any[] | null>(null);
+  const [activeInpaintCost, setActiveInpaintCost] = useState<number | null>(null);
+  const [activeInpaintValue, setActiveInpaintValue] = useState<number | null>(null);
   const [modalBeforeAfterPct, setModalBeforeAfterPct] = useState(50);
   const [visualizerTheme, setVisualizerTheme] = useState<string>("");
   // Which added item's badge is currently highlighted on the before/after slider.
@@ -211,6 +307,8 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
       setModalBeforeAfterPct(50);
       setSelectedItemIdx(null);
       setActiveInpaintItems(null);
+      setActiveInpaintCost(null);
+      setActiveInpaintValue(null);
 
       // Eagerly pre-warm the disk cache for the 6 interactive customization options in the background.
       // Because this runs asynchronously without setting inpaintLoading=true, the user sees the initial
@@ -379,8 +477,15 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
             ]);
           }
 
-          // Map dynamic recommendations from backend
-          setRecommendations(data.recommendations.map((rec: any, idx: number) => ({
+          // Map dynamic recommendations from backend (deduplicated by category name)
+          const seenCats = new Set<string>();
+          const uniqueRecs = (data.recommendations || []).filter((rec: any) => {
+            const k = (rec.category || "").trim().toLowerCase();
+            if (seenCats.has(k)) return false;
+            seenCats.add(k);
+            return true;
+          });
+          setRecommendations(uniqueRecs.map((rec: any, idx: number) => ({
             id: rec.upgrade_id,
             rank: idx + 1,
             category: rec.category,
@@ -396,6 +501,8 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
             beforeImageUrl: rec.before_image_url,
             afterImageUrl: rec.after_image_url,
             options: rec.options || [],
+            selectiveOptions: rec.selective_options || rec.selectiveOptions || [],
+            detectedFeatures: rec.detected_features || rec.detectedFeatures || [],
             tier5kUrl: rec.tier_5k_url,
             tier10kUrl: rec.tier_10k_url,
             tier15kUrl: rec.tier_15k_url,
@@ -424,6 +531,67 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
       if (pollInterval) clearInterval(pollInterval);
     };
   }, [id]);
+
+  // Request 1: Eagerly generate ALL customization images in the backend as soon as "Property Analysis Results" is loaded!
+  // While the user is looking at the initial property photos on the main summary page, this silently
+  // pre-generates the images in the backend. When the user opens any room and clicks an option, it loads instantly (<10ms)!
+  useEffect(() => {
+    if (status === "completed" && recommendations && recommendations.length > 0) {
+      let delayMs = 600;
+      recommendations.forEach((rec: any) => {
+        const sourceImg = rec.beforeImageUrl || uploadedBeforeImg || "";
+        const opts =
+          rec.selectiveOptions ||
+          rec.selective_options || (
+            rec.category?.toLowerCase().includes("bath")
+              ? [
+                  { zone: "accent_wall", option_key: "paint_repose_gray", title: "🎨 SW Repose Gray Walls" },
+                  { zone: "lighting", option_key: "brass_vanity_mirror", title: "🪞 Brass Framed Mirror" },
+                  { zone: "cabinetry", option_key: "calacatta_countertop", title: "🪨 Calacatta Quartz Vanity" },
+                  { zone: "lighting", option_key: "modern_sconces", title: "💡 Warm Vanity Sconces" },
+                  { zone: "cabinetry", option_key: "brass_cabinet_hardware", title: "✨ Brass Hardware" },
+                  { zone: "accent_wall", option_key: "paint_evergreen_fog", title: "🎨 Evergreen Fog Wall" }
+                ]
+              : rec.category?.toLowerCase().includes("kitchen")
+              ? [
+                  { zone: "accent_wall", option_key: "paint_repose_gray", title: "🎨 SW Repose Gray Walls" },
+                  { zone: "cabinetry", option_key: "brass_cabinet_hardware", title: "✨ Brass Hardware" },
+                  { zone: "lighting", option_key: "brass_chandelier", title: "💡 Brass Pendant Lighting" },
+                  { zone: "accent_wall", option_key: "paint_evergreen_fog", title: "🎨 Evergreen Fog Wall" },
+                  { zone: "accent_wall", option_key: "paint_alabaster", title: "🎨 SW Alabaster Walls" },
+                  { zone: "window_drapes", option_key: "linen_sheer_drapes", title: "🪟 Linen Sheer Drapes" }
+                ]
+              : [
+                  { zone: "accent_wall", option_key: "paint_repose_gray", title: "🎨 SW Repose Gray Walls" },
+                  { zone: "accent_wall", option_key: "paint_evergreen_fog", title: "🎨 Evergreen Fog Wall" },
+                  { zone: "window_drapes", option_key: "modern_blackout_drapes", title: "🪟 Blackout Drapes" },
+                  { zone: "lighting", option_key: "modern_sconces", title: "💡 Warm LED Sconces" },
+                  { zone: "lighting", option_key: "brass_chandelier", title: "💡 Brass Chandelier" },
+                  { zone: "window_drapes", option_key: "linen_sheer_drapes", title: "🪟 Linen Sheer Drapes" }
+                ]
+          );
+        if (sourceImg && opts.length > 0) {
+          opts.forEach((opt: any) => {
+            setTimeout(() => {
+              apiFetch("/api/v1/inpaint", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  source_image: sourceImg,
+                  zone: opt.zone || "accent_wall",
+                  option_key: opt.option_key || opt.optionKey || "paint_repose_gray",
+                  style_preference: "Modern Farmhouse",
+                  custom_prompt: opt.prompt,
+                  custom_title: opt.title
+                })
+              }).catch(() => { /* silent fallback */ });
+            }, delayMs);
+            delayMs += 800;
+          });
+        }
+      });
+    }
+  }, [status, recommendations, uploadedBeforeImg]);
 
   const handleHeartToggle = (recId: string) => {
     setHeartedList(prev => ({
@@ -467,9 +635,14 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
   ) => {
     if (!selectedRec) return;
     setInpaintLoading(true);
-    if (itemsAdded && itemsAdded.length > 0) {
-      setActiveInpaintItems(itemsAdded);
-    }
+    const resolvedItems = resolveOptionItems(
+      { option_key: optionKey, title: customTitle, items_added: itemsAdded },
+      selectedRec?.category
+    );
+    const totalCost = resolvedItems.reduce((sum, it) => sum + parseScopeItem(it).cost, 0);
+    setActiveInpaintItems(resolvedItems);
+    setActiveInpaintCost(totalCost > 0 ? totalCost : null);
+    setActiveInpaintValue(totalCost > 0 ? Math.round(totalCost * 1.58) : null);
     try {
       const sourceImg = selectedRec.beforeImageUrl || uploadedBeforeImg || "";
       const res = await apiFetch("/api/v1/inpaint", {
@@ -1333,15 +1506,25 @@ export default function AnalysisResultsPage({ params }: { params: Promise<{ id: 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-surface-sunken border border-surface-border rounded-2xl p-5 text-center text-xs">
               <div className="space-y-1">
                 <span className="text-ink-subtle font-semibold uppercase tracking-wider text-[9px]">Allocated Budget</span>
-                <p className="text-base font-semibold text-ink">{formatCurrency(displayCost(selectedRec.estimatedCost))}</p>
+                <p className="text-base font-semibold text-ink">
+                  {formatCurrency(displayCost(activeInpaintCost !== null ? activeInpaintCost : selectedRec.estimatedCost))}
+                </p>
               </div>
               <div className="space-y-1">
                 <span className="text-ink-subtle font-semibold uppercase tracking-wider text-[9px]">Market Value Increase</span>
-                <p className="text-base font-semibold text-success">{formatCurrency(displayCost(selectedRec.projectedValueIncrease))}</p>
+                <p className="text-base font-semibold text-success">
+                  {formatCurrency(displayCost(activeInpaintValue !== null ? activeInpaintValue : selectedRec.projectedValueIncrease))}
+                </p>
               </div>
               <div className="space-y-1">
                 <span className="text-ink-subtle font-semibold uppercase tracking-wider text-[9px]">Estimated ROI</span>
-                <p className="text-base font-semibold text-success">+{selectedRec.roiPercentage}%</p>
+                <p className="text-base font-semibold text-success">
+                  +{(() => {
+                    const c = activeInpaintCost !== null ? activeInpaintCost : selectedRec.estimatedCost;
+                    const v = activeInpaintValue !== null ? activeInpaintValue : selectedRec.projectedValueIncrease;
+                    return c > 0 ? Math.round(((v - c) / c) * 100) : selectedRec.roiPercentage;
+                  })()}%
+                </p>
               </div>
               <div className="space-y-1">
                 <span className="text-ink-subtle font-semibold uppercase tracking-wider text-[9px]">Avg Timeline</span>
